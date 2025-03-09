@@ -1,0 +1,92 @@
+﻿@model MyCompany.Region
+@{
+    ViewData["Title"] = $"Участок \"{Model.Name}\"";
+}
+
+<form>
+    <input type="submit" value="Сохранить" asp-controller="Region" asp-action="Update" asp-route-region="@Model" />
+    <p>Номер завода<input name="FactoryId" asp-for="@Model.FactoryId" value="@Model.FactoryId" readonly /></p>
+    <p>Номер завода<input asp-for="@Model.Id" value="@Model.Id" readonly /></p>
+    <p>Название участка<input type="text" asp-for="@Model.Name" value="@Model.Name" required /></p>
+    <p>Тип участка<select name="Type" asp-for="@Model.Type" asp-items="Html.GetEnumSelectList<RegionType>()"></select></p>
+    <p>Время прохода продукции по участку<input name="TransitTime" asp-for="@Model.TransitTime" type="number" required /></p>
+
+    @if (Model.Factory != null && Model.Factory.Regions != null && Model.Factory.Regions.Count > 0)
+    {
+        <table class="table table-bordered">
+            <tr>
+                <td>Предшествующие участки</td>
+                <td>Последующие участки</td>
+            </tr>
+            <tr>
+                <td>
+                    <select asp-for="@Model.RegionsParentsId" multiple>
+                        @foreach(var r in Model.Factory.Regions)
+                        {
+                            if (r.Id != Model.Id)
+                            {
+                                bool find = false;
+                                if (Model.RegionsParents!= null)
+                                    foreach (var r1 in Model.RegionsParents)
+                                        if (r.Id == r1.Id)
+                                        {
+                                            find = true;
+                                            break;
+                                        }
+                                if(find)
+                                {
+                                    <option value="@r.Id" selected="selected">@r</option>
+                                }
+                                else
+                                {
+                                    <option value="@r.Id">@r</option>
+                                }
+                            }
+                        }
+                    </select>
+                </td>
+                <td>
+                    <select asp-for="@Model.RegionsChildrensId" multiple>
+                        @foreach (var r in Model.Factory.Regions)
+                        {
+                            if (r.Id != Model.Id)
+                            {
+                                bool find = false;
+                                if (Model.RegionsChildrens != null)
+                                    foreach (var r1 in Model.RegionsChildrens!)
+                                        if (r.Id == r1.Id)
+                                        {
+                                            find = true;
+                                            break;
+                                        }
+                                if (find)
+                                {
+                                    <option value="@r.Id" selected="selected">@r</option>
+                                }
+                                else
+                                {
+                                    <option value="@r.Id">@r</option>
+                                }
+                            }
+                        }
+                    </select>
+                </td>
+            </tr>
+        </table>
+    }
+
+    @if (Model.Materials != null && Model.Materials.Count > 0)
+    {
+        <p>Настройка производительности (г/час)</p>
+        for (int i = 0; i < Model.Materials.Count; ++i)
+        {
+            var item = Model.Materials[i];
+            <div>
+                <input type="number" asp-for="@Model.Materials[i].RegionId" value="@Model.Id" hidden />
+                <input type="text" asp-for="@Model.Materials[i].MaterialId" value="@Model.Materials[i].MaterialId" hidden />
+                <input type="number" asp-for="@Model.Materials[i].Id" value="@Model.Materials[i].Id" hidden />
+                <p>@item.Material.Name<input type="number" asp-for="@Model.Materials[i].Power" value="@item.Power" /></p>
+            </div>
+        }
+    }
+</form>

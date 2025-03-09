@@ -1,0 +1,28 @@
+﻿@model IEnumerable<MyCompany.Material>
+@{
+    ViewData["Title"] = "Список сырья";
+}
+
+<button onclick="location.href='@Url.Action("Create", "Material")'">Добавить материал</button>
+<table class="table border">
+    <thead>
+        <tr>
+            <th>№</th>
+            <th>Название</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var item in Model) {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    <a asp-action="Detail" asp-route-id="@item.Id">Подробнее</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id">Удалить</a>
+                </td>
+            </tr>
+    }
+    </tbody>
+</table>

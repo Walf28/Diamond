@@ -1,0 +1,9 @@
+﻿@model MyCompany.Material
+@{
+    ViewData["Title"] = "Добавление сырья";
+}
+
+<form>
+    <input type="submit" value="Добавить" asp-controller="Material" asp-action="Add" asp-route-material="@Model" />
+    <p>Название<input asp-for="Name" type="text"/></p>
+</form>

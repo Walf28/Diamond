@@ -1,0 +1,47 @@
+﻿@model Region
+@{
+    ViewData["Title"] = "Добавление участка";
+}
+
+<form method="post">
+    @* Обычные поля *@
+    <input type="submit" value="Добавить" asp-controller="Region" asp-action="Add" asp-route-region="@Model"/>
+    <p>Номер завода<input name="FactoryId" asp-for="@Model.FactoryId" value="@Model.FactoryId" readonly/></p>
+    <p>Название участка<input type="text" asp-for="@Model.Name" value="@Model.Name" required/></p>
+    <p>Тип участка<select name="Type" asp-for="@Model.Type" asp-items="Html.GetEnumSelectList<RegionType>()"></select></p>
+    <p>Время прохода продукции по участку<input name="TransitTime" asp-for="@Model.TransitTime" type="number" required/></p>
+
+    @* Связи с другими участками *@
+    @if (Model.Factory != null && Model.Factory.Regions != null && Model.Factory.Regions.Count > 0)
+    {
+        <table class="table table-bordered">
+            <tr>
+                <td>Предшествующие участки</td>
+                <td>Последующие участки</td>
+            </tr>
+            <tr>
+                <td>
+                    <select asp-for="@Model.RegionsParentsId" asp-items="@(new MultiSelectList(@Model.Factory.Regions, "Id", "Name"))"></select>
+                </td>
+                <td>
+                    <select asp-for="@Model.RegionsChildrensId" asp-items="@(new MultiSelectList(@Model.Factory.Regions, "Id", "Name"))"></select>
+                </td>
+            </tr>
+        </table>
+    }
+
+    @* Производительность на каждом сырье *@
+    @if (Model.Materials != null && Model.Materials.Count > 0)
+    {
+        <p>Настройка производительности (г/час)</p>
+        for (int i = 0;i< Model.Materials.Count;++i)
+        {
+            var item = Model.Materials[i];
+            <div>
+                <input type="number" asp-for="@Model.Materials[i].RegionId" value="@Model.Id" hidden />
+                <input type="text" asp-for="@Model.Materials[i].MaterialId" value="@Model.Materials[i].MaterialId" hidden />
+                <p>@item.Material.Name<input type="number" asp-for="@Model.Materials[i].Power" value="0"/></p>
+            </div>
+        }
+    }
+</form>
