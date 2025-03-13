@@ -3,8 +3,8 @@
     ViewData["Title"] = "Список сырья";
 }
 
-<button onclick="location.href='@Url.Action("Create", "Material")'">Добавить материал</button>
-<table class="table border">
+<button onclick="location.href='@Url.Action("Create", "Material")'">Добавить сырьё</button>
+<table class="table table-bordered">
     <thead>
         <tr>
             <th>№</th>
@@ -16,11 +16,14 @@
     @foreach (var item in Model) {
             <tr>
                 <td>
+                    @Html.DisplayFor(modelItem => item.Id)
+                </td>
+                <td>
                     @Html.DisplayFor(modelItem => item.Name)
                 </td>
                 <td>
-                    <a asp-action="Detail" asp-route-id="@item.Id">Подробнее</a>
-                    <a asp-action="Delete" asp-route-id="@item.Id">Удалить</a>
+                    <a asp-action="Detail" asp-route-id="@item.Id">| Подробнее |</a>
+                    <a asp-action="Delete" asp-route-id="@item.Id">| Удалить |</a>
                 </td>
             </tr>
     }

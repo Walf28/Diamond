@@ -1,4 +1,6 @@
-﻿namespace MyCompany
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace MyCompany
 {
     public class Product
     {
@@ -7,16 +9,20 @@
         public int Id { get; set; }
         public string? Name { get; set; } // Наименование продукции
         public int Size { get; set; } // Размер в граммах
-        public string? TechnologyProcessing { get; set; } // Пока что, наверное, не пригодится
-        public int Price { get; set; }
+        public int Price { get; set; } // Цена
         #endregion
 
         #region Ссылочные
+        [NotMapped]
+        public string TechnologyProcessing { get; set; } = ""; // Пока что, наверное, не пригодится
         public List<Request>? Requests { get; set; } // Заявки
+
+        [ForeignKey("MaterialId")]
         public Material? Material { get; set; } // На каком сырье создаётся
         #endregion
 
         #region Id ссылок
+        public int MaterialId { get; set; } // На каком сырье создаётся
         #endregion
         #endregion
 

@@ -18,7 +18,7 @@ namespace MyCompany
                 CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
                 builder.Services.AddRazorPages();
                 builder.Services.AddDbContext<DB>(options =>
-                    options.UseNpgsql(DB.GetConnectionString));
+                    options.UseNpgsql(DB.ConnectionString));
             }
 
             var app = builder.Build();

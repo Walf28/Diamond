@@ -1,0 +1,24 @@
+﻿@model List<Route>
+@{
+    ViewData["Title"] = $"Список всех маршрутов на заводе \"{ViewBag.FactoryName} ({ViewBag.FactoryId})\"";
+}
+
+<form>
+    <button asp-action="Update" asp-route-routes="@Model">Сохранить</button>
+
+    <h1>Список маршрутов</h1>
+    <table class="table table-bordered">
+        <tr>
+            <td>Использовать</td>
+            <td>Наименование</td>
+            <td>Содержание</td>
+        </tr>
+        @for (int i=0;i<Model.Count;++i){
+            <tr>
+                <td><input type="checkbox" name="check[@i]" id="check[@i]" /></td>
+                <td>@Model[i].Name<input type="text" value="@Model[i].Name"/></td>
+                <td>@Model[i].GetContent</td>
+            </tr>
+        }
+    </table>
+</form>

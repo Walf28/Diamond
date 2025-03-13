@@ -8,7 +8,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace MyCompany.Migrations
+namespace Diamond.Migrations
 {
     [DbContext(typeof(DB))]
     partial class DBModelSnapshot : ModelSnapshot
@@ -116,7 +116,7 @@ namespace MyCompany.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("MaterialId")
+                    b.Property<int>("MaterialId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Name")
@@ -127,9 +127,6 @@ namespace MyCompany.Migrations
 
                     b.Property<int>("Size")
                         .HasColumnType("integer");
-
-                    b.Property<string>("TechnologyProcessing")
-                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -302,7 +299,8 @@ namespace MyCompany.Migrations
                     b.HasOne("MyCompany.Material", "Material")
                         .WithMany("Products")
                         .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Material");
                 });

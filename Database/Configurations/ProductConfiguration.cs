@@ -15,7 +15,9 @@ namespace MyCompany.Database.Configurations
                 .OnDelete(DeleteBehavior.Cascade);
             // С сырьём
             builder.HasOne(p => p.Material).WithMany(m => m.Products)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasPrincipalKey(m => m.Id)
+                .HasForeignKey(p => p.MaterialId)
+                .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }
     }

@@ -7,7 +7,7 @@ namespace MyCompany
     {
         #region Поля
         #region Простые
-        public RegionType Type { get; set; } = RegionType.NONE; // Тип участка
+        public Technology Type { get; set; } = Technology.NONE; // Тип участка
         public int Workload { get; set; } = 0; // Текущая загруженность
         public int MaxVolume { get; set; } = 0; // Максимальная вместительность участка
         public int TransitTime { get; set; } = 0; // Время прохода продукции по участку
@@ -15,11 +15,11 @@ namespace MyCompany
 
         #region Ссылочные
         public required Factory Factory { get; set; } // Фабрика
-        public List<Route>? Routes { get; set; } // Маршруты, проходящие по данному участку
-        public List<Region>? RegionsParents { get; set; } // Список родительских участков
-        public List<Region>? RegionsChildrens { get; set; } // Список подчиннных участков, куда направляется изготовленная продукция
+        public List<Route> Routes { get; set; } = []; // Маршруты, проходящие по данному участку
+        public List<Region> RegionsParents { get; set; } = []; // Список родительских участков
+        public List<Region> RegionsChildrens { get; set; } = []; // Список подчиннных участков, куда направляется изготовленная продукция
         public Downtime? Downtime { get; set; } // Простой
-        public List<MaterialForRegion>? Materials { get; set; } // Производительность под каждое сырье
+        public List<MaterialForRegion> Materials { get; set; } = []; // Производительность под каждое сырье
         #endregion
 
         #region Id ссылок
@@ -43,7 +43,7 @@ namespace MyCompany
 
         /*#region Свойства
         public int? GetIdParent => idParent;
-        public RegionType Type { get => Type; set => Type = value; }
+        public Technology Type { get => Type; set => Type = value; }
         public int? Power
         {
             get => power;
@@ -133,7 +133,7 @@ namespace MyCompany
             this.id = id;
             Refresh();
         }
-        public Region(int? idParent, string name, RegionType Type, int? power, int? transitTime, string RegionsChildrens,
+        public Region(int? idParent, string name, Technology Type, int? power, int? transitTime, string RegionsChildrens,
             DateTime? downtimeStart = null, int? downtimeDuration = null, string? downtimeReason = null) : base(name) // Когда ещё только создаётся Участок
         {
             this.name = name;
@@ -147,7 +147,7 @@ namespace MyCompany
             this.DowntimeReason = downtimeReason;
             UpdateDowntime();
         }
-        public Region(int id, int? idParent, string name, RegionType Type, int? power, int? transitTime, List<int>? workload, string RegionsChildrens,
+        public Region(int id, int? idParent, string name, Technology Type, int? power, int? transitTime, List<int>? workload, string RegionsChildrens,
             double? SizeToCompleteFirstRoute, DateTime? downtimeStart, int? downtimeDuration, string? downtimeReason) : base(id, name) // Когда всё известно и надо загрузить
         {
             this.idParent = idParent;
@@ -167,7 +167,7 @@ namespace MyCompany
         {
             this.id = int.Parse(id);
             this.idParent = int.Parse(idParent);
-            this.Type = int.TryParse(Type, out int rType) ? (RegionType)rType : RegionType.NONE;
+            this.Type = int.TryParse(Type, out int rType) ? (Technology)rType : Technology.NONE;
             this.name = name;
             this.Power = power == null ? null : int.Parse(power);
             this.transitTime = transitTime == null ? null : int.Parse(transitTime);
@@ -232,7 +232,7 @@ namespace MyCompany
             object[] datas = DB.SelectWhere("Region", "id", id.ToString()!)![0];
             this.idParent = int.Parse(datas[1].ToString()!);
             this.name = datas[2].ToString()!;
-            this.Type = (RegionType)int.Parse(datas[3].ToString()!);
+            this.Type = (Technology)int.Parse(datas[3].ToString()!);
             this.power = int.Parse(datas[4].ToString()!);
             this.transitTime = int.Parse(datas[5].ToString()!);
             this.workload = StringToWorkload(datas[6].ToString()!);

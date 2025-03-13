@@ -4,10 +4,10 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace MyCompany.Migrations
+namespace Diamond.Migrations
 {
     /// <inheritdoc />
-    public partial class m : Migration
+    public partial class m1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -45,11 +45,11 @@ namespace MyCompany.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Type = table.Column<int>(type: "integer", nullable: false),
-                    Power = table.Column<int>(type: "integer", nullable: false),
                     Workload = table.Column<int>(type: "integer", nullable: false),
                     MaxVolume = table.Column<int>(type: "integer", nullable: false),
                     TransitTime = table.Column<int>(type: "integer", nullable: false),
                     FactoryId = table.Column<int>(type: "integer", nullable: false),
+                    DowntimeId = table.Column<int>(type: "integer", nullable: true),
                     Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
                 },
                 constraints: table =>
@@ -60,7 +60,7 @@ namespace MyCompany.Migrations
                         column: x => x.FactoryId,
                         principalTable: "Factories",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -92,9 +92,8 @@ namespace MyCompany.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "text", nullable: true),
                     Size = table.Column<int>(type: "integer", nullable: false),
-                    TechnologyProcessing = table.Column<string>(type: "text", nullable: true),
                     Price = table.Column<int>(type: "integer", nullable: false),
-                    MaterialId = table.Column<int>(type: "integer", nullable: true)
+                    MaterialId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -104,7 +103,7 @@ namespace MyCompany.Migrations
                         column: x => x.MaterialId,
                         principalTable: "Materials",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -170,13 +169,13 @@ namespace MyCompany.Migrations
                         column: x => x.MaterialId,
                         principalTable: "Materials",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_RegionsMaterials_Regions_RegionId",
                         column: x => x.RegionId,
                         principalTable: "Regions",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(

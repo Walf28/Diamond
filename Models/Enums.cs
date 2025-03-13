@@ -1,9 +1,8 @@
-﻿using System.ComponentModel;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace MyCompany
 {
-    public enum RegionType
+    public enum Technology
     {
         [Display(Name = "Отсутствует")]
         NONE = 0,

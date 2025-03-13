@@ -1,16 +1,20 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using MyCompany.Models;
 using MyCompany.Database.Configurations;
-using System.ComponentModel;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace MyCompany
 {
-    public class DB(DbContextOptions options) : DbContext(options)
+    public class DB : DbContext
     {
-        private static string ConnectionString = "Database=MyCompany;Host=localhost;Username=postgres;Password=111;";
-
-        public static string GetConnectionString => ConnectionString;
+        public readonly static string ConnectionString = "Database=Diamond;Host=localhost;Username=postgres;Password=111;";
+        public DbSet<Factory> Factories { get; set; } = null!;
+        public DbSet<Route> Routes { get; set; } = null!;
+        public DbSet<Region> Regions { get; set; } = null!;
+        public DbSet<Downtime> Downtimes { get; set; } = null!;
+        public DbSet<Product> Products { get; set; } = null!;
+        public DbSet<Material> Materials { get; set; } = null!;
+        public DbSet<MaterialForRegion> RegionsMaterials { get; set; } = null!;
+        public DbSet<Request> Requests { get; set; } = null!;
 
         /*string cmdDeleteMigrations = "Remove-Migration";
         string cmdCreateMigrations = "Add-Migration InitialCreate";
@@ -19,14 +23,8 @@ namespace MyCompany
         string cmdCreateMigrations = "dotnet ef migrations add InitialCreate";
         string cmdUpdateMigrations = "dotnet ef database update";*/
 
-        public required DbSet<Factory> Factories { get; set; }
-        public required DbSet<Route> Routes { get; set; }
-        public required DbSet<Region> Regions { get; set; }
-        public required DbSet<Downtime> Downtimes { get; set; }
-        public required DbSet<Product> Products { get; set; }
-        public required DbSet<Material> Materials { get; set; }
-        public required DbSet<MaterialForRegion> RegionsMaterials { get; set; }
-        public required DbSet<Request> Requests { get; set; }
+        public DB(DbContextOptions options) : base(options) { }
+        public DB() { }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -41,6 +39,14 @@ namespace MyCompany
             modelBuilder.ApplyConfiguration(new ProductConfiguration());
 
             base.OnModelCreating(modelBuilder);
+        }
+
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            if (!optionsBuilder.IsConfigured)
+            {
+                optionsBuilder.UseNpgsql(ConnectionString);
+            }
         }
     }
 }

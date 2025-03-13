@@ -9,11 +9,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
-namespace MyCompany.Migrations
+namespace Diamond.Migrations
 {
     [DbContext(typeof(DB))]
-    [Migration("20250309093257_m7")]
-    partial class m7
+    [Migration("20250313085319_n1")]
+    partial class n1
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -119,7 +119,7 @@ namespace MyCompany.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("MaterialId")
+                    b.Property<int>("MaterialId")
                         .HasColumnType("integer");
 
                     b.Property<string>("Name")
@@ -130,9 +130,6 @@ namespace MyCompany.Migrations
 
                     b.Property<int>("Size")
                         .HasColumnType("integer");
-
-                    b.Property<string>("TechnologyProcessing")
-                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -275,13 +272,13 @@ namespace MyCompany.Migrations
                     b.HasOne("MyCompany.Material", "Material")
                         .WithMany("Materials")
                         .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.SetNull)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("MyCompany.Region", "Region")
                         .WithMany("Materials")
                         .HasForeignKey("RegionId")
-                        .OnDelete(DeleteBehavior.SetNull)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Material");
@@ -305,7 +302,8 @@ namespace MyCompany.Migrations
                     b.HasOne("MyCompany.Material", "Material")
                         .WithMany("Products")
                         .HasForeignKey("MaterialId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Material");
                 });

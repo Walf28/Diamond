@@ -13,10 +13,14 @@ namespace MyCompany.Controllers
     {
         private readonly DB context = context;
 
-        #region Список/подробности
+        #region Отображение
         public IActionResult List()
         {
             return View(context.Factories.AsNoTracking().ToList());
+        }
+        public IActionResult Create()
+        {
+            return View();
         }
         public IActionResult Edit(int? Id)
         {
@@ -30,11 +34,7 @@ namespace MyCompany.Controllers
         }
         #endregion
 
-        #region Создание, обновление и удаление
-        public IActionResult Create()
-        {
-            return View();
-        }
+        #region Управление
         public async Task<IActionResult> Add(Factory factory)
         {
             await context.Factories.AddAsync(factory);

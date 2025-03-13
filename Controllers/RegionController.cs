@@ -34,7 +34,7 @@ namespace MyCompany.Controllers
         {
             if (Id == null)
                 throw new Exception("Участок не найден");
-            var r = context.Regions
+            var region = context.Regions
                 .Where(r => r.Id == Id)
                 .Include(r => r.RegionsParents)
                 .Include(r => r.RegionsChildrens)
@@ -43,23 +43,26 @@ namespace MyCompany.Controllers
                 .Include(r => r.Materials)
                 .First(r => r.Id == Id);
 
-            foreach (var item in context.Materials)
+            List<Material> AllMaterials = context.Materials.ToList();
+            List<Material> NewMaterials = [];
+            foreach (var am in AllMaterials)
             {
                 bool find = false;
-                for (int i = 0; i < r.Materials!.Count; ++i)
+                foreach (var om in region.Materials!)
                 {
-                    if (r.Materials[i].MaterialId == item.Id)
+                    if (om.MaterialId == am.Id)
                     {
                         find = true;
-                        r.Materials[i].Material = item;
                         break;
                     }
                 }
-                if (!find)
-                    r.Materials.Add(new MaterialForRegion() { Material = item, MaterialId = item.Id, Region = r, RegionId = r.Id });
-            }
 
-            return View(r);
+                if (!find)
+                    NewMaterials.Add(am);
+            }
+            ViewBag.NewMaterials = NewMaterials;
+
+            return View(region);
         }
         #endregion
 
@@ -79,6 +82,19 @@ namespace MyCompany.Controllers
                 foreach (var pId in region.RegionsParentsId)
                     region.RegionsParents.Add(context.Regions.Where(r => r.Id == pId).First());
 
+            // Добавление производительности
+            if (region.Materials != null)
+                for (int i = 0; i < region.Materials.Count; ++i)
+                {
+                    if (region.Materials[i].Power <= 0)
+                    {
+                        region.Materials.RemoveAt(i);
+                        --i;
+                    }
+                    else
+                        region.Materials[i].Material = context.Materials.Where(m => m.Id == region.Materials[i].MaterialId).First();
+                }
+            
             // Добавление в БД
             await context.Regions.AddAsync(region);
             await context.SaveChangesAsync();
@@ -111,10 +127,17 @@ namespace MyCompany.Controllers
                     DBRegion.RegionsParents!.Add(context.Regions.Where(r => r.Id == pId).First());
 
             // Обновление производительности
-            DBRegion.Materials!.Clear();
-            if (region.Materials != null && region.Materials.Count > 0)
-                foreach (var mat in region.Materials)
-                    DBRegion.Materials.Add(mat);
+            for (int i = 0; i < region.Materials.Count; ++i)
+                {
+                    if (region.Materials[i].Power <= 0)
+                    {
+                        region.Materials.RemoveAt(i);
+                        --i;
+                    }
+                    else
+                        region.Materials[i].Material = context.Materials.Where(m => m.Id == region.Materials[i].MaterialId).First();
+                }
+            DBRegion.Materials = region.Materials;
 
             // Сохранение всех изменений
             await context.SaveChangesAsync();

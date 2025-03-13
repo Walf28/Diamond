@@ -12,12 +12,14 @@ namespace MyCompany.Database.Configurations
             #region Связи
             // С заводом
             builder.HasOne(r => r.Factory).WithMany(f => f.Routes)
+                .HasPrincipalKey(f => f.Id)
+                .HasForeignKey(r => r.FactoryId)
                 .OnDelete(DeleteBehavior.Cascade);
             // С участками
             builder.HasMany(r => r.Regions).WithMany(r => r.Routes);
             // С заказами
             builder.HasMany(r => r.Requests).WithOne(r => r.Route)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }
     }

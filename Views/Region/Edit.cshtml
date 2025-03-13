@@ -8,7 +8,7 @@
     <p>Номер завода<input name="FactoryId" asp-for="@Model.FactoryId" value="@Model.FactoryId" readonly /></p>
     <p>Номер завода<input asp-for="@Model.Id" value="@Model.Id" readonly /></p>
     <p>Название участка<input type="text" asp-for="@Model.Name" value="@Model.Name" required /></p>
-    <p>Тип участка<select name="Type" asp-for="@Model.Type" asp-items="Html.GetEnumSelectList<RegionType>()"></select></p>
+    <p>Тип участка<select name="Type" asp-for="@Model.Type" asp-items="Html.GetEnumSelectList<Technology>()"></select></p>
     <p>Время прохода продукции по участку<input name="TransitTime" asp-for="@Model.TransitTime" type="number" required /></p>
 
     @if (Model.Factory != null && Model.Factory.Regions != null && Model.Factory.Regions.Count > 0)
@@ -75,17 +75,30 @@
         </table>
     }
 
-    @if (Model.Materials != null && Model.Materials.Count > 0)
+    @if ((Model.Materials != null && Model.Materials.Count > 0) || ((List<Material>)ViewBag.NewMaterials).Count > 0)
     {
         <p>Настройка производительности (г/час)</p>
-        for (int i = 0; i < Model.Materials.Count; ++i)
+        List<Material> lm = ViewBag.NewMaterials;
+        Model.Materials ??= [];
+        int k = 0;
+        if (Model.Materials.Count > 0){
+            for (int i = 0; i < Model.Materials.Count; ++i, ++k)
+            {
+                <div>
+                    <input type="number" asp-for="@Model.Materials[i].MaterialId" value="@Model.Materials[i].MaterialId" hidden />
+                    <input type="number" asp-for="@Model.Materials[i].Id" value="@Model.Materials[i].Id" hidden />
+                    <p>@Model.Materials[i].Material.Name<input type="number" asp-for="@Model.Materials[i].Power" value="@Model.Materials[i].Power" /></p>
+                </div>
+            }
+        }
+
+        List<Material> RemainingMaterial = ViewBag.NewMaterials;
+        for (int i = 0; i <RemainingMaterial.Count; ++i, ++k)
         {
-            var item = Model.Materials[i];
+            Model.Materials.Add(new());
             <div>
-                <input type="number" asp-for="@Model.Materials[i].RegionId" value="@Model.Id" hidden />
-                <input type="text" asp-for="@Model.Materials[i].MaterialId" value="@Model.Materials[i].MaterialId" hidden />
-                <input type="number" asp-for="@Model.Materials[i].Id" value="@Model.Materials[i].Id" hidden />
-                <p>@item.Material.Name<input type="number" asp-for="@Model.Materials[i].Power" value="@item.Power" /></p>
+                <input type="number" asp-for="@Model.Materials[k].MaterialId" value="@RemainingMaterial[i].Id" hidden />
+                <p>@RemainingMaterial[i].Name<input type="number" asp-for="@Model.Materials[k].Power" value="0" /></p>
             </div>
         }
     }

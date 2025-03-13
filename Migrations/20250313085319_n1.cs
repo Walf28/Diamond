@@ -2,10 +2,10 @@
 
 #nullable disable
 
-namespace MyCompany.Migrations
+namespace Diamond.Migrations
 {
     /// <inheritdoc />
-    public partial class m7 : Migration
+    public partial class n1 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)

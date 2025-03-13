@@ -8,7 +8,7 @@
         <input type="submit" value="Сохранить" asp-controller="Factory" asp-action="Update" asp-route-factory="@Model"/>
         <input type="submit" value="Удалить" asp-controller="Factory" asp-action="Delete" asp-route-Id="@Model.Id">
         <input type="submit" value="Добавить участок" asp-controller="Region" asp-action="Create" asp-route-Factory="@Model"/>
-        <input type="submit" value="Настроить маршруты"/>
+        <input type="submit" value="Настроить маршруты" asp-controller="Route" asp-action="List" asp-route-id="@Model.Id" />
     </div>
     
     <p>Номер завода<input name="Id" value="@Model.Id" readonly></p>
@@ -16,7 +16,7 @@
     
     <p>Список участков</p>
     <div>
-        @if (Model.Regions != null)
+        @if (Model.Regions.Count > 0)
         {
             <table class="table table-bordered">
                 <tr>
@@ -42,13 +42,14 @@
 
     <p>Список маршрутов</p>
     <div>
-        @if (Model.Routes != null)
+        @if (Model.Routes.Count > 0)
         {
             <table class="table table-bordered">
                 <tr>
                     <td>№</td>
                     <td>Название</td>
                     <td>Мощность</td>
+                    <td>Количество простаивающих участков</td>
                     <td></td>
                 </tr>
                 @foreach (var Route in Model.Routes)
@@ -57,6 +58,7 @@
                         <td>@Route.Id</td>
                         <td>@Route.Name</td>
                         <td>@Route.MaxPower</td>
+                        <td>0</td>
                         <td>
                             <a asp-controller="Route" asp-action="Detail" asp-route-Id="@Route.Id">Подробнее</a>
                             <a asp-controller="Route" asp-action="Delete" asp-route-Id="@Route.Id">Удалить</a>
@@ -69,7 +71,7 @@
 
     <p>Список заказов</p>
     <div>
-        @if (Model.Requests != null)
+        @if (Model.Requests.Count > 0)
         {
             <table class="table table-bordered">
                 <tr>
