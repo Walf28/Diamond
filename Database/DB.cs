@@ -1,17 +1,18 @@
-﻿using Microsoft.EntityFrameworkCore;
-using MyCompany.Models;
-using MyCompany.Database.Configurations;
+﻿using Diamond.Database.Configurations;
+using Diamond.Models;
+using Microsoft.EntityFrameworkCore;
 
-namespace MyCompany
+namespace Diamond
 {
     public class DB : DbContext
     {
         public readonly static string ConnectionString = "Database=Diamond;Host=localhost;Username=postgres;Password=111;";
         public DbSet<Factory> Factories { get; set; } = null!;
-        public DbSet<Route> Routes { get; set; } = null!;
+        public DbSet<Models.Route> Routes { get; set; } = null!;
         public DbSet<Region> Regions { get; set; } = null!;
         public DbSet<Downtime> Downtimes { get; set; } = null!;
-        public DbSet<Product> Products { get; set; } = null!;
+        public DbSet<ProductGroup> ProductsGroup { get; set; } = null!;
+        public DbSet<ProductSpecific> ProductsSpecific { get; set; } = null!;
         public DbSet<Material> Materials { get; set; } = null!;
         public DbSet<MaterialForRegion> RegionsMaterials { get; set; } = null!;
         public DbSet<Request> Requests { get; set; } = null!;
@@ -36,7 +37,8 @@ namespace MyCompany
             modelBuilder.ApplyConfiguration(new MaterialConfiguration());
             modelBuilder.ApplyConfiguration(new MaterialForRegionConfiguration());
             modelBuilder.ApplyConfiguration(new RequestConfiguration());
-            modelBuilder.ApplyConfiguration(new ProductConfiguration());
+            modelBuilder.ApplyConfiguration(new ProductGroupConfiguration());
+            modelBuilder.ApplyConfiguration(new ProductSpecificConfiguration());
 
             base.OnModelCreating(modelBuilder);
         }

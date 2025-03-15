@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Diamond.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
-using MyCompany;
 
-namespace MyCompany.Controllers
+namespace Diamond.Controllers
 {
     public class FactoryController(DB context) : Controller
     {
@@ -29,7 +24,10 @@ namespace MyCompany.Controllers
             var f = context.Factories
                 .AsNoTracking()
                 .Include(f => f.Regions)
-                .FirstOrDefault(f => f.Id == Id);
+                .Include(f => f.Routes)
+                .Include(f => f.Requests)
+                .First(f => f.Id == Id);
+            //f.Requests.RemoveRange(f.Requests.Where())
             return View(f);
         }
         #endregion

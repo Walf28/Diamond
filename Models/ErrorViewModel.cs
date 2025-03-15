@@ -1,4 +1,4 @@
-namespace MyCompany.Models
+namespace Diamond.Models
 {
     public class ErrorViewModel
     {

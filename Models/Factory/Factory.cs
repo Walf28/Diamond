@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace MyCompany
+namespace Diamond.Models
 {
     public class Factory : FactoryObject
     {
@@ -22,14 +22,15 @@ namespace MyCompany
         [NotMapped]
         public List<int> RequestsId { get; set; } = [];
         #endregion
+
+        #region Специально для взаимодействия представления и контроллера
+        [NotMapped]
+        public List<bool>? check { get; set; }
+        #endregion
         #endregion
 
-        public Factory()
-        {
-            context = new DB();
-        }
-
         #region Методы
+        // Найти все маршруты
         public List<Route> FindAllRoutes()
         {
             if (Regions.Count == 0)
@@ -45,12 +46,47 @@ namespace MyCompany
 
             return routes;
         }
+
+        // Найти неиспользуемые маршруты
+        public List<Route> FindUnusingRoutes()
+        {
+            if (Regions.Count == 0)
+                Regions = [.. context.Regions.AsNoTracking().Where(r => r.FactoryId == Id).Include(r => r.RegionsParents).Include(r => r.RegionsChildrens)];
+            if (Routes.Count == 0)
+                Routes = [..context.Routes.AsNoTracking().Where(r => r.FactoryId == Id)];
+
+            List<Route> routes = [];
+            foreach (var r in Regions)
+            {
+                if (r.RegionsParents.Count > 0 || r.RegionsChildrens.Count == 0)
+                    continue;
+                List<Route> ThisRoutes = FindRouteFor(r);
+
+                // Нахождение используемых маршрутов
+                for (int i = 0; i < ThisRoutes.Count; ++i)
+                    foreach (var UsedRoute in Routes)
+                        if (ThisRoutes[i].GetContent == UsedRoute.GetContent)
+                        {
+                            ThisRoutes.RemoveAt(i);
+                            --i;
+                            break;
+                        }
+
+                // Добавление маршрутов
+                routes.AddRange(ThisRoutes);
+            }
+
+            return routes;
+        }
+
+        // Найти маршруты, начинающиеся с данного участка
         private List<Route> FindRouteFor(Region region, List<Route>? routes = null, List<Region>? list = null)
         {
-            list ??= [region];
+            list ??= [];
+            list.Add(region);
             routes ??= [];
             if (region.RegionsChildrens.Count == 0)
-                region = context.Regions.Where(r => r.Id == region.Id).First();
+                region = context.Regions.AsNoTracking().Where(r => r.Id == region.Id).Include(r=>r.RegionsChildrens).First();
 
             // Конец
             if (region.RegionsChildrens.Count == 0)
@@ -62,11 +98,7 @@ namespace MyCompany
             // Просмотр всех последующих участков
             foreach (var children in region.RegionsChildrens)
             {
-                List<Region> regions = new(list)
-                {
-                    children
-                };
-                routes.AddRange(FindRouteFor(children, [.. routes], [.. regions]));
+                routes = FindRouteFor(children, [.. routes], [.. list]);
             }
 
             return routes;

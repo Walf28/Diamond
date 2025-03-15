@@ -1,9 +1,9 @@
-﻿@model IEnumerable<MyCompany.Material>
+﻿@model IEnumerable<Diamond.Models.Material>
 @{
     ViewData["Title"] = "Список сырья";
 }
 
-<button onclick="location.href='@Url.Action("Create", "Material")'">Добавить сырьё</button>
+<input type="button" onclick="location.href='@Url.Action("Create", "Material")'" value="Добавить сырьё" />
 <table class="table table-bordered">
     <thead>
         <tr>

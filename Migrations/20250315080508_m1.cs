@@ -85,21 +85,19 @@ namespace Diamond.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Products",
+                name: "ProductsGroup",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "text", nullable: true),
-                    Size = table.Column<int>(type: "integer", nullable: false),
-                    Price = table.Column<int>(type: "integer", nullable: false),
                     MaterialId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Products", x => x.Id);
+                    table.PrimaryKey("PK_ProductsGroup", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Products_Materials_MaterialId",
+                        name: "FK_ProductsGroup_Materials_MaterialId",
                         column: x => x.MaterialId,
                         principalTable: "Materials",
                         principalColumn: "Id",
@@ -203,6 +201,27 @@ namespace Diamond.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ProductsSpecific",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Size = table.Column<int>(type: "integer", nullable: false),
+                    Price = table.Column<int>(type: "integer", nullable: false),
+                    ProductGroupId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductsSpecific", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductsSpecific_ProductsGroup_ProductGroupId",
+                        column: x => x.ProductGroupId,
+                        principalTable: "ProductsGroup",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Requests",
                 columns: table => new
                 {
@@ -224,9 +243,9 @@ namespace Diamond.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
-                        name: "FK_Requests_Products_ProductId",
+                        name: "FK_Requests_ProductsSpecific_ProductId",
                         column: x => x.ProductId,
-                        principalTable: "Products",
+                        principalTable: "ProductsSpecific",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -244,9 +263,14 @@ namespace Diamond.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Products_MaterialId",
-                table: "Products",
+                name: "IX_ProductsGroup_MaterialId",
+                table: "ProductsGroup",
                 column: "MaterialId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductsSpecific_ProductGroupId",
+                table: "ProductsSpecific",
+                column: "ProductGroupId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RegionRegion_RegionsParentsId",
@@ -316,16 +340,19 @@ namespace Diamond.Migrations
                 name: "Regions");
 
             migrationBuilder.DropTable(
-                name: "Products");
+                name: "ProductsSpecific");
 
             migrationBuilder.DropTable(
                 name: "Routes");
 
             migrationBuilder.DropTable(
-                name: "Materials");
+                name: "ProductsGroup");
 
             migrationBuilder.DropTable(
                 name: "Factories");
+
+            migrationBuilder.DropTable(
+                name: "Materials");
         }
     }
 }

@@ -21,7 +21,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
     <Folder Include="Views\Requests\" />
     <Folder Include="Views\Shared\" />
     <Folder Include="wwwroot\css\" />

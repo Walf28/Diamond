@@ -1,9 +1,8 @@
 using System.Diagnostics;
+using Diamond.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using MyCompany.Models;
 
-namespace MyCompany.Controllers
+namespace Diamond.Controllers
 {
     public class HomeController : Controller
     {

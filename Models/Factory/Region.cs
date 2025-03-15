@@ -1,7 +1,7 @@
-﻿using MyCompany.Models;
+﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace MyCompany
+namespace Diamond.Models
 {
     public class Region : FactoryObject
     {
@@ -14,6 +14,7 @@ namespace MyCompany
         #endregion
 
         #region Ссылочные
+        public DB context = new();
         public required Factory Factory { get; set; } // Фабрика
         public List<Route> Routes { get; set; } = []; // Маршруты, проходящие по данному участку
         public List<Region> RegionsParents { get; set; } = []; // Список родительских участков
@@ -24,23 +25,34 @@ namespace MyCompany
 
         #region Id ссылок
         public int FactoryId { get; set; }
-        
         [NotMapped]
         public List<int>? RoutesId { get; set; } // Маршруты, проходящие по данному участку
-        
         [NotMapped]
         public List<int>? RegionsParentsId { get; set; } // Список родительских участков
-        
         [NotMapped]
         public List<int>? RegionsChildrensId { get; set; } // Список подчиннных участков, куда направляется изготовленная продукция
-        
         public int? DowntimeId { get; set; } // Простой
-        
         [NotMapped]
         public List<int>? MaterialsId { get; set; } // Производительность под каждое сырье
         #endregion
         #endregion
 
+        #region Методы
+        // Взять список сырья, на котором может работать данный участок
+        public List<Material> GetMaterials()
+        {
+            if (Materials.Count == 0)
+                Materials =[.. context.RegionsMaterials.AsNoTracking().Where(rm => rm.RegionId == Id)];
+
+            List<Material> result = [];
+            foreach (var material in Materials)
+            {
+                result.Add(context.Materials.AsNoTracking().Where(m=>m.Id == material.MaterialId).First());
+            }
+
+            return result;
+        }
+        #endregion
         /*#region Свойства
         public int? GetIdParent => idParent;
         public Technology Type { get => Type; set => Type = value; }

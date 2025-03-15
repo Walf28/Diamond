@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Diamond.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace MyCompany.Controllers
+namespace Diamond.Controllers
 {
     public class RegionController(DB context) : Controller
     {

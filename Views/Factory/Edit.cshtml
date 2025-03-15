@@ -1,4 +1,5 @@
-﻿@model Factory
+﻿@using Diamond.Models
+@model Factory
 @{
     ViewData["Title"] = $"Завод \"{Model.Name}\"";
 }
@@ -8,10 +9,10 @@
         <input type="submit" value="Сохранить" asp-controller="Factory" asp-action="Update" asp-route-factory="@Model"/>
         <input type="submit" value="Удалить" asp-controller="Factory" asp-action="Delete" asp-route-Id="@Model.Id">
         <input type="submit" value="Добавить участок" asp-controller="Region" asp-action="Create" asp-route-Factory="@Model"/>
-        <input type="submit" value="Настроить маршруты" asp-controller="Route" asp-action="List" asp-route-id="@Model.Id" />
+        <input type="submit" value="Настроить маршруты" asp-controller="Route" asp-action="List" asp-route-Id="@Model.Id" />
     </div>
     
-    <p>Номер завода<input name="Id" value="@Model.Id" readonly></p>
+    <p>Номер завода<input name="Id" asp-for="Id" value="@Model.Id" readonly></p>
     <p>Название завода<input name="Name" value="@Model.Name"></p>
     
     <p>Список участков</p>
@@ -46,23 +47,20 @@
         {
             <table class="table table-bordered">
                 <tr>
-                    <td>№</td>
                     <td>Название</td>
-                    <td>Мощность</td>
                     <td>Количество простаивающих участков</td>
-                    <td></td>
+                    <td>Мощность</td>
+                    <td>Что может производить</td>
+                    <td>Маршрут</td>
                 </tr>
                 @foreach (var Route in Model.Routes)
                 {
                     <tr>
-                        <td>@Route.Id</td>
                         <td>@Route.Name</td>
-                        <td>@Route.MaxPower</td>
                         <td>0</td>
-                        <td>
-                            <a asp-controller="Route" asp-action="Detail" asp-route-Id="@Route.Id">Подробнее</a>
-                            <a asp-controller="Route" asp-action="Delete" asp-route-Id="@Route.Id">Удалить</a>
-                        </td>
+                        <td>@MaterialForRegion.ToString(Route.GetMaxPowerOnMaterial()).Replace("\n", " | ")</td>
+                        <td>@ProductGroup.ToString(Route.GetAvailableProducts())</td>
+                        <td>@Route.GetContent</td>
                     </tr>
                 }
             </table>
@@ -86,10 +84,10 @@
                     <tr>
                         <td>@Request.Id</td>
                         <td>@Request.Name</td>
-                        <td>@Request.Product.Name</td>
+                        <td>@Request.Product.GetProductGroup!.Name</td>
                         <td>@Request.Count</td>
                         <td>
-                            <a asp-controller="Request" asp-action="Detail" asp-route-Id="@Request.Id">Подробнее</a>
+                            <a asp-controller="Request" asp-action="Detail" asp-route-Id="@Request.Id">Подробнее |</a>
                             <a asp-controller="Request" asp-action="Delete" asp-route-Id="@Request.Id">Удалить</a>
                         </td>
                     </tr>

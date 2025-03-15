@@ -1,27 +1,23 @@
-﻿@model List<Product>
+﻿@model Diamond.Models.ProductGroup
 @{
-    ViewData["Title"] = "Список продукции";
+    ViewData["Title"] = $"Разновидности \"{Model.Name}\"";
 }
 
-<button onclick="location.href='@Url.Action("Create", "Product")'">Добавить продукцию</button>
+<input type="button" onclick="location.href='@Url.Action("CreateSpecific", "Product", new{groupId = Model.Id})'" value="Добавить" />
 <table class="table table-bordered">
     <thead>
         <tr>
             <th>№</th>
-            <th>Название</th>
             <th>Размер (гр.)</th>
             <th>Цена (руб.)</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-    @foreach (var item in Model) {
+        @foreach (var item in Model.ProductsSpecific) {
             <tr>
                 <td>
                     @Html.DisplayFor(modelItem => item.Id)
-                </td>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Name)
                 </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.Size)
@@ -30,10 +26,10 @@
                     @Html.DisplayFor(modelItem => item.Price)
                 </td>
                 <td>
-                    <a asp-action="Edit" asp-route-id="@item.Id">Редактировать |</a>
-                    <a asp-action="Delete" asp-route-id="@item.Id">Удалить</a>
+                    <a asp-action="EditSpecific" asp-route-productId="@item.Id">Редактировать |</a>
+                    <a asp-action="DeleteSpecific" asp-route-productId="@Model.Id" asp-route-id="@item.Id">Удалить</a>
                 </td>
             </tr>
-    }
+        }
     </tbody>
 </table>

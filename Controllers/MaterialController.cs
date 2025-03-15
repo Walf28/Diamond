@@ -1,16 +1,21 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Diamond.Models;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
-namespace MyCompany.Controllers
+namespace Diamond.Controllers
 {
     public class MaterialController(DB context) : Controller
     {
         private readonly DB context = context;
 
-        #region Список/подробности
+        #region Представление
         public IActionResult List()
         {
             return View(context.Materials.AsNoTracking().ToList());
+        }
+        public IActionResult Create()
+        {
+            return View();
         }
         public async Task<IActionResult> Detail(int? Id)
         {
@@ -23,11 +28,7 @@ namespace MyCompany.Controllers
         }
         #endregion
 
-        #region Создание, обновление и удаление
-        public IActionResult Create()
-        {
-            return View();
-        }
+        #region Управление
         public async Task<IActionResult> Add(Material material)
         {
             await context.Materials.AddAsync(material);

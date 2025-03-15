@@ -1,21 +1,37 @@
-﻿namespace MyCompany
+﻿namespace Diamond.Models
 {
     public class Material
     {
         #region Поля
         #region Обычные
         public int Id { get; set; }
-        public required string Name { get; set; } = "Без названия"; // Наименование сырья
+        public string Name { get; set; } = ""; // Наименование сырья
         #endregion
 
         #region Ссылочные
         public List<MaterialForRegion>? Materials { get; set; }
-        public List<Product>? Products { get; set; }
+        public List<ProductGroup>? Products { get; set; }
         #endregion
 
         #region Id ссылок
 
         #endregion
+        #endregion
+
+        #region Методы
+        public static string ToString(List<Material> materials)
+        {
+            string s = "";
+            
+            if (materials.Count > 0)
+            {
+                foreach (var material in materials)
+                    s += $"{material.Name}, ";
+                s = s.Remove(s.Length - 2);
+            }
+
+            return s;
+        }
         #endregion
     }
 }

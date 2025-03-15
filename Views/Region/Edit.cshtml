@@ -1,4 +1,4 @@
-﻿@model MyCompany.Region
+﻿@model Diamond.Models.Region
 @{
     ViewData["Title"] = $"Участок \"{Model.Name}\"";
 }
@@ -6,7 +6,7 @@
 <form>
     <input type="submit" value="Сохранить" asp-controller="Region" asp-action="Update" asp-route-region="@Model" />
     <p>Номер завода<input name="FactoryId" asp-for="@Model.FactoryId" value="@Model.FactoryId" readonly /></p>
-    <p>Номер завода<input asp-for="@Model.Id" value="@Model.Id" readonly /></p>
+    <input asp-for="@Model.Id" value="@Model.Id" readonly hidden/>
     <p>Название участка<input type="text" asp-for="@Model.Name" value="@Model.Name" required /></p>
     <p>Тип участка<select name="Type" asp-for="@Model.Type" asp-items="Html.GetEnumSelectList<Technology>()"></select></p>
     <p>Время прохода продукции по участку<input name="TransitTime" asp-for="@Model.TransitTime" type="number" required /></p>

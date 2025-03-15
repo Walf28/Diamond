@@ -1,8 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Diamond.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using MyCompany.Models;
 
-namespace MyCompany.Database.Configurations
+namespace Diamond.Database.Configurations
 {
     public class DowntimeConfiguration : IEntityTypeConfiguration<Downtime>
     {

@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
-namespace MyCompany
+namespace Diamond
 {
     public class Program
     {

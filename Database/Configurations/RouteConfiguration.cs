@@ -1,11 +1,12 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Diamond.Models;
 
-namespace MyCompany.Database.Configurations
+namespace Diamond.Database.Configurations
 {
-    public class RouteConfiguration : IEntityTypeConfiguration<Route>
+    public class RouteConfiguration : IEntityTypeConfiguration<Models.Route>
     {
-        public void Configure(EntityTypeBuilder<Route> builder)
+        public void Configure(EntityTypeBuilder<Models.Route> builder)
         {
             builder.HasKey(r => r.Id);
 

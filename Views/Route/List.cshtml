@@ -1,24 +1,52 @@
-﻿@model List<Route>
-@{
-    ViewData["Title"] = $"Список всех маршрутов на заводе \"{ViewBag.FactoryName} ({ViewBag.FactoryId})\"";
+﻿@{
+    ViewData["Title"] = $"Список всех маршрутов на заводе \"{ViewBag.FactoryName}\"";
 }
 
-<form>
-    <button asp-action="Update" asp-route-routes="@Model">Сохранить</button>
-
+<form asp-controller="Route" asp-action="Update">
+    <input type="submit" value="Сохранить"/>
+    <input type="number" name="FactoryId" value="@ViewBag.FactoryId" hidden />
     <h1>Список маршрутов</h1>
     <table class="table table-bordered">
         <tr>
             <td>Использовать</td>
             <td>Наименование</td>
-            <td>Содержание</td>
+            <td>Мощность</td>
+            <td>Что может производить</td>
+            <td>Маршрут</td>
         </tr>
-        @for (int i=0;i<Model.Count;++i){
-            <tr>
-                <td><input type="checkbox" name="check[@i]" id="check[@i]" /></td>
-                <td>@Model[i].Name<input type="text" value="@Model[i].Name"/></td>
-                <td>@Model[i].GetContent</td>
-            </tr>
+        @{
+            int k = 0;
+            List<Route> routes = ViewBag.ExistRoutes;
+            for (int i =0;i< routes.Count; ++i, ++k){
+                <tr>
+                    <td><input type="checkbox" name="check" value="@k" checked /></td>
+                    <td><input type="text" name="name" value="@routes[i].Name" /></td>
+                    <td>@MaterialForRegion.ToString(routes[i].GetMaxPowerOnMaterial()).Replace("\n", " | ")</td>
+                    <td>@ProductGroup.ToString(routes[i].GetAvailableProducts())</td>
+                    <td>
+                        @routes[i].GetContent
+                        @for(int j =0; j< routes[i].Regions.Count; ++j){
+                            <input type="number" name="regions[@k][@j]" value="@routes[i].Regions[j].Id" hidden/>
+                        }
+                    </td>
+                </tr>
+            }
+
+            routes = ViewBag.OtherRoutes;
+            for (int i =0;i< routes.Count; ++i, ++k){
+                <tr>
+                    <td><input type="checkbox" name="check" value="@k" /></td>
+                    <td><input type="text" name="name" value=""/></td>
+                    <td>@MaterialForRegion.ToString(routes[i].GetMaxPowerOnMaterial()).Replace("\n", " | ")</td>
+                    <td>@ProductGroup.ToString(routes[i].GetAvailableProducts())</td>
+                    <td>
+                        @routes[i].GetContent
+                        @for (int j = 0; j < routes[i].Regions.Count; ++j){
+                            <input type="number" name="regions[@k][@j]" value="@routes[i].Regions[j].Id" hidden />
+                        }
+                    </td>
+                </tr>
+            }
         }
     </table>
 </form>

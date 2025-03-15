@@ -1,6 +1,7 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace MyCompany
+namespace Diamond.Models
 {
     public class MaterialForRegion
     {
@@ -11,14 +12,39 @@ namespace MyCompany
         #endregion
 
         #region Ссылочные
-        public Material Material { get; set; } = new() { Name = "" }; // Сырьё (родитель)
-        public Region Region { get; set; } = new() { Factory = new() }; // Участок
+        [NotMapped]
+        public readonly DB context = new();
+        public Material Material { get; set; } = null!; // Сырьё (родитель)
+        public Region Region { get; set; } = null!; // Участок
         #endregion
 
         #region Id ссылок
         public int MaterialId { get; set; }
         public int RegionId { get; set; }
         #endregion
+        #endregion
+
+        #region Свойства
+        public string GetName
+        {
+            get
+            {
+                if (this.Material == null)
+                    Material = context.Materials.AsNoTracking().Where(m => m.Id == MaterialId).First();
+                return Material.Name;
+            }
+        }
+        #endregion
+
+        #region Методы
+        public static string ToString(List<MaterialForRegion> materials)
+        {
+            string s = "";
+            if (materials.Count > 0)
+                foreach (var material in materials)
+                    s += $"{material.GetName} - {material.Power}\n";
+            return s.TrimEnd();
+        }
         #endregion
     }
 }

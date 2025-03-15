@@ -1,14 +1,12 @@
-﻿@model MyCompany.Product
+﻿@model Diamond.Models.ProductGroup
 @{
     ViewData["Title"] = $"Продукция \"{Model.Name}\"";
 }
 
-<form>
-    <input type="submit" value="Сохранить" asp-controller="Product" asp-action="Update" asp-route-material="@Model" />
+<form method="post">
+    <input type="submit" value="Сохранить"/>
     <p>Номер<input asp-for="@Model.Id" type="number" value="@Model.Id" readonly/></p>
     <p>Название<input asp-for="@Model.Name" type="text" required/></p>
-    <p>Размер (гр.)<input asp-for="@Model.Size" type="number" required/></p>
-    <p>Цена (руб.)<input asp-for="@Model.Price" type="number" required/></p>
 
     <p>На каком сырье производится<select asp-for="@Model.MaterialId" required>
         @foreach (var m in ((List<Material>)ViewBag.materials))

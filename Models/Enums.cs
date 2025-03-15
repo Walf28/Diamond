@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace MyCompany
+namespace Diamond.Models
 {
     public enum Technology
     {
