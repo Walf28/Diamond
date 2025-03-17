@@ -69,7 +69,6 @@ namespace Diamond.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    MaxPower = table.Column<int>(type: "integer", nullable: false),
                     FactoryId = table.Column<int>(type: "integer", nullable: false),
                     Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
                 },
@@ -227,11 +226,15 @@ namespace Diamond.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Name = table.Column<string>(type: "text", nullable: false),
                     Count = table.Column<int>(type: "integer", nullable: false),
+                    DateOfReceipt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DateOfDesiredComplete = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DateOfAcceptance = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DateOfComplete = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
                     FactoryId = table.Column<int>(type: "integer", nullable: true),
-                    RouteId = table.Column<int>(type: "integer", nullable: true),
-                    ProductId = table.Column<int>(type: "integer", nullable: false)
+                    ProductId = table.Column<int>(type: "integer", nullable: false),
+                    RouteId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -252,8 +255,7 @@ namespace Diamond.Migrations
                         name: "FK_Requests_Routes_RouteId",
                         column: x => x.RouteId,
                         principalTable: "Routes",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.SetNull);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateIndex(

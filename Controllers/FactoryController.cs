@@ -25,9 +25,8 @@ namespace Diamond.Controllers
                 .AsNoTracking()
                 .Include(f => f.Regions)
                 .Include(f => f.Routes)
-                .Include(f => f.Requests)
+                .Include(f => f.Requests.Where(r => r.Status < RequestStatus.DELIVERY))
                 .First(f => f.Id == Id);
-            //f.Requests.RemoveRange(f.Requests.Where())
             return View(f);
         }
         #endregion

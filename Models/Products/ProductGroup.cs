@@ -7,7 +7,7 @@ namespace Diamond.Models
         #region Поля
         #region Обычные
         public int Id { get; set; }
-        public string? Name { get; set; } // Наименование продукции
+        public string Name { get; set; } = ""; // Наименование продукции
         #endregion
 
         #region Ссылочные

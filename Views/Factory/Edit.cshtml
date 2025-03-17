@@ -30,7 +30,7 @@
                     <tr>
                         <td>@Region.Id</td>
                         <td>@Region.Name</td>
-                        <td>@Html.DisplayFor(m => m.Regions!.First(r => r.Id == Region.Id).Type)</td>
+                        <td>@Html.DisplayFor(f => f.Regions!.First(r => r.Id == Region.Id).Type)</td>
                         <td>
                             <a asp-controller="Region" asp-action="Edit" asp-route-Id="@Region.Id">Редактировать</a>
                             <a asp-controller="Factory" asp-action="DeleteRegion" asp-route-ModelId="@Model.Id" asp-route-RegionId="@Region.Id">Удалить</a>
@@ -74,22 +74,18 @@
             <table class="table table-bordered">
                 <tr>
                     <td>№</td>
-                    <td>Название</td>
                     <td>Товар</td>
                     <td>Количество</td>
+                    <td>Желаемая дата выполнения</td>
                     <td></td>
                 </tr>
                 @foreach (var Request in Model.Requests)
                 {
                     <tr>
                         <td>@Request.Id</td>
-                        <td>@Request.Name</td>
                         <td>@Request.Product.GetProductGroup!.Name</td>
                         <td>@Request.Count</td>
-                        <td>
-                            <a asp-controller="Request" asp-action="Detail" asp-route-Id="@Request.Id">Подробнее |</a>
-                            <a asp-controller="Request" asp-action="Delete" asp-route-Id="@Request.Id">Удалить</a>
-                        </td>
+                        <td>@Request.DateOfDesiredComplete</td>
                     </tr>
                 }
             </table>

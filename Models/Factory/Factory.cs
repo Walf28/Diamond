@@ -13,20 +13,6 @@ namespace Diamond.Models
         public List<Region> Regions { get; set; } = [];
         public List<Request> Requests { get; set; } = [];
         #endregion
-
-        #region Id ссылок
-        [NotMapped]
-        public List<int> RoutesId { get; set; } = [];
-        [NotMapped]
-        public List<int> RegionsId { get; set; } = [];
-        [NotMapped]
-        public List<int> RequestsId { get; set; } = [];
-        #endregion
-
-        #region Специально для взаимодействия представления и контроллера
-        [NotMapped]
-        public List<bool>? check { get; set; }
-        #endregion
         #endregion
 
         #region Методы

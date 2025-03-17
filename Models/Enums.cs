@@ -23,4 +23,16 @@ namespace Diamond.Models
         [Display(Name = "Бункер")]
         SILO = 8,
     }
+
+    public enum RequestStatus
+    {
+        [Display(Name = "Рассматривается")]
+        ANALYZE,
+        [Display(Name = "Изготавливается")]
+        FABRICATING,
+        [Display(Name = "В доставке")]
+        DELIVERY,
+        [Display(Name = "Выполнена")]
+        COMPLETE
+    }
 }

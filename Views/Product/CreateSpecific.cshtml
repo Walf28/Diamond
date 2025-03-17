@@ -6,6 +6,6 @@
 <form method="post">
     <input type="submit" value="Добавить"/>
     <input type="number" asp-for="@Model.ProductGroupId" value="@Model.ProductGroup.Id" hidden />
-    <p>Размер<input asp-for="@Model.Size" type="number" required/></p>
-    <p>Цена<input asp-for="@Model.Price" type="number" required/></p>
+    <p>Размер (гр.)<input asp-for="@Model.Size" type="number" required/></p>
+    <p>Цена (руб.)<input asp-for="@Model.Price" type="number" required/></p>
 </form>

@@ -16,6 +16,7 @@ namespace Diamond
                 var cultureInfo = new CultureInfo("en-US"); // Используем культуру с точкой как разделителем
                 CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
                 CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
+                cultureInfo.DateTimeFormat.LongTimePattern = "HH:mm:ss";
                 builder.Services.AddRazorPages();
                 builder.Services.AddDbContext<DB>(options =>
                     options.UseNpgsql(DB.ConnectionString));

@@ -15,13 +15,9 @@ namespace Diamond.Database.Configurations
             builder.HasOne(r => r.Factory).WithMany(f => f.Requests)
                 .OnDelete(DeleteBehavior.SetNull);
 
-            // С маршрутом
-            builder.HasOne(r => r.Route).WithMany(r => r.Requests)
-                .OnDelete(DeleteBehavior.SetNull);
-
             // С товаром
             builder.HasOne(r => r.Product).WithMany(p=>p.Requests)
-                .OnDelete(DeleteBehavior.SetNull);
+                .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }
     }

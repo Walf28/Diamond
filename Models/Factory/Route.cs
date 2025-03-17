@@ -7,7 +7,6 @@ namespace Diamond.Models
     {
         #region Поля
         #region Обычные
-        public int MaxPower { get; set; } = 0; // Мощность маршрута
         #endregion
 
         #region Ссылочные
@@ -51,22 +50,6 @@ namespace Diamond.Models
         #endregion
 
         #region Методы
-        /*public void UpdateMaxPower() // Придётся изменить класс тогда (а это в любом случае придётся сделать)
-        {
-            if (Regions.Count == 0)
-            {
-                Regions = [.. context.Regions.Where(r=> r.FactoryId == FactoryId)];
-                if (Regions.Count == 0)
-                    return;
-            }
-
-            MaxPower = int.MaxValue;
-            foreach (var region in Regions)
-            {
-                if (region.po)
-            }
-        }*/
-
         // Список, на каком сырье может работать данный маршрут
         public List<Material> GetAcceptableMaterials()
         {

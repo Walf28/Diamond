@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Diamond.Migrations
 {
     [DbContext(typeof(DB))]
-    [Migration("20250315080508_m1")]
-    partial class m1
+    [Migration("20250316060637_m2")]
+    partial class m2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -123,6 +123,7 @@ namespace Diamond.Migrations
                         .HasColumnType("integer");
 
                     b.Property<string>("Name")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -205,17 +206,28 @@ namespace Diamond.Migrations
                     b.Property<int>("Count")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("DateOfAcceptance")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DateOfComplete")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DateOfDesiredComplete")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DateOfReceipt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int?>("FactoryId")
                         .HasColumnType("integer");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<int>("ProductId")
                         .HasColumnType("integer");
 
                     b.Property<int?>("RouteId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -238,9 +250,6 @@ namespace Diamond.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("FactoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("MaxPower")
                         .HasColumnType("integer");
 
                     b.Property<string>("Name")
@@ -361,16 +370,13 @@ namespace Diamond.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Diamond.Models.Route", "Route")
+                    b.HasOne("Diamond.Models.Route", null)
                         .WithMany("Requests")
-                        .HasForeignKey("RouteId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("RouteId");
 
                     b.Navigation("Factory");
 
                     b.Navigation("Product");
-
-                    b.Navigation("Route");
                 });
 
             modelBuilder.Entity("Diamond.Models.Route", b =>

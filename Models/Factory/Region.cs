@@ -14,8 +14,9 @@ namespace Diamond.Models
         #endregion
 
         #region Ссылочные
+        [NotMapped]
         public DB context = new();
-        public required Factory Factory { get; set; } // Фабрика
+        public Factory Factory { get; set; } = null!;// Фабрика
         public List<Route> Routes { get; set; } = []; // Маршруты, проходящие по данному участку
         public List<Region> RegionsParents { get; set; } = []; // Список родительских участков
         public List<Region> RegionsChildrens { get; set; } = []; // Список подчиннных участков, куда направляется изготовленная продукция

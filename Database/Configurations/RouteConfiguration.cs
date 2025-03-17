@@ -18,9 +18,6 @@ namespace Diamond.Database.Configurations
                 .OnDelete(DeleteBehavior.Cascade);
             // С участками
             builder.HasMany(r => r.Regions).WithMany(r => r.Routes);
-            // С заказами
-            builder.HasMany(r => r.Requests).WithOne(r => r.Route)
-                .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }
     }

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Diamond.Models
@@ -8,11 +9,14 @@ namespace Diamond.Models
         #region Поля
         #region Обычные
         public int Id { get; set; }
+        [Range(1, int.MaxValue, ErrorMessage = "Разрешены только положительные значения")]
         public int Size { get; set; } // Размер в граммах
+        [Range(0, int.MaxValue, ErrorMessage = "Разрешены только положительные значения")]
         public int Price { get; set; } // Цена
         #endregion
 
         #region Ссылочные
+        [NotMapped]
         private readonly DB context = new();
         [ForeignKey("ProductGroupId")]
         public ProductGroup ProductGroup { get; set; } = new();
