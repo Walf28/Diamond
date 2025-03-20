@@ -1,4 +1,6 @@
-﻿namespace Diamond.Models
+﻿using Diamond.Models.Factory;
+
+namespace Diamond.Models
 {
     public class Downtime
     {

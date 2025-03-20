@@ -1,12 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Diamond.Models;
 
 namespace Diamond.Database.Configurations
 {
-    public class RouteConfiguration : IEntityTypeConfiguration<Models.Route>
+    public class RouteConfiguration : IEntityTypeConfiguration<Models.Factory.Route>
     {
-        public void Configure(EntityTypeBuilder<Models.Route> builder)
+        public void Configure(EntityTypeBuilder<Models.Factory.Route> builder)
         {
             builder.HasKey(r => r.Id);
 
@@ -18,6 +17,9 @@ namespace Diamond.Database.Configurations
                 .OnDelete(DeleteBehavior.Cascade);
             // С участками
             builder.HasMany(r => r.Regions).WithMany(r => r.Routes);
+            // С планом
+            builder.HasMany(f => f.Plan).WithOne(p => p.Route)
+                .OnDelete(DeleteBehavior.SetNull);
             #endregion
         }
     }

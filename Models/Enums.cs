@@ -35,4 +35,22 @@ namespace Diamond.Models
         [Display(Name = "Выполнена")]
         COMPLETE
     }
+
+    public enum RegionStatus
+    {
+        [Display(Name = "Выключен")]
+        OFF,
+        [Display(Name = "Готов к работе")]
+        READY_TO_WORK,
+        [Display(Name = "Идёт переналадка")]
+        READJUSTMENT,
+        [Display(Name = "Ожидает загрузки")]
+        AWAIT_DOWNLOAD,
+        [Display(Name = "Работает")]
+        IN_WORKING,
+        [Display(Name = "Ожидает разгрузки")]
+        AWAIT_UNLOADING,
+        [Display(Name = "Временно не работает")]
+        DOESNT_WORK
+    }
 }

@@ -1,4 +1,4 @@
-﻿@using Diamond.Models
+﻿@using Diamond.Models.Factory
 @model Region
 @{
     ViewData["Title"] = "Добавление участка";
@@ -10,7 +10,7 @@
     <p>Номер завода<input name="FactoryId" asp-for="@Model.FactoryId" value="@Model.FactoryId" readonly/></p>
     <p>Название участка<input type="text" asp-for="@Model.Name" value="@Model.Name" required/></p>
     <p>Тип участка<select name="Type" asp-for="@Model.Type" asp-items="Html.GetEnumSelectList<Technology>()"></select></p>
-    <p>Время прохода продукции по участку<input name="TransitTime" asp-for="@Model.TransitTime" type="number" required/></p>
+    <p>Время прохода продукции по участку<input name="TransitTime" asp-for="@Model.TransitTime" type="number" min="0" required/></p>
 
     @* Связи с другими участками *@
     @if (Model.Factory != null && Model.Factory.Regions != null && Model.Factory.Regions.Count > 0)
@@ -39,7 +39,7 @@
         {
             <div>
                 <input type="number" asp-for="@Model.Materials[i].MaterialId" value="@Model.Materials[i].MaterialId" hidden />
-                <p>@Model.Materials[i].Material.Name<input type="number" asp-for="@Model.Materials[i].Power" value="0" /></p>
+                <p>@Model.Materials[i].Material.Name<input type="number" asp-for="@Model.Materials[i].Power" min="0" value="0" /></p>
             </div>
         }
     }

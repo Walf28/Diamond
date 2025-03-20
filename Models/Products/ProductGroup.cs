@@ -11,9 +11,8 @@ namespace Diamond.Models
         #endregion
 
         #region Ссылочные
-        [NotMapped]
-        public string TechnologyProcessing { get; set; } = ""; // Пока что, наверное, не пригодится
-        public List<ProductSpecific> ProductsSpecific { get; set; } = [];
+        public List<Technology> TechnologyProcessing { get; set; } = []; // Процесс обработки
+        public List<ProductSpecific> ProductsSpecific { get; set; } = []; // Разновидности (размер/цена)
         [ForeignKey("MaterialId")]
         public Material Material { get; set; } = null!; // На каком сырье создаётся
         #endregion

@@ -1,4 +1,5 @@
-﻿@using Diamond.Models
+﻿@using Diamond.Models.Factory
+@using Diamond.Models.Materials
 @model Factory
 @{
     ViewData["Title"] = $"Завод \"{Model.Name}\"";
@@ -32,8 +33,8 @@
                         <td>@Region.Name</td>
                         <td>@Html.DisplayFor(f => f.Regions!.First(r => r.Id == Region.Id).Type)</td>
                         <td>
-                            <a asp-controller="Region" asp-action="Edit" asp-route-Id="@Region.Id">Редактировать</a>
-                            <a asp-controller="Factory" asp-action="DeleteRegion" asp-route-ModelId="@Model.Id" asp-route-RegionId="@Region.Id">Удалить</a>
+                            <a asp-controller="Region" asp-action="Edit" asp-route-Id="@Region.Id" class="btn btn-primary">Редактировать</a>
+                            <a asp-controller="Factory" asp-action="DeleteRegion" asp-route-ModelId="@Model.Id" asp-route-RegionId="@Region.Id" class="btn btn-danger">Удалить</a>
                         </td>
                     </tr>
                 }
@@ -77,15 +78,16 @@
                     <td>Товар</td>
                     <td>Количество</td>
                     <td>Желаемая дата выполнения</td>
-                    <td></td>
+                    <td>Статус</td>
                 </tr>
                 @foreach (var Request in Model.Requests)
                 {
                     <tr>
                         <td>@Request.Id</td>
-                        <td>@Request.Product.GetProductGroup!.Name</td>
+                        <td>@Request.GetProduct!.GetProductGroup!.Name</td>
                         <td>@Request.Count</td>
                         <td>@Request.DateOfDesiredComplete</td>
+                        <td>@Html.DisplayFor(f => f.Requests.First(r => r.Id == Request.Id).Status)</td>
                     </tr>
                 }
             </table>

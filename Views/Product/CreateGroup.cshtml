@@ -7,4 +7,11 @@
     <input type="submit" value="Добавить"/>
     <p>Название<input asp-for="@Model.Name" type="text" required/></p>
     <p>На каком сырье производится<select asp-for="@Model.MaterialId" asp-items="@(new SelectList((List<Material>)ViewBag.materials, "Id", "Name"))" required></select></p>
+
+    <p>Процесс обработки (последовательные числа через пробел)<input type="text" name="techProcess" value="" required /></p>
+    <div>
+        @foreach(var i in Html.GetEnumSelectList<Technology>()){
+            <p>@($"{i.Value}. {@i.Text}")</p>
+        }
+    </div>
 </form>

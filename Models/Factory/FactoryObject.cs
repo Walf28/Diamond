@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Diamond.Models
+namespace Diamond.Models.Factory
 {
     public abstract class FactoryObject
     {

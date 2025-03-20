@@ -1,4 +1,4 @@
-﻿using Diamond.Models;
+﻿using Diamond.Models.Factory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -25,6 +25,9 @@ namespace Diamond.Database.Configurations
             // С заказами
             builder.HasMany(f => f.Requests).WithOne(r => r.Factory)
                 .OnDelete(DeleteBehavior.SetNull);
+            // С планом
+            builder.HasMany(f => f.Plan).WithOne(p => p.Factory)
+                .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }
     }

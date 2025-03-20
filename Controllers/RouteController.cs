@@ -1,4 +1,5 @@
-﻿using Diamond.Models;
+﻿using Diamond.Database;
+using Diamond.Models.Factory;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,7 +17,7 @@ namespace Diamond.Controllers
                 .Where(f => f.Id == Id)
                 .First();
             f.Routes = [.. context.Routes.AsNoTracking().Where(r => r.FactoryId == Id).Include(r => r.Regions)];
-            List<Models.Route> OtherRoutes = f.FindUnusingRoutes();
+            List<Models.Factory.Route> OtherRoutes = f.FindUnusingRoutes();
 
             ViewBag.FactoryName = f.Name;
             ViewBag.FactoryId = Id;
@@ -38,7 +39,7 @@ namespace Diamond.Controllers
             DBFactory.Routes.Clear();
             context.SaveChanges();
 
-            List<Models.Route> routes = [];
+            /*List<Models.Factory.Route> routes = [];
             foreach (int c in check)
             {
                 routes.Add(new()
@@ -49,7 +50,22 @@ namespace Diamond.Controllers
                 foreach (var region in regions[c])
                     routes[^1].Regions.Add(context.Regions.Where(r => r.Id == region).First());
             }
-            DBFactory.Routes = routes;
+            DBFactory.Routes.AddRange(routes);*/
+            DBFactory.Routes.Clear();
+            foreach (int c in check)
+            {
+                DBFactory.Routes.Add(new()
+                {
+                    Name = name[c] ?? "",
+                    Factory = DBFactory,
+                });
+                foreach (var region in regions[c])
+                {
+                    DBFactory.Routes[^1].Regions.Add(context.Regions.Where(r => r.Id == region).First());
+                    DBFactory.Routes[^1].RegionsRoute.Add(region);
+                }
+                DBFactory.Routes[^1].Regions.OrderBy(r => r.Routes[^1].RegionsRoute);
+            }
 
             // Сохранение всех изменений
             context.SaveChanges();

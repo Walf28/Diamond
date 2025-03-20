@@ -1,3 +1,4 @@
+using Diamond.Database;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 

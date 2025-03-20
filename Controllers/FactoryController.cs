@@ -1,4 +1,6 @@
-﻿using Diamond.Models;
+﻿using Diamond.Database;
+using Diamond.Models;
+using Diamond.Models.Factory;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -25,7 +27,7 @@ namespace Diamond.Controllers
                 .AsNoTracking()
                 .Include(f => f.Regions)
                 .Include(f => f.Routes)
-                .Include(f => f.Requests.Where(r => r.Status < RequestStatus.DELIVERY))
+                .Include(f => f.Requests.Where(r => r.Status == RequestStatus.FABRICATING))
                 .First(f => f.Id == Id);
             return View(f);
         }

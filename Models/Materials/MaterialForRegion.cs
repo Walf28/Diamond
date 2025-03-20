@@ -1,7 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Diamond.Database;
+using Diamond.Models.Factory;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Diamond.Models
+namespace Diamond.Models.Materials
 {
     public class MaterialForRegion
     {
@@ -29,8 +31,7 @@ namespace Diamond.Models
         {
             get
             {
-                if (this.Material == null)
-                    Material = context.Materials.AsNoTracking().Where(m => m.Id == MaterialId).First();
+                Material ??= context.Materials.AsNoTracking().Where(m => m.Id == MaterialId).First();
                 return Material.Name;
             }
         }

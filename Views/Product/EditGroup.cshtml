@@ -9,16 +9,29 @@
     <p>Название<input asp-for="@Model.Name" type="text" required/></p>
 
     <p>На каком сырье производится<select asp-for="@Model.MaterialId" required>
-        @foreach (var m in ((List<Material>)ViewBag.materials))
+            @foreach (var m in ((List<Material>)ViewBag.materials))
+            {
+                if (Model.MaterialId == m.Id)
+                {
+                    <option value="@m.Id" selected>@m.Name</option>
+                }
+                else
+                {
+                    <option value="@m.Id">@m.Name</option>
+                }
+            }
+        </select></p>
+
+    @{
+        string s = "";
+        foreach (var r in Model.TechnologyProcessing)
+            s += $"{(int)r} ";
+    }
+    <p>Процесс обработки (последовательные числа через пробел)<input type="text" name="techProcess" value="@s" required /></p>
+    <div>
+        @foreach (var i in Html.GetEnumSelectList<Technology>())
         {
-            if (Model.MaterialId == m.Id)
-            {
-                <option value="@m.Id" selected>@m.Name</option>
-            }
-            else
-            {
-                <option value="@m.Id">@m.Name</option>
-            }
+            <p>@($"{i.Value}. {@i.Text}")</p>
         }
-    </select></p>
+    </div>
 </form>

@@ -7,6 +7,6 @@
     <input type="submit" value="Сохранить"/>
 
     <p>Дата желаемого выполнения заявки<input type="date" asp-for="@Model.DateOfDesiredComplete" required/></p>
-    <p>Товар<select asp-for="@Model.ProductId" asp-items="@(new SelectList(ViewBag.Products, "Id", "ProductGroup.Name"))" required></select></p>
-    <p>Количество<input type="number" asp-for="@Model.Count" required/></p>
+    <p>Товар<select asp-for="@Model.ProductId" asp-items="@(new SelectList(ViewBag.Products, "Id", "GetNameAndCount"))" required></select></p>
+    <p>Количество<input type="number" asp-for="@Model.Count" min="1" required/></p>
 </form>

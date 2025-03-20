@@ -1,4 +1,6 @@
-﻿@{
+﻿@using Diamond.Models.Materials
+@using Diamond.Models.Factory
+@{
     ViewData["Title"] = $"Список всех маршрутов на заводе \"{ViewBag.FactoryName}\"";
 }
 
@@ -26,7 +28,7 @@
                     <td>
                         @routes[i].GetContent
                         @for(int j =0; j< routes[i].Regions.Count; ++j){
-                            <input type="number" name="regions[@k][@j]" value="@routes[i].Regions[j].Id" hidden/>
+                            <input type="number" name="regions[@k][@j]" value="@routes[i].RegionsRoute[j]" hidden/>
                         }
                     </td>
                 </tr>

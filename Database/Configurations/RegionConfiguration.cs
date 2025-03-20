@@ -1,4 +1,5 @@
 ﻿using Diamond.Models;
+using Diamond.Models.Factory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -28,11 +29,20 @@ namespace Diamond.Database.Configurations
                 .OnDelete(DeleteBehavior.Cascade);
             // Сырьё
             builder.HasMany(r => r.Materials).WithOne(m => m.Region)
-                .HasForeignKey(m=> m.RegionId)
+                .HasForeignKey(m => m.RegionId)
+                .OnDelete(DeleteBehavior.Cascade);
+            builder.HasOne(r => r.MaterialOptionNow).WithMany(m => m.RegionsOptions)
+                .HasPrincipalKey(m => m.Id)
+                .HasForeignKey(r => r.MaterialOptionNowId)
                 .OnDelete(DeleteBehavior.Cascade);
             // Ссылка на себя самого
-            builder.HasMany(r=> r.RegionsChildrens).WithMany(r=>r.RegionsParents);
-            builder.HasMany(r=> r.RegionsParents).WithMany(r=>r.RegionsChildrens);
+            builder.HasMany(r => r.RegionsChildrens).WithMany(r => r.RegionsParents);
+            builder.HasMany(r => r.RegionsParents).WithMany(r => r.RegionsChildrens);
+            // С планом
+            builder.HasOne(r => r.Plan).WithOne(p => p.Region)
+                .HasPrincipalKey<Region>(r => r.Id)
+                .HasForeignKey<Plan>(p => p.Id)
+                .OnDelete(DeleteBehavior.SetNull);
             #endregion
         }
     }

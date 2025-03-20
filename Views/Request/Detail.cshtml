@@ -1,19 +1,20 @@
-﻿@model Diamond.Models.Request
+﻿@using Diamond.Models.Factory
+@model Diamond.Models.Request
 @{
     ViewData["Title"] = $"Рассмотрение заявки";
 }
 
 <form method="post">
     <div>
-        <button onclick="location.href='@Url.Action("List", "Request")'">Назад</button>
+        <button onclick="location.href='@Url.Action("List", "Request")'" formmethod="get">Назад</button>
         @if(Model.Status == RequestStatus.ANALYZE){
             <input type="submit" value="Сохранить"/>
         }
     </div>
 
     <p>Номер заявки<input type="number" asp-for="@Model.Id" value="@Model.Id" readonly/></p>
-    <p>Дата желаемого выполнения заявки<input type="date" value="@Model.DateOfDesiredComplete" readonly/></p>
-    <p>Товар<input type="text" value="@Model.GetProductName" readonly/></p>
+    <p>Дата желаемого выполнения заявки<input type="text" value="@Model.DateOfDesiredComplete.ToString("dd.mm.yyyy")" readonly/></p>
+    <p>Товар<input type="text" value="@(Model.Product.GetNameAndCount)" readonly /></p>
     <p>Количество<input type="number" value="@Model.Count" readonly/></p>
 
     <p>Завод
@@ -24,14 +25,7 @@
                 @if ((List<Factory>)ViewBag.Factories != null)
                     @foreach (var factory in (List<Factory>)ViewBag.Factories)
                     {
-                        if (Model.Factory!.Id == factory.Id)
-                        {
-                            <option value="@factory.Id" selected>@factory.Name</option>
-                        }
-                        else
-                        {
-                            <option value="@factory.Id">@factory.Name</option>
-                        }
+                        <option value="@factory.Id">@factory.Name</option>
                     }
             </select>
         }

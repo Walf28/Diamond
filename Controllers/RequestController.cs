@@ -1,4 +1,5 @@
-﻿using Diamond.Models;
+﻿using Diamond.Database;
+using Diamond.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -39,13 +40,14 @@ namespace Diamond.Controllers
                 .AsNoTracking()
                 .Where(r => r.Id == requestId)
                 .Include(r => r.Factory)
+                .Include(r => r.Product)
                 .FirstOrDefault();
             if (request == null)
             {
                 NotFound();
                 return RedirectToAction(nameof(List));
             }
-            if (request.Factory != null)
+            if (request.Factory == null)
                 ViewBag.Factories = context.Factories.AsNoTracking().ToList();
 
             return View(request);
@@ -68,7 +70,6 @@ namespace Diamond.Controllers
         public IActionResult Detail(Request request)
         {
             Request DBRequest = context.Requests
-                .AsNoTracking()
                 .Where(r => r.Id == request.Id)
                 .First();
 
@@ -76,7 +77,7 @@ namespace Diamond.Controllers
                 .Where(f => f.Id == request.FactoryId)
                 .First();
             DBRequest.DateOfAcceptance = DateTime.UtcNow;
-            ++DBRequest.Status;
+            DBRequest.Status = RequestStatus.FABRICATING;
 
             context.SaveChanges();
             return RedirectToAction(nameof(List));

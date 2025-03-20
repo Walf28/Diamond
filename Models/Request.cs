@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Diamond.Database;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -22,7 +23,7 @@ namespace Diamond.Models
         [NotMapped]
         public readonly DB context = new();
         [ForeignKey("FactoryId")]
-        public Factory? Factory { get; set; } // Завод
+        public Factory.Factory? Factory { get; set; } // Завод
         [ForeignKey("ProductId")]
         public ProductSpecific Product { get; set; } = null!; // Что заказали (лучше сделать списком, но непонятно пока, как это сделать, поэтому пока что будет так для упрощения задачи - потом расширим, если что)
         #endregion
@@ -34,23 +35,31 @@ namespace Diamond.Models
         #endregion
 
         #region Свойства
+        public ProductSpecific? GetProduct => context.ProductsSpecific.Where(ps=>ps.Id == ProductId).FirstOrDefault();
         public string GetProductName
         {
-            get => context.ProductsSpecific
-                    .Where(ps => ps.Id == ProductId)
-                    .Include(p => p.ProductGroup)
-                    .First()
-                    .ProductGroup
-                    .Name;
+            get
+            {
+                try
+                {
+                    return context.ProductsSpecific
+                        .AsNoTracking()
+                        .Where(ps => ps.Id == ProductId)
+                        .Include(p => p.ProductGroup)
+                        .First()
+                        .ProductGroup
+                        .Name;
+                }
+                catch
+                {
+                    return "";
+                }
+            }
         }
-        /*public DateTime GetDateOfReceiptLocal => DateTime.SpecifyKind(DateOfReceipt, DateTimeKind.Utc);
-        public DateTime GetDateOfDesiredCompleteLocal => DateTime.SpecifyKind(DateOfDesiredComplete, DateTimeKind.Utc);
-        public DateTime? GetDateOfAcceptanceLocal => DateOfAcceptance != null ? DateTime.SpecifyKind((DateTime)DateOfAcceptance, DateTimeKind.Utc) : null;
-        public DateTime? GetDateOfCompleteLocal => DateOfComplete != null ? DateTime.SpecifyKind((DateTime)DateOfComplete, DateTimeKind.Utc) : null;*/
         public DateTime GetDateOfReceiptLocal => DateOfReceipt.ToLocalTime();
         public DateTime GetDateOfDesiredCompleteLocal => DateOfDesiredComplete.ToLocalTime();
-        public DateTime? GetDateOfAcceptanceLocal => DateOfAcceptance != null ? DateOfAcceptance.Value.ToLocalTime() : null;
-        public DateTime? GetDateOfCompleteLocal => DateOfComplete != null ? DateOfComplete.Value.ToLocalTime() : null;
+        public DateTime? GetDateOfAcceptanceLocal => DateOfAcceptance?.ToLocalTime();
+        public DateTime? GetDateOfCompleteLocal => DateOfComplete?.ToLocalTime();
         #endregion
     }
 }

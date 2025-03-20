@@ -1,4 +1,7 @@
-﻿using Diamond.Models;
+﻿using Diamond.Database;
+using Diamond.Models;
+using Diamond.Models.Factory;
+using Diamond.Models.Materials;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,9 +26,8 @@ namespace Diamond.Controllers
                     .Where(f => f.Id == factory.Id)
                     .Include(f => f.Regions)
                     .FirstAsync(),
+                Materials = []
             };
-            
-            region.Materials = [];
             foreach (var item in context.Materials)
                 region.Materials.Add(new MaterialForRegion() { Material = item, MaterialId = item.Id, Region = region, RegionId = region.Id });
             
@@ -44,7 +46,7 @@ namespace Diamond.Controllers
                 .Include(r => r.Materials)
                 .First(r => r.Id == Id);
 
-            List<Material> AllMaterials = context.Materials.ToList();
+            List<Material> AllMaterials = [.. context.Materials];
             List<Material> NewMaterials = [];
             foreach (var am in AllMaterials)
             {

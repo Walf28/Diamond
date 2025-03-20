@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Diamond.Models;
+using Diamond.Models.Factory;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Diamond.Controllers

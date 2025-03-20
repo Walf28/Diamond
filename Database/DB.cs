@@ -1,15 +1,18 @@
 ﻿using Diamond.Database.Configurations;
 using Diamond.Models;
+using Diamond.Models.Factory;
+using Diamond.Models.Materials;
 using Microsoft.EntityFrameworkCore;
 
-namespace Diamond
+namespace Diamond.Database
 {
     public class DB : DbContext
     {
         public readonly static string ConnectionString = "Database=Diamond;Host=localhost;Username=postgres;Password=111;";
         public DbSet<Factory> Factories { get; set; } = null!;
-        public DbSet<Models.Route> Routes { get; set; } = null!;
+        public DbSet<Models.Factory.Route> Routes { get; set; } = null!;
         public DbSet<Region> Regions { get; set; } = null!;
+        public DbSet<Plan> Plans { get; set; } = null!;
         public DbSet<Downtime> Downtimes { get; set; } = null!;
         public DbSet<ProductGroup> ProductsGroup { get; set; } = null!;
         public DbSet<ProductSpecific> ProductsSpecific { get; set; } = null!;
@@ -39,6 +42,7 @@ namespace Diamond
             modelBuilder.ApplyConfiguration(new RequestConfiguration());
             modelBuilder.ApplyConfiguration(new ProductGroupConfiguration());
             modelBuilder.ApplyConfiguration(new ProductSpecificConfiguration());
+            modelBuilder.ApplyConfiguration(new PlanConfiguration());
 
             base.OnModelCreating(modelBuilder);
         }

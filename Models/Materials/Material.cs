@@ -1,4 +1,7 @@
-﻿namespace Diamond.Models
+﻿using Diamond.Models.Factory;
+using Diamond.Models.Materials;
+
+namespace Diamond.Models
 {
     public class Material
     {
@@ -11,6 +14,7 @@
         #region Ссылочные
         public List<MaterialForRegion>? Materials { get; set; }
         public List<ProductGroup>? Products { get; set; }
+        public List<Region> RegionsOptions { get; set; } = [];
         #endregion
 
         #region Id ссылок

@@ -16,9 +16,14 @@ namespace Diamond.Database.Configurations
                 .OnDelete(DeleteBehavior.Cascade);
             // Продукты
             builder.HasMany(m => m.Products).WithOne(p => p.Material)
-                .HasPrincipalKey(m=> m.Id)
+                .HasPrincipalKey(m => m.Id)
                 .HasForeignKey(p => p.MaterialId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // С участками
+            builder.HasMany(m=>m.RegionsOptions).WithOne(r=>r.MaterialOptionNow)
+                .HasPrincipalKey(m=>m.Id)
+                .HasForeignKey(r=>r.MaterialOptionNowId)
+                .OnDelete(DeleteBehavior.SetNull);
             #endregion
         }
     }

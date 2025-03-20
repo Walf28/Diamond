@@ -1,4 +1,5 @@
-﻿@model Diamond.Models.Region
+﻿@using Diamond.Models.Factory
+@model Region
 @{
     ViewData["Title"] = $"Участок \"{Model.Name}\"";
 }
@@ -9,9 +10,9 @@
     <input asp-for="@Model.Id" value="@Model.Id" readonly hidden/>
     <p>Название участка<input type="text" asp-for="@Model.Name" value="@Model.Name" required /></p>
     <p>Тип участка<select name="Type" asp-for="@Model.Type" asp-items="Html.GetEnumSelectList<Technology>()"></select></p>
-    <p>Время прохода продукции по участку<input name="TransitTime" asp-for="@Model.TransitTime" type="number" required /></p>
+    <p>Время прохода продукции по участку<input name="TransitTime" asp-for="@Model.TransitTime" type="number" min="0" required /></p>
 
-    @if (Model.Factory != null && Model.Factory.Regions != null && Model.Factory.Regions.Count > 0)
+    @if (Model.Factory != null && Model.Factory.Regions != null && Model.Factory.Regions.Count > 0 && !(Model.Factory.Regions.Count == 1 && Model.Factory.Regions[0].Id == Model.Id))
     {
         <table class="table table-bordered">
             <tr>
@@ -87,7 +88,7 @@
                 <div>
                     <input type="number" asp-for="@Model.Materials[i].MaterialId" value="@Model.Materials[i].MaterialId" hidden />
                     <input type="number" asp-for="@Model.Materials[i].Id" value="@Model.Materials[i].Id" hidden />
-                    <p>@Model.Materials[i].Material.Name<input type="number" asp-for="@Model.Materials[i].Power" value="@Model.Materials[i].Power" /></p>
+                    <p>@Model.Materials[i].Material.Name<input type="number" asp-for="@Model.Materials[i].Power" min="0" value="@Model.Materials[i].Power" /></p>
                 </div>
             }
         }
@@ -98,7 +99,7 @@
             Model.Materials.Add(new());
             <div>
                 <input type="number" asp-for="@Model.Materials[k].MaterialId" value="@RemainingMaterial[i].Id" hidden />
-                <p>@RemainingMaterial[i].Name<input type="number" asp-for="@Model.Materials[k].Power" value="0" /></p>
+                <p>@RemainingMaterial[i].Name<input type="number" asp-for="@Model.Materials[k].Power" min="0" value="0" /></p>
             </div>
         }
     }

@@ -1,8 +1,7 @@
-﻿using Diamond.Models;
-using Microsoft.AspNetCore.Http.Extensions;
+﻿using Diamond.Database;
+using Diamond.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Text.RegularExpressions;
 
 namespace Diamond.Controllers
 {
@@ -42,14 +41,21 @@ namespace Diamond.Controllers
 
         #region Управление
         [HttpPost]
-        public IActionResult CreateGroup(ProductGroup product)
+        public IActionResult CreateGroup(ProductGroup product, string techProcess)
         {
+            {
+                techProcess = techProcess.Replace("  ", " ").Trim();
+                string[] tech = techProcess.Split(' ');
+                foreach (var techItem in tech)
+                    product.TechnologyProcessing.Add((Technology)int.Parse(techItem));
+            }
+
             context.ProductsGroup.Add(product);
             context.SaveChanges();
             return RedirectToAction(nameof(ListGroup));
         }
         [HttpPost]
-        public IActionResult EditGroup(ProductGroup product)
+        public IActionResult EditGroup(ProductGroup product, string techProcess)
         {
             ProductGroup? productGroup = context.ProductsGroup
                 .Where(pg => pg.Id == product.Id)
@@ -59,7 +65,14 @@ namespace Diamond.Controllers
                 NotFound();
                 return RedirectToAction(nameof(ListGroup));
             }
-
+            
+            {
+                techProcess = techProcess.Replace("  ", " ").Trim();
+                string[] tech = techProcess.Split(' ');
+                productGroup.TechnologyProcessing.Clear();
+                foreach (var techItem in tech)
+                    productGroup.TechnologyProcessing.Add((Technology)int.Parse(techItem));
+            }
             productGroup.Name = product.Name;
             productGroup.MaterialId = product.MaterialId;
 

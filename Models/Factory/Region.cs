@@ -1,7 +1,9 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Diamond.Database;
+using Diamond.Models.Materials;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Diamond.Models
+namespace Diamond.Models.Factory
 {
     public class Region : FactoryObject
     {
@@ -11,6 +13,8 @@ namespace Diamond.Models
         public int Workload { get; set; } = 0; // Текущая загруженность
         public int MaxVolume { get; set; } = 0; // Максимальная вместительность участка
         public int TransitTime { get; set; } = 0; // Время прохода продукции по участку
+        public RegionStatus Status { get; set; } = 0; // Текущий статус участка
+        public int UploadedNow { get; set; } = 0; // Сейчас загружено
         #endregion
 
         #region Ссылочные
@@ -22,6 +26,8 @@ namespace Diamond.Models
         public List<Region> RegionsChildrens { get; set; } = []; // Список подчиннных участков, куда направляется изготовленная продукция
         public Downtime? Downtime { get; set; } // Простой
         public List<MaterialForRegion> Materials { get; set; } = []; // Производительность под каждое сырье
+        public Material? MaterialOptionNow { get; set; } // Под какое сырьё участок сейчас настроен
+        public Plan? Plan { get; set; } = null!;
         #endregion
 
         #region Id ссылок
@@ -35,24 +41,133 @@ namespace Diamond.Models
         public int? DowntimeId { get; set; } // Простой
         [NotMapped]
         public List<int>? MaterialsId { get; set; } // Производительность под каждое сырье
+        public int? MaterialOptionNowId { get; set; } // Под какое сырьё участок сейчас настроен
         #endregion
         #endregion
 
+        #region Свойства
+        public bool IsRegionsParents
+        {
+            get
+            {
+                try
+                {
+                    if (RegionsParents == null || RegionsParents.Count == 0)
+                    {
+                        List<Region> regions = context.Regions
+                            .AsNoTracking()
+                            .Where(r => r.Id == Id)
+                            .Include(r => r.RegionsParents)
+                            .First()
+                            .RegionsParents;
+                        if (regions.Count == 0)
+                            return false;
+                    }
+                    return true;
+                }
+                catch { return false; }
+            }
+        }
+        public bool IsRegionsChildrens
+        {
+            get
+            {
+                try
+                {
+                    if (RegionsChildrens == null || RegionsChildrens.Count == 0)
+                    {
+                        List<Region> regions = context.Regions
+                            .AsNoTracking()
+                            .Where(r => r.Id == Id)
+                            .Include(r => r.RegionsChildrens)
+                            .First()
+                            .RegionsChildrens;
+                        if (regions.Count == 0)
+                            return false;
+                    }
+                    return true;
+                }
+                catch { return false; }
+            }
+        }
+        #endregion
+
         #region Методы
+        #region Взаимодействие с БД
+        public bool SavePlan()
+        {
+            Region? region = context.Regions
+                .Where(r => r.Id == Id)
+                .Include(r => r.Plan)
+                .FirstOrDefault();
+            if (region == null)
+                return false;
+
+            region.Plan = Plan;
+            context.SaveChanges();
+            return true;
+        }
+        public bool SaveStatus()
+        {
+            Region? region = context.Regions
+                .Where(r => r.Id == Id)
+                .FirstOrDefault();
+            if (region == null)
+                return false;
+
+            region.Status = Status;
+            context.SaveChanges();
+            return true;
+        }
+        #endregion
+
+        #region Информационные
         // Взять список сырья, на котором может работать данный участок
         public List<Material> GetMaterials()
         {
             if (Materials.Count == 0)
-                Materials =[.. context.RegionsMaterials.AsNoTracking().Where(rm => rm.RegionId == Id)];
+                Materials = [.. context.RegionsMaterials.AsNoTracking().Where(rm => rm.RegionId == Id)];
 
             List<Material> result = [];
             foreach (var material in Materials)
             {
-                result.Add(context.Materials.AsNoTracking().Where(m=>m.Id == material.MaterialId).First());
+                result.Add(context.Materials.AsNoTracking().Where(m => m.Id == material.MaterialId).First());
             }
 
             return result;
         }
+        #endregion
+
+        #region Работа с данным участком
+        // Обновить статус
+        private void SetStatus(RegionStatus status, bool SaveInDatabase = true)
+        {
+            Status = status;
+            if (SaveInDatabase)
+                SaveStatus();
+        }
+
+        // Выбрать, что производить
+        public void SetPlan(Plan Plan, out bool SaveSuccess)
+        {
+            SaveSuccess = false;
+            if (Status != RegionStatus.READY_TO_WORK)
+                return;
+            Region? region = context.Regions
+                .Where(r => r.Id == Id)
+                .Include(r => r.Plan)
+                .FirstOrDefault();
+
+            this.Plan = Plan;
+            SaveSuccess = SavePlan();
+
+            if (MaterialOptionNowId == null || MaterialOptionNowId != Plan.GetUsingMaterial!.Id)
+                SetStatus(RegionStatus.READJUSTMENT);
+            else
+                SetStatus(RegionStatus.AWAIT_DOWNLOAD);
+            return;
+        }
+        #endregion
         #endregion
         /*#region Свойства
         public int? GetIdParent => idParent;
