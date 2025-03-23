@@ -13,7 +13,7 @@
     </div>
 
     <p>Номер заявки<input type="number" asp-for="@Model.Id" value="@Model.Id" readonly/></p>
-    <p>Дата желаемого выполнения заявки<input type="text" value="@Model.DateOfDesiredComplete.ToString("dd.mm.yyyy")" readonly/></p>
+    <p>Дата желаемого выполнения заявки<input type="text" value="@Model.DateOfDesiredComplete.ToString("dd.MM.yyyy")" readonly/></p>
     <p>Товар<input type="text" value="@(Model.Product.GetNameAndCount)" readonly /></p>
     <p>Количество<input type="number" value="@Model.Count" readonly/></p>
 

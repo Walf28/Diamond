@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Diamond.Migrations
 {
     [DbContext(typeof(DB))]
-    [Migration("20250320040612_m1")]
+    [Migration("20250322155756_m1")]
     partial class m1
     {
         /// <inheritdoc />
@@ -21,7 +21,7 @@ namespace Diamond.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "9.0.3")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -29,7 +29,10 @@ namespace Diamond.Migrations
             modelBuilder.Entity("Diamond.Models.Downtime", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int?>("DowntimeDuration")
                         .HasColumnType("integer");
@@ -43,7 +46,13 @@ namespace Diamond.Migrations
                     b.Property<DateTime?>("DowntimeStart")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("RegionId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("RegionId")
+                        .IsUnique();
 
                     b.ToTable("Downtimes");
                 });
@@ -61,11 +70,11 @@ namespace Diamond.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.PrimitiveCollection<List<int>>("ProductSumId")
+                    b.PrimitiveCollection<List<int>>("ProductsCommonId")
                         .IsRequired()
                         .HasColumnType("integer[]");
 
-                    b.PrimitiveCollection<List<int>>("ProductSumSize")
+                    b.PrimitiveCollection<List<int>>("ProductsCommonSize")
                         .IsRequired()
                         .HasColumnType("integer[]");
 
@@ -80,10 +89,16 @@ namespace Diamond.Migrations
             modelBuilder.Entity("Diamond.Models.Factory.Plan", b =>
                 {
                     b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<DateTime>("ComingSoon")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FactoryId")
+                        .HasColumnType("integer");
 
                     b.Property<bool>("IsFabricating")
                         .HasColumnType("boolean");
@@ -94,13 +109,15 @@ namespace Diamond.Migrations
                     b.Property<int?>("RegionId")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("RouteId")
+                    b.Property<int>("RouteId")
                         .HasColumnType("integer");
 
                     b.Property<int>("Size")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FactoryId");
 
                     b.HasIndex("ProductId");
 
@@ -119,9 +136,6 @@ namespace Diamond.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int?>("DowntimeId")
-                        .HasColumnType("integer");
 
                     b.Property<int>("FactoryId")
                         .HasColumnType("integer");
@@ -356,8 +370,8 @@ namespace Diamond.Migrations
                 {
                     b.HasOne("Diamond.Models.Factory.Region", "Region")
                         .WithOne("Downtime")
-                        .HasForeignKey("Diamond.Models.Downtime", "Id")
-                        .OnDelete(DeleteBehavior.SetNull)
+                        .HasForeignKey("Diamond.Models.Downtime", "RegionId")
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Region");
@@ -367,12 +381,12 @@ namespace Diamond.Migrations
                 {
                     b.HasOne("Diamond.Models.Factory.Factory", "Factory")
                         .WithMany("Plan")
-                        .HasForeignKey("Id")
+                        .HasForeignKey("FactoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("Diamond.Models.ProductSpecific", "Product")
-                        .WithMany()
+                        .WithMany("Plans")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -380,12 +394,13 @@ namespace Diamond.Migrations
                     b.HasOne("Diamond.Models.Factory.Region", "Region")
                         .WithOne("Plan")
                         .HasForeignKey("Diamond.Models.Factory.Plan", "RegionId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Diamond.Models.Factory.Route", "Route")
                         .WithMany("Plan")
                         .HasForeignKey("RouteId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Factory");
 
@@ -407,7 +422,7 @@ namespace Diamond.Migrations
                     b.HasOne("Diamond.Models.Material", "MaterialOptionNow")
                         .WithMany("RegionsOptions")
                         .HasForeignKey("MaterialOptionNowId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Factory");
 
@@ -471,7 +486,7 @@ namespace Diamond.Migrations
                     b.HasOne("Diamond.Models.Factory.Factory", "Factory")
                         .WithMany("Requests")
                         .HasForeignKey("FactoryId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Diamond.Models.ProductSpecific", "Product")
                         .WithMany("Requests")
@@ -555,6 +570,8 @@ namespace Diamond.Migrations
 
             modelBuilder.Entity("Diamond.Models.ProductSpecific", b =>
                 {
+                    b.Navigation("Plans");
+
                     b.Navigation("Requests");
                 });
 #pragma warning restore 612, 618

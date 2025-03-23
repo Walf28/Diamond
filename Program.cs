@@ -1,4 +1,5 @@
 using Diamond.Database;
+using Diamond.Models.Factory;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 
@@ -15,12 +16,15 @@ namespace Diamond
 
             {
                 var cultureInfo = new CultureInfo("en-US"); // Используем культуру с точкой как разделителем
+                cultureInfo.DateTimeFormat.LongTimePattern = "HH:mm:ss";
+                cultureInfo.DateTimeFormat.ShortDatePattern = "dd.MM.yyyy";
+                cultureInfo.DateTimeFormat.FullDateTimePattern = "dd.MM.yyyy - HH:mm:ss";
                 CultureInfo.DefaultThreadCurrentCulture = cultureInfo;
                 CultureInfo.DefaultThreadCurrentUICulture = cultureInfo;
-                cultureInfo.DateTimeFormat.LongTimePattern = "HH:mm:ss";
                 builder.Services.AddRazorPages();
                 builder.Services.AddDbContext<DB>(options =>
                     options.UseNpgsql(DB.ConnectionString));
+                Server.FactoryLoad();
             }
 
             var app = builder.Build();

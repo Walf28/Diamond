@@ -28,6 +28,8 @@ namespace Diamond.Controllers
                 .Include(f => f.Regions)
                 .Include(f => f.Routes)
                 .Include(f => f.Requests.Where(r => r.Status == RequestStatus.FABRICATING))
+                .Include(f => f.Plan).ThenInclude(p => p.Product).ThenInclude(ps => ps.ProductGroup)
+                .Include(f => f.Plan).ThenInclude(p => p.Route)
                 .First(f => f.Id == Id);
             return View(f);
         }

@@ -33,16 +33,16 @@ namespace Diamond.Database
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Принятие конфигураций
-            modelBuilder.ApplyConfiguration(new FactoryConfiguration());
-            modelBuilder.ApplyConfiguration(new RouteConfiguration());
-            modelBuilder.ApplyConfiguration(new RegionConfiguration());
             modelBuilder.ApplyConfiguration(new DowntimeConfiguration());
+            modelBuilder.ApplyConfiguration(new FactoryConfiguration());
             modelBuilder.ApplyConfiguration(new MaterialConfiguration());
             modelBuilder.ApplyConfiguration(new MaterialForRegionConfiguration());
-            modelBuilder.ApplyConfiguration(new RequestConfiguration());
+            modelBuilder.ApplyConfiguration(new PlanConfiguration());
             modelBuilder.ApplyConfiguration(new ProductGroupConfiguration());
             modelBuilder.ApplyConfiguration(new ProductSpecificConfiguration());
-            modelBuilder.ApplyConfiguration(new PlanConfiguration());
+            modelBuilder.ApplyConfiguration(new RegionConfiguration());
+            modelBuilder.ApplyConfiguration(new RequestConfiguration());
+            modelBuilder.ApplyConfiguration(new RouteConfiguration());
 
             base.OnModelCreating(modelBuilder);
         }

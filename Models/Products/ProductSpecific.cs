@@ -1,4 +1,5 @@
 ﻿using Diamond.Database;
+using Diamond.Models.Factory;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -19,9 +20,10 @@ namespace Diamond.Models
         #region Ссылочные
         [NotMapped]
         private readonly DB context = new();
+        public List<Request> Requests { get; set; } = []; // Заявки
         [ForeignKey("ProductGroupId")]
         public ProductGroup ProductGroup { get; set; } = new();
-        public List<Request> Requests { get; set; } = []; // Заявки
+        public List<Plan> Plans { get; set; } = [];
         #endregion
 
         #region Id ссылок
@@ -56,6 +58,17 @@ namespace Diamond.Models
         #endregion
 
         #region Методы
+        public override string ToString()
+        {
+            try
+            {
+                return context.ProductsGroup.AsNoTracking().Where(pg=>pg.Id == ProductGroupId).First().Name;
+            }
+            catch
+            {
+                return "";
+            }
+        }
         #endregion
     }
 }

@@ -13,10 +13,12 @@ namespace Diamond.Database.Configurations
             #region Связи
             // С заводом
             builder.HasOne(r => r.Factory).WithMany(f => f.Requests)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasForeignKey(r => r.FactoryId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // С товаром
-            builder.HasOne(r => r.Product).WithMany(p=>p.Requests)
+            builder.HasOne(r => r.Product).WithMany(p => p.Requests)
+                .HasForeignKey(r => r.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }

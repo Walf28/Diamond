@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using Diamond.Models.Factory;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Diamond.Models
 {
@@ -33,6 +34,10 @@ namespace Diamond.Models
                 s = s.Remove(s.Length - 2);
             }
             return s;
+        }
+        public override string ToString()
+        {
+            return Name;
         }
         #endregion
     }

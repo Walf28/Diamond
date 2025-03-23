@@ -40,7 +40,7 @@ namespace Diamond.Models
     {
         [Display(Name = "Выключен")]
         OFF,
-        [Display(Name = "Готов к работе")]
+        [Display(Name = "Свободен")]
         READY_TO_WORK,
         [Display(Name = "Идёт переналадка")]
         READJUSTMENT,

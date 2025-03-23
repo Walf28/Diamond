@@ -1,4 +1,5 @@
 ﻿using Diamond.Models;
+using Diamond.Models.Factory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,8 +14,9 @@ namespace Diamond.Database.Configurations
             #region Связи
             // С участком
             builder.HasOne(d => d.Region).WithOne(r => r.Downtime)
-                .HasForeignKey<Downtime>(d => d.Id)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasPrincipalKey<Region>(r => r.Id)
+                .HasForeignKey<Downtime>(d => d.RegionId)
+                .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }
     }

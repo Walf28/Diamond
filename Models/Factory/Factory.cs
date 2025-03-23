@@ -8,12 +8,12 @@ namespace Diamond.Models.Factory
     {
         #region Поля
         #region Обычные
-        // Эти два - это очередь
+        // Это план - что и где производим
         public List<Plan> Plan { get; set; } = [];
 
         // Эти два - это суммарно, сколько и чего надо произвести
-        public List<int> ProductSumId { get; set; } = []; // Что имеется в очереди
-        public List<int> ProductSumSize { get; set; } = []; // Сколько этого надо произвести
+        public List<int> ProductsCommonId { get; set; } = []; // Что имеется в очереди
+        public List<int> ProductsCommonSize { get; set; } = []; // Сколько этого надо произвести
         #endregion
 
         #region Ссылочные
@@ -31,9 +31,8 @@ namespace Diamond.Models.Factory
         public void LoadLinks()
         {
             Factory? factory = context.Factories
-                .AsNoTracking()
                 .Where(f => f.Id == Id)
-                .Include(f => f.Routes)
+                .Include(f => f.Routes).ThenInclude(r => r.Regions)
                 .Include(f => f.Regions)
                 .Include(f => f.Requests.Where(r => r.Status == RequestStatus.FABRICATING))
                 .FirstOrDefault();
@@ -114,6 +113,26 @@ namespace Diamond.Models.Factory
 
             return routes;
         }
+
+        /// <summary>
+        /// Сколько времени необходимо маршруту, чтобы завершить план (с учётом уже имеющихся планов и пересекающихся маршрутов).
+        /// Если маршрута не существует, вернётся 0.
+        /// </summary>
+        public double NeedTimeForRoute(int routeId)
+        {
+            // Поиск маршрута
+            double Time = 0;
+            Route? route = Routes.Where(r => r.Id == routeId).FirstOrDefault();
+            if (route == null)
+                return Time;
+
+            // Подобор интересущих участков
+            List<Region> regions = route.Regions;
+            foreach (var region in regions)
+                Time += region.GetTime();
+
+            return Time;
+        }
         #endregion
 
         #region Заявки
@@ -121,31 +140,17 @@ namespace Diamond.Models.Factory
         public void AddRequest(int requestId)
         {
             Request? request = context.Requests
+                .AsNoTracking()
                 .Where(r => r.Id == requestId)
                 .Include(r => r.Product).ThenInclude(p => p.ProductGroup)
                 .FirstOrDefault() ?? throw new Exception("Заказ не найден");
+            request.DateOfAcceptance = DateTime.UtcNow;
+            request.FactoryId = Id;
             request.Status = RequestStatus.FABRICATING;
-
-            // Добавление в план
-            for (int i = 0; i < ProductSumId.Count; ++i)
-            {
-                if (ProductSumId[i] == requestId)
-                {
-                    ProductSumSize[i] += request.Count * request.Product.Size;
-                    break;
-                }
-                else if (i == ProductSumId.Count - 1)
-                {
-                    ProductSumId.Add(requestId);
-                    ProductSumSize.Add(request.Count * request.Product.Size);
-                    break;
-                }
-            }
 
             // Добавление заявки в список заявок
             Requests.Add(request);
             AddToPlan(request);
-            context.SaveChanges();
         }
         #endregion
 
@@ -153,57 +158,108 @@ namespace Diamond.Models.Factory
         /// <summary>Добавить в производственный план</summary>
         private void AddToPlan(Request request)
         {
-            LoadLinks();
+            // Добавляем в общий план
+            int fullSize = request.Count * request.Product.Size;
+            AddInCommonPlan(request.ProductId, fullSize);
 
-            // Ищем, на каких участках возможно произвести товар
-            List<Route> PotencialRoutes = [];
-            List<int> MaxVolulme = [];
-            foreach (var route in Routes)
-                if (route.CanProduceProduct(request.ProductId, out int MaxSpeed))
+            // Пытаемся запихнуть в свободное место в плане, если такое найдётся
+            List<Plan> PlanOuttime = [];
+            for (int i = 0; i < Plan.Count && fullSize > 0; ++i)
+                if (!Plan[i].IsFabricating && Plan[i].ProductId == request.ProductId) // Ищем свободное местечко в тех местах, где возможно подкорректировать план
                 {
+                    // Если невозможно выполнить в назначенный срок вместе с этим планом, то запомним его на всякий случай
+                    if (Plan[i].ComingSoon > request.DateOfDesiredComplete)
+                    {
+                        PlanOuttime.Add(Plan[i]);
+                        continue;
+                    }
+                    
+                    int MaxVolumeInRoute = Plan[i].Route.GetMaxVolume(Plan[i].GetMaterial!.Id);
+                    if (MaxVolumeInRoute > Plan[i].Size)
+                    {
+                        int PlanAndSize = Plan[i].Size + fullSize;
+                        if (PlanAndSize > MaxVolumeInRoute)
+                        {
+                            Plan[i].Size = MaxVolumeInRoute;
+                            fullSize = PlanAndSize - MaxVolumeInRoute;
+                        }
+                        else
+                        {
+                            Plan[i].Size = PlanAndSize;
+                            fullSize = 0;
+                        }
+                    }
+                }
+            if (fullSize == 0)
+                return;
+
+            // Ищем, на каких маршрутах возможно произвести товар
+            List<Route> PotencialRoutes = [];
+            foreach (var route in Routes)
+                if (route.CanProduceProduct(request.GetProductGroup!.Id))
                     PotencialRoutes.Add(route);
-                    MaxVolulme.Add(MaxSpeed);
+            if (PotencialRoutes.Count == 0)
+                throw new Exception("Нет маршрутов, способных выполнить заказ");
+
+            // Заполняем план
+            while (fullSize > 0)
+            {
+                int fastestRouteId = PotencialRoutes[0].Id;
+                DateTime dateTimeOfFastestRoute = DateTime.UtcNow.AddMinutes(NeedTimeForRoute(PotencialRoutes[0].Id));
+                for (int i = 1; i < PotencialRoutes.Count; ++i) // 
+                {
+                    DateTime dt = DateTime.UtcNow.AddMinutes(NeedTimeForRoute(PotencialRoutes[i].Id));
+                    if (dateTimeOfFastestRoute > dt)
+                    {
+                        dateTimeOfFastestRoute = dt;
+                        fastestRouteId = PotencialRoutes[i].Id;
+                    }
                 }
 
-            // Ищем минимум, на скольких маршрутах придётся распределить заказ
-            int complete = 0;
-            List<Route> SelectedRoutes = [];
-            List<int> SelectedRoutesVolume = [];
-            while (complete < request.Count * request.Product.Size)
-            {
-                int i = MaxVolulme.IndexOf(MaxVolulme.Max());
-                complete += MaxVolulme[i];
+                // Проверка, не будет ли лучше по времени дополнить уже отстающий по срокам план
+                DateTime? minTimePlan = PlanOuttime.Count > 0 ? PlanOuttime.Min(p => p.ComingSoon) : null;
+                if ((minTimePlan != null && dateTimeOfFastestRoute < minTimePlan) || minTimePlan == null)
+                {
+                    int idIndex = Routes.FindIndex(r=>r.Id == fastestRouteId);
+                    int volume = Routes[idIndex].GetMaxVolume(request.Product.GetMaterial!.Id);
+                    Plan.Add(new()
+                    {
+                        Size = fullSize <= volume ? fullSize : volume,
+                        ComingSoon = request.DateOfDesiredComplete,
+                        Factory = this,
+                        FactoryId = Id,
+                        Route = Routes[idIndex],
+                        RouteId = fastestRouteId,
+                        ProductId = request.Product.Id,
+                    });
+                    Routes[idIndex].Plan.Add(Plan[^1]);
+                    fullSize = fullSize <= volume ? 0 : fullSize - volume;
+                }
+                else
+                {
+                    // Определим индекс из плана, где план выполняется раньше всех
+                    Plan po = PlanOuttime.First(po => po.ComingSoon == minTimePlan);
+                    int index = Plan.FindIndex(p => p.Id == po.Id);
 
-                SelectedRoutes.Add(PotencialRoutes[i]);
-                SelectedRoutesVolume.Add(MaxVolulme[i]);
+                    // Определим, какой будет размер у плана и максимальный объём
+                    int PlanAndSize = Plan[index].Size + fullSize; // Общий объём
+                    int volume = Plan[index].Route.GetMaxVolume(request.GetProductGroup!.MaterialId); // Максимальный объём
 
-                MaxVolulme.RemoveAt(i);
-                PotencialRoutes.RemoveAt(i);
+                    // Расчёты
+                    Plan[index].Size = PlanAndSize <= volume ? PlanAndSize : volume;
+                    fullSize = PlanAndSize <= volume ? 0 : (PlanAndSize - volume);
+                }
             }
 
-            // Добавляем в план
-            for (int i = 0; i < PotencialRoutes.Count; ++i)
-                Plan.Add(new()
-                {
-                    ProductId = request.ProductId,
-                    Size = SelectedRoutesVolume[i],
-                    RouteId = SelectedRoutes[i].Id,
-                    ComingSoon = request.DateOfDesiredComplete,
-                    Product = request.GetProduct!,
-                    IsFabricating = false
-                });
-
-            // Обновляем сроки
+            // Обновляем порядок по срокам
             Plan = [.. Plan.OrderBy(p => p.ComingSoon)];
-
-            // Стартуем (по возможности)
-            SavePlan();
-            StartPlan();
+            //StartPlan();
         }
 
         /// <summary>Запустить процесс по плану, если имеется такая возможность</summary>
-        private void StartPlan()
+        public void StartPlan()
         {
+            UpdatePlan();
             for (int PlanIndex = 0; PlanIndex < Plan.Count; ++PlanIndex)
                 if (!Plan[PlanIndex].IsFabricating)
                 {
@@ -225,25 +281,72 @@ namespace Diamond.Models.Factory
         }
 
         /// <summary>Обновить производственный план</summary>
-        private void UpdatePlan()
+        public void UpdatePlan()
         {
-            /*// Чего и сколько уже в производстве
-            Plan.ForEach(p =>
-            {
-
-            });*/
-            SavePlan();
+            // Тут в плане было полностью обновление плана, но пусть пока будет хоть что-то
+            Plan = [.. Plan.OrderBy(p => p.ComingSoon)];
+            return;
         }
 
-        /// <summary>Сохранить план</summary>
-        public void SavePlan()
+        /// <summary>
+        /// Добавить в общий план
+        /// </summary>
+        private void AddInCommonPlan(int productId, int productSize)
         {
-            Factory factory = context.Factories
-                .Where(f => f.Id == Id)
-                .Include(f => f.Plan)
-                .FirstOrDefault() ?? throw new Exception("Завод не найден");
-            factory.Plan = Plan;
-            context.SaveChanges();
+            bool find = false;
+            for (int i = 0; i < ProductsCommonId.Count; ++i)
+                if (ProductsCommonId[i] == productId)
+                {
+                    ProductsCommonSize[i] += productSize;
+                    find = true;
+                    break;
+                }
+            if (!find)
+            {
+                ProductsCommonId.Add(productId);
+                ProductsCommonSize.Add(productSize);
+            }
+        }
+        /// <summary>
+        /// Добавить в общий план
+        /// </summary>
+        private void AddInCommonPlan(List<int> productId, List<int> productSize)
+        {
+            for (int pIndex = 0; pIndex < productId.Count; ++pIndex)
+            {
+                bool find = false;
+                for (int pcIndex = 0; pcIndex < ProductsCommonId.Count; ++pcIndex)
+                    if (ProductsCommonId[pcIndex] == productId[pIndex])
+                    {
+                        ProductsCommonSize[pcIndex] += productSize[pIndex];
+                        find = true;
+                        break;
+                    }
+
+                if (!find)
+                {
+                    ProductsCommonId.Add(productId[pIndex]);
+                    ProductsCommonSize.Add(productSize[pIndex]);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Убрать из плана
+        /// </summary>
+        private void RemoveInCommonPlan(int productId, int productSize)
+        {
+            for (int pcIndex = 0; pcIndex < ProductsCommonId.Count; ++pcIndex)
+                if (ProductsCommonId[pcIndex] == productId)
+                {
+                    ProductsCommonSize[pcIndex] -= productSize;
+                    if (ProductsCommonSize[pcIndex] <= 0)
+                    {
+                        ProductsCommonId.RemoveAt(pcIndex);
+                        ProductsCommonSize.RemoveAt(pcIndex);
+                    }
+                    return;
+                }
         }
         #endregion
         #endregion

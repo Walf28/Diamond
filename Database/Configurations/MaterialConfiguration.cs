@@ -13,17 +13,18 @@ namespace Diamond.Database.Configurations
             #region Связи
             // С материалом для конкретного участка
             builder.HasMany(m => m.Materials).WithOne(m => m.Material)
+                .HasForeignKey(m => m.MaterialId)
                 .OnDelete(DeleteBehavior.Cascade);
             // Продукты
             builder.HasMany(m => m.Products).WithOne(p => p.Material)
                 .HasPrincipalKey(m => m.Id)
                 .HasForeignKey(p => p.MaterialId)
                 .OnDelete(DeleteBehavior.Cascade);
-            // С участками
-            builder.HasMany(m=>m.RegionsOptions).WithOne(r=>r.MaterialOptionNow)
-                .HasPrincipalKey(m=>m.Id)
-                .HasForeignKey(r=>r.MaterialOptionNowId)
-                .OnDelete(DeleteBehavior.SetNull);
+            // Настройка на участке
+            builder.HasMany(m => m.RegionsOptions).WithOne(r => r.MaterialOptionNow)
+                .HasPrincipalKey(m => m.Id)
+                .HasForeignKey(r => r.MaterialOptionNowId)
+                .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }
     }

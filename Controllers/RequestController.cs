@@ -1,5 +1,6 @@
 ﻿using Diamond.Database;
 using Diamond.Models;
+using Diamond.Models.Factory;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -59,9 +60,9 @@ namespace Diamond.Controllers
         public IActionResult Create(Request request)
         {
             request.DateOfReceipt = DateTime.UtcNow;
-            request.Product = context.ProductsSpecific.Where(ps=>ps.Id == request.ProductId).First();
+            request.Product = context.ProductsSpecific.Where(ps => ps.Id == request.ProductId).First();
             request.DateOfDesiredComplete = DateTime.SpecifyKind(request.DateOfDesiredComplete, DateTimeKind.Utc);
-            
+
             context.Requests.Add(request);
             context.SaveChanges();
             return RedirectToAction(nameof(List));
@@ -69,17 +70,7 @@ namespace Diamond.Controllers
         [HttpPost]
         public IActionResult Detail(Request request)
         {
-            Request DBRequest = context.Requests
-                .Where(r => r.Id == request.Id)
-                .First();
-
-            DBRequest.Factory = context.Factories
-                .Where(f => f.Id == request.FactoryId)
-                .First();
-            DBRequest.DateOfAcceptance = DateTime.UtcNow;
-            DBRequest.Status = RequestStatus.FABRICATING;
-
-            context.SaveChanges();
+            Server.AddRequest(request);
             return RedirectToAction(nameof(List));
         }
         #endregion

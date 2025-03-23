@@ -25,24 +25,23 @@ namespace Diamond.Database.Configurations
             builder.HasMany(r => r.RegionsChildrens).WithMany(r => r.RegionsParents);
             // Простой
             builder.HasOne(r => r.Downtime).WithOne(d => d.Region)
-                .HasForeignKey<Region>(r => r.Id)
+                .HasPrincipalKey<Region>(r => r.Id)
+                .HasForeignKey<Downtime>(d => d.RegionId)
                 .OnDelete(DeleteBehavior.Cascade);
             // Сырьё
             builder.HasMany(r => r.Materials).WithOne(m => m.Region)
+                .HasPrincipalKey(r => r.Id)
                 .HasForeignKey(m => m.RegionId)
                 .OnDelete(DeleteBehavior.Cascade);
             builder.HasOne(r => r.MaterialOptionNow).WithMany(m => m.RegionsOptions)
                 .HasPrincipalKey(m => m.Id)
                 .HasForeignKey(r => r.MaterialOptionNowId)
                 .OnDelete(DeleteBehavior.Cascade);
-            // Ссылка на себя самого
-            builder.HasMany(r => r.RegionsChildrens).WithMany(r => r.RegionsParents);
-            builder.HasMany(r => r.RegionsParents).WithMany(r => r.RegionsChildrens);
             // С планом
             builder.HasOne(r => r.Plan).WithOne(p => p.Region)
                 .HasPrincipalKey<Region>(r => r.Id)
-                .HasForeignKey<Plan>(p => p.Id)
-                .OnDelete(DeleteBehavior.SetNull);
+                .HasForeignKey<Plan>(p => p.RegionId)
+                .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }
     }

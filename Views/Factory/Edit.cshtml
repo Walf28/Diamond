@@ -12,85 +12,109 @@
         <input type="submit" value="Добавить участок" asp-controller="Region" asp-action="Create" asp-route-Factory="@Model"/>
         <input type="submit" value="Настроить маршруты" asp-controller="Route" asp-action="List" asp-route-Id="@Model.Id" />
     </div>
-    
+
     <p>Номер завода<input name="Id" asp-for="Id" value="@Model.Id" readonly></p>
     <p>Название завода<input name="Name" value="@Model.Name"></p>
-    
-    <p>Список участков</p>
-    <div>
-        @if (Model.Regions.Count > 0)
-        {
-            <table class="table table-bordered">
-                <tr>
-                    <td>№</td>
-                    <td>Название</td>
-                    <td>Тип участка</td>
-                    <td></td>
-                </tr>
-                @foreach(var Region in Model.Regions) {
-                    <tr>
-                        <td>@Region.Id</td>
-                        <td>@Region.Name</td>
-                        <td>@Html.DisplayFor(f => f.Regions!.First(r => r.Id == Region.Id).Type)</td>
-                        <td>
-                            <a asp-controller="Region" asp-action="Edit" asp-route-Id="@Region.Id" class="btn btn-primary">Редактировать</a>
-                            <a asp-controller="Factory" asp-action="DeleteRegion" asp-route-ModelId="@Model.Id" asp-route-RegionId="@Region.Id" class="btn btn-danger">Удалить</a>
-                        </td>
-                    </tr>
-                }
-            </table>
-        }
-    </div>
 
-    <p>Список маршрутов</p>
-    <div>
-        @if (Model.Routes.Count > 0)
-        {
-            <table class="table table-bordered">
-                <tr>
-                    <td>Название</td>
-                    <td>Количество простаивающих участков</td>
-                    <td>Мощность</td>
-                    <td>Что может производить</td>
-                    <td>Маршрут</td>
-                </tr>
-                @foreach (var Route in Model.Routes)
-                {
-                    <tr>
-                        <td>@Route.Name</td>
-                        <td>0</td>
-                        <td>@MaterialForRegion.ToString(Route.GetMaxPowerOnMaterial()).Replace("\n", " | ")</td>
-                        <td>@ProductGroup.ToString(Route.GetAvailableProducts())</td>
-                        <td>@Route.GetContent</td>
-                    </tr>
-                }
-            </table>
-        }
-    </div>
 
-    <p>Список заказов</p>
-    <div>
-        @if (Model.Requests.Count > 0)
-        {
-            <table class="table table-bordered">
+    @if (Model.Regions.Count > 0)
+    {
+        <footer class="border-top footer" />
+        <p>Список участков</p>
+        <table class="table table-bordered">
+            <tr>
+                <td>№</td>
+                <td>Название</td>
+                <td>Тип участка</td>
+                <td></td>
+            </tr>
+            @foreach(var Region in Model.Regions) {
                 <tr>
-                    <td>№</td>
-                    <td>Товар</td>
-                    <td>Количество</td>
-                    <td>Желаемая дата выполнения</td>
-                    <td>Статус</td>
+                    <td>@Region.Id</td>
+                    <td>@Region.Name</td>
+                    <td>@Html.DisplayFor(f => f.Regions!.First(r => r.Id == Region.Id).Type)</td>
+                    <td>
+                        <a asp-controller="Region" asp-action="Edit" asp-route-Id="@Region.Id" class="btn btn-primary">Редактировать</a>
+                        <a asp-controller="Factory" asp-action="DeleteRegion" asp-route-ModelId="@Model.Id" asp-route-RegionId="@Region.Id" class="btn btn-danger">Удалить</a>
+                    </td>
                 </tr>
-                @foreach (var Request in Model.Requests)
-                {
-                    <tr>
-                        <td>@Request.Id</td>
-                        <td>@Request.GetProduct!.GetProductGroup!.Name</td>
-                        <td>@Request.Count</td>
-                        <td>@Request.DateOfDesiredComplete</td>
-                        <td>@Html.DisplayFor(f => f.Requests.First(r => r.Id == Request.Id).Status)</td>
-                    </tr>
-                }
-            </table>
-        }
-    </div>
+            }
+        </table>
+    }
+
+    @if (Model.Routes.Count > 0)
+    {
+        <footer class="border-top footer" />
+        <p>Список маршрутов</p>
+        <table class="table table-bordered">
+            <tr>
+                <td>Название</td>
+                <td>Количество простаивающих участков</td>
+                <td>Мощность</td>
+                <td>Что может производить</td>
+                <td>Маршрут</td>
+            </tr>
+            @foreach (var Route in Model.Routes)
+            {
+                <tr>
+                    <td>@Route.Name</td>
+                    <td>0</td>
+                    <td>@MaterialForRegion.ToString(Route.GetMaxPowerOnMaterial()).Replace("\n", " | ")</td>
+                    <td>@ProductGroup.ToString(Route.GetAvailableProducts())</td>
+                    <td>@Route.GetContent</td>
+                </tr>
+            }
+        </table>
+    }
+
+    @if (Model.Requests.Count > 0)
+    {
+        <footer class="border-top footer"/>
+        <p>Список заказов</p>
+        <table class="table table-bordered">
+            <tr>
+                <td>№</td>
+                <td>Товар</td>
+                <td>Количество</td>
+                <td>Желаемая дата выполнения</td>
+                <td>Статус</td>
+            </tr>
+            @foreach (var Request in Model.Requests)
+            {
+                <tr>
+                    <td>@Request.Id</td>
+                    <td>@Request.GetProductSpecific!.GetProductGroup!.Name</td>
+                    <td>@Request.Count</td>
+                    <td>@Request.DateOfDesiredComplete.ToString("dd.MM.yyyy")</td>
+                    <td>@Html.DisplayFor(f => f.Requests.First(r => r.Id == Request.Id).Status)</td>
+                </tr>
+            }
+        </table>
+    }
+
+    @if (Model.Plan.Count > 0){
+        <footer class="border-top footer" />
+        <p>Планирование</p>
+        <table class="table table-bordered">
+            <tr>
+                <td>id</td>
+                <td>Сырьё</td>
+                <td>Продукция</td>
+                <td>Количество</td>
+                <td>Маршрут</td>
+                <td>Статус</td>
+            </tr>
+            @foreach (var plan in Model.Plan)
+            {
+                <tr>
+                    <td>@plan.Id</td>
+                    <td>@(plan.GetMaterial!.Name)</td>
+                    <td>@plan.Product</td>
+                    <td>@plan.Size</td>
+                    <td>@plan.Route!.GetContent</td>
+                    <td>@(plan.IsFabricating ? $"{Html.DisplayFor(p => plan.Region!.Type)}" : "Ожидание")</td>
+                </tr>
+            }
+        </table>
+    }
 </form>

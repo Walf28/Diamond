@@ -14,11 +14,12 @@ namespace Diamond.Database.Configurations
             // С конкретной продукцией
             builder.HasMany(pg => pg.ProductsSpecific).WithOne(ps => ps.ProductGroup)
                 .HasPrincipalKey(pg => pg.Id)
-                .HasForeignKey(pg => pg.ProductGroupId)
+                .HasForeignKey(ps => ps.ProductGroupId)
                 .OnDelete(DeleteBehavior.Cascade);
             // C сырьём
             builder.HasOne(pg => pg.Material).WithMany(m => m.Products)
                 .HasPrincipalKey(pg => pg.Id)
+                .HasForeignKey(m => m.MaterialId)
                 .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }

@@ -35,7 +35,8 @@ namespace Diamond.Models
         #endregion
 
         #region Свойства
-        public ProductSpecific? GetProduct => context.ProductsSpecific.Where(ps=>ps.Id == ProductId).FirstOrDefault();
+        public ProductSpecific? GetProductSpecific => context.ProductsSpecific.Where(ps => ps.Id == ProductId).FirstOrDefault();
+        public ProductGroup? GetProductGroup => context.ProductsGroup.Where(pg => pg.Id == context.ProductsSpecific.First(ps=>ps.Id == ProductId).Id).FirstOrDefault();
         public string GetProductName
         {
             get

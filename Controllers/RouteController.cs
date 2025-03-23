@@ -36,35 +36,56 @@ namespace Diamond.Controllers
                 .Where(f => f.Id == FactoryId)
                 .Include(r => r.Routes)
                 .First();
-            DBFactory.Routes.Clear();
-            context.SaveChanges();
 
-            /*List<Models.Factory.Route> routes = [];
+            // Нахождение маршрутов
+            List<Models.Factory.Route> routes = [];
             foreach (int c in check)
             {
-                routes.Add(new()
+                // Создание маршрута
+                Models.Factory.Route route = new()
                 {
                     Name = name[c] ?? "",
                     Factory = DBFactory,
-                });
-                foreach (var region in regions[c])
-                    routes[^1].Regions.Add(context.Regions.Where(r => r.Id == region).First());
-            }
-            DBFactory.Routes.AddRange(routes);*/
-            DBFactory.Routes.Clear();
-            foreach (int c in check)
-            {
-                DBFactory.Routes.Add(new()
-                {
-                    Name = name[c] ?? "",
-                    Factory = DBFactory,
-                });
+                };
                 foreach (var region in regions[c])
                 {
-                    DBFactory.Routes[^1].Regions.Add(context.Regions.Where(r => r.Id == region).First());
-                    DBFactory.Routes[^1].RegionsRoute.Add(region);
+                    route.Regions.Add(context.Regions.Where(r => r.Id == region).First());
+                    route.RegionsRoute.Add(region);
                 }
-                DBFactory.Routes[^1].Regions.OrderBy(r => r.Routes[^1].RegionsRoute);
+
+                routes.Add(route);
+            }
+
+            // Добавление маршрутов
+            foreach (var route in routes)
+            {
+                bool find = false;
+                foreach (var r in DBFactory.Routes)
+                    if (route.RegionsRoute == r.RegionsRoute)
+                    {
+                        find = true;
+                        break;
+                    }
+                if (!find)
+                    DBFactory.Routes.Add(route);
+            }
+
+            // Удаление маршрутов
+            for (int i = 0; i < DBFactory.Routes.Count; ++i)
+            {
+                bool find = false;
+                foreach (var route in routes)
+                    if (route.RegionsRoute == DBFactory.Routes[i].RegionsRoute)
+                    {
+                        find = true;
+                        break;
+                    }
+
+                if (!find)
+                {
+                    DBFactory.Routes.RemoveAt(i);
+                    --i;
+                }
             }
 
             // Сохранение всех изменений

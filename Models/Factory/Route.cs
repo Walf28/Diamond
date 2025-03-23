@@ -76,7 +76,9 @@ namespace Diamond.Models.Factory
 
         #region Методы
         #region Информационные
-        // Список, на каком сырье может работать данный маршрут
+        /// <summary>
+        /// Список, на каком сырье может работать данный маршрут
+        /// </summary>
         public List<Material> GetAcceptableMaterials()
         {
             // Проверка
@@ -111,7 +113,9 @@ namespace Diamond.Models.Factory
             return materials;
         }
 
-        // Список, какую продукцию на нём можно производить
+        /// <summary>
+        /// Список, какую продукцию на нём можно производить
+        /// </summary>
         public List<ProductGroup> GetAvailableProducts()
         {
             // Сырьё, которое может использовать маршрут
@@ -147,7 +151,9 @@ namespace Diamond.Models.Factory
             return products;
         }
 
-        // Список, какое сырьё можно производить и с какой скоростью
+        /// <summary>
+        /// Список, какое сырьё можно производить и с какой скоростью
+        /// </summary>
         public List<MaterialForRegion> GetMaxPowerOnMaterial()
         {
             List<Material> materials = GetAcceptableMaterials();
@@ -184,31 +190,95 @@ namespace Diamond.Models.Factory
 
             return result;
         }
-        
-        // Можно ли произвести данную продукцию на этом маршруте и, если да, с какой скорость
-        public bool CanProduceProduct(int productId, out int MaxSpeed)
+
+        /// <summary>
+        /// Максимальный объём (в граммах) сырья, которое маршрут может обработать в одной партии
+        /// </summary>
+        public int GetMaxVolume(int materialId)
         {
-            MaxSpeed = 0;
+            int volume = int.MaxValue;
+            foreach (var r in Regions)
+            {
+                int regionVolume = r.GetVolume(materialId);
+                if (regionVolume < volume)
+                {
+                    volume = regionVolume;
+                    break;
+                }
+            }
+            return (int)volume;
+        }
+        
+        /// <summary>
+        /// Время (в мин.), за которое маршрут обработает данную партию
+        /// </summary>
+        public double GetTime(int materialId, int Size)
+        {
+            double time = 0;
+            foreach (var r in Regions)
+            {
+                double regionTime = r.GetTime(materialId, Size);
+                if (regionTime == double.PositiveInfinity)
+                    return regionTime;
+                time += regionTime;
+            }
+            return time;
+        }
+
+        /// <summary>
+        /// Можно ли произвести данную продукцию на этом маршруте
+        /// </summary>
+        public bool CanProduceProduct(int productId)
+        {
             var list = GetAvailableProducts();
             foreach (var item in list)
                 if (item.Id == productId)
-                {
-                    Material m = context.ProductsSpecific
-                        .AsNoTracking()
-                        .Where(ps => ps.Id == productId)
-                        .Include(ps => ps.ProductGroup).ThenInclude(pg => pg.Material)
-                        .First()
-                        .ProductGroup.Material;
-                    var Materials = GetMaxPowerOnMaterial();
-                    foreach (var material in Materials)
-                        if (material.MaterialId == m.Id)
-                        {
-                            MaxSpeed = material.Power;
-                            break;
-                        }
                     return true;
-                }
+            return false;
+        }
 
+        /// <summary>
+        /// Сколько минут требуется маршруту, чтобы завершить весь план, который у него имеется.
+        /// Пересечение с другими маршрутами и выполняющиеся сейчас планы не учитываются.
+        /// </summary>
+        public double MinutesToCompletePlan()
+        {
+            double Time = 0;
+            foreach (var p in Plan)
+                Time += GetTime(p.GetMaterial!.Id, p.Size);
+            return Time;
+        }
+
+        /// <summary>
+        /// Сколько минут требуется маршруту, чтобы завершить все планы, которые следует выполнить в назначенный срок.
+        /// Пересечение с другими маршрутами и выполняющиеся сейчас планы не учитываются.
+        /// </summary>
+        public double MinutesToCompletePlan(DateTime timeBefore)
+        {
+            double Time = 0;
+            foreach (var p in Plan)
+                if (p.ComingSoon < timeBefore)
+                    Time += GetTime(p.GetMaterial!.Id, p.Size);
+            return Time;
+        }
+
+        /// <summary>
+        /// Сколько минут требуется маршруту, чтобы завершить все планы до указанного участка (включительно).
+        /// Пересечение с другими маршрутами и выполняющиеся сейчас планы не учитываются.
+        /// Если участок в маршруте отсутствует, вернётся false, а Time будет равен общему времени выполнения всех планов, в ином случае - наоборот.
+        /// </summary>
+        public bool MinutesToCompletePlan(int regionId, out double Time)
+        {
+            Time = 0;
+            foreach (var regId in RegionsRoute) // Прошерстим участки
+            {
+                List<Plan> plans = [.. Plan.Where(p => p.RegionId == regId)];
+                foreach (var p in plans)
+                    Time += Regions[Regions.FindIndex(r => r.Id == regId)].GetTime(p);
+
+                if (regId == regionId)
+                    return true;
+            }
             return false;
         }
         #endregion

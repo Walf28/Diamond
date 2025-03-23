@@ -1,4 +1,5 @@
 ﻿using Diamond.Models.Factory;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Diamond.Models
 {
@@ -14,10 +15,12 @@ namespace Diamond.Models
         #endregion
 
         #region Ссылочные
+        [ForeignKey("RegionId")]
         public required Region Region { get; set; }
         #endregion
 
         #region Id ссылок
+        public int RegionId { get; set; }
         #endregion
         #endregion
     }
