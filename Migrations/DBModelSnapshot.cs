@@ -100,6 +100,9 @@ namespace Diamond.Migrations
                     b.Property<bool>("IsFabricating")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("MaterialId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("ProductId")
                         .HasColumnType("integer");
 
@@ -115,6 +118,8 @@ namespace Diamond.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FactoryId");
+
+                    b.HasIndex("MaterialId");
 
                     b.HasIndex("ProductId");
 
@@ -140,13 +145,13 @@ namespace Diamond.Migrations
                     b.Property<int?>("MaterialOptionNowId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("MaxVolume")
-                        .HasColumnType("integer");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<int>("ReadjustmentTime")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -155,9 +160,6 @@ namespace Diamond.Migrations
                         .HasColumnType("integer");
 
                     b.Property<int>("Type")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("UploadedNow")
                         .HasColumnType("integer");
 
                     b.Property<int>("Workload")
@@ -197,6 +199,25 @@ namespace Diamond.Migrations
                     b.HasIndex("FactoryId");
 
                     b.ToTable("Routes");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Factory.Warehouse", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("FactoryId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FactoryId")
+                        .IsUnique();
+
+                    b.ToTable("Warehouses");
                 });
 
             modelBuilder.Entity("Diamond.Models.Material", b =>
@@ -240,6 +261,32 @@ namespace Diamond.Migrations
                     b.HasIndex("RegionId");
 
                     b.ToTable("RegionsMaterials");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Materials.MaterialWarehouse", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("MaterialId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaterialId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("MaterialsWarehouse");
                 });
 
             modelBuilder.Entity("Diamond.Models.ProductGroup", b =>
@@ -290,6 +337,32 @@ namespace Diamond.Migrations
                     b.HasIndex("ProductGroupId");
 
                     b.ToTable("ProductsSpecific");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Products.ProductSpecificWarehouse", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("WarehouseId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.HasIndex("WarehouseId");
+
+                    b.ToTable("ProductsSpecificWarehouse");
                 });
 
             modelBuilder.Entity("Diamond.Models.Request", b =>
@@ -382,6 +455,12 @@ namespace Diamond.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Diamond.Models.Material", "Material")
+                        .WithMany("Plans")
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("Diamond.Models.ProductSpecific", "Product")
                         .WithMany("Plans")
                         .HasForeignKey("ProductId")
@@ -400,6 +479,8 @@ namespace Diamond.Migrations
                         .IsRequired();
 
                     b.Navigation("Factory");
+
+                    b.Navigation("Material");
 
                     b.Navigation("Product");
 
@@ -437,6 +518,17 @@ namespace Diamond.Migrations
                     b.Navigation("Factory");
                 });
 
+            modelBuilder.Entity("Diamond.Models.Factory.Warehouse", b =>
+                {
+                    b.HasOne("Diamond.Models.Factory.Factory", "Factory")
+                        .WithOne("Warehouse")
+                        .HasForeignKey("Diamond.Models.Factory.Warehouse", "FactoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Factory");
+                });
+
             modelBuilder.Entity("Diamond.Models.Materials.MaterialForRegion", b =>
                 {
                     b.HasOne("Diamond.Models.Material", "Material")
@@ -454,6 +546,25 @@ namespace Diamond.Migrations
                     b.Navigation("Material");
 
                     b.Navigation("Region");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Materials.MaterialWarehouse", b =>
+                {
+                    b.HasOne("Diamond.Models.Material", "Material")
+                        .WithMany("MaterialWarehouses")
+                        .HasForeignKey("MaterialId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Diamond.Models.Factory.Warehouse", "Warehouse")
+                        .WithMany("Materials")
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Material");
+
+                    b.Navigation("Warehouse");
                 });
 
             modelBuilder.Entity("Diamond.Models.ProductGroup", b =>
@@ -476,6 +587,25 @@ namespace Diamond.Migrations
                         .IsRequired();
 
                     b.Navigation("ProductGroup");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Products.ProductSpecificWarehouse", b =>
+                {
+                    b.HasOne("Diamond.Models.ProductSpecific", "Product")
+                        .WithMany("ProductWarehouses")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Diamond.Models.Factory.Warehouse", "Warehouse")
+                        .WithMany("Products")
+                        .HasForeignKey("WarehouseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+
+                    b.Navigation("Warehouse");
                 });
 
             modelBuilder.Entity("Diamond.Models.Request", b =>
@@ -535,6 +665,9 @@ namespace Diamond.Migrations
                     b.Navigation("Requests");
 
                     b.Navigation("Routes");
+
+                    b.Navigation("Warehouse")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Diamond.Models.Factory.Region", b =>
@@ -551,9 +684,20 @@ namespace Diamond.Migrations
                     b.Navigation("Plan");
                 });
 
-            modelBuilder.Entity("Diamond.Models.Material", b =>
+            modelBuilder.Entity("Diamond.Models.Factory.Warehouse", b =>
                 {
                     b.Navigation("Materials");
+
+                    b.Navigation("Products");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Material", b =>
+                {
+                    b.Navigation("MaterialWarehouses");
+
+                    b.Navigation("Materials");
+
+                    b.Navigation("Plans");
 
                     b.Navigation("Products");
 
@@ -568,6 +712,8 @@ namespace Diamond.Migrations
             modelBuilder.Entity("Diamond.Models.ProductSpecific", b =>
                 {
                     b.Navigation("Plans");
+
+                    b.Navigation("ProductWarehouses");
 
                     b.Navigation("Requests");
                 });

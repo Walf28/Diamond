@@ -15,10 +15,8 @@ namespace Diamond.Models
         public List<MaterialForRegion>? Materials { get; set; }
         public List<ProductGroup>? Products { get; set; }
         public List<Region> RegionsOptions { get; set; } = [];
-        #endregion
-
-        #region Id ссылок
-
+        public List<Plan> Plans { get; set; } = [];
+        public List<MaterialWarehouse> MaterialWarehouses { get; set; } = [];
         #endregion
         #endregion
 

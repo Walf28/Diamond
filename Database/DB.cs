@@ -2,6 +2,7 @@
 using Diamond.Models;
 using Diamond.Models.Factory;
 using Diamond.Models.Materials;
+using Diamond.Models.Products;
 using Microsoft.EntityFrameworkCore;
 
 namespace Diamond.Database
@@ -16,9 +17,12 @@ namespace Diamond.Database
         public DbSet<Downtime> Downtimes { get; set; } = null!;
         public DbSet<ProductGroup> ProductsGroup { get; set; } = null!;
         public DbSet<ProductSpecific> ProductsSpecific { get; set; } = null!;
+        public DbSet<ProductSpecificWarehouse> ProductsSpecificWarehouse { get; set; } = null!;
         public DbSet<Material> Materials { get; set; } = null!;
         public DbSet<MaterialForRegion> RegionsMaterials { get; set; } = null!;
+        public DbSet<MaterialWarehouse> MaterialsWarehouse { get; set; } = null!;
         public DbSet<Request> Requests { get; set; } = null!;
+        public DbSet<Warehouse> Warehouses { get; set; } = null!;
 
         /*string cmdDeleteMigrations = "Remove-Migration";
         string cmdCreateMigrations = "Add-Migration InitialCreate";
@@ -37,12 +41,16 @@ namespace Diamond.Database
             modelBuilder.ApplyConfiguration(new FactoryConfiguration());
             modelBuilder.ApplyConfiguration(new MaterialConfiguration());
             modelBuilder.ApplyConfiguration(new MaterialForRegionConfiguration());
+            modelBuilder.ApplyConfiguration(new MaterialWarehouseConfiguration());
             modelBuilder.ApplyConfiguration(new PlanConfiguration());
             modelBuilder.ApplyConfiguration(new ProductGroupConfiguration());
             modelBuilder.ApplyConfiguration(new ProductSpecificConfiguration());
+            modelBuilder.ApplyConfiguration(new ProductSpecificWarehouseConfiguration());
             modelBuilder.ApplyConfiguration(new RegionConfiguration());
             modelBuilder.ApplyConfiguration(new RequestConfiguration());
             modelBuilder.ApplyConfiguration(new RouteConfiguration());
+            modelBuilder.ApplyConfiguration(new WarehouseConfiguration());
+            modelBuilder.ApplyConfiguration(new WarehouseConfiguration());
 
             base.OnModelCreating(modelBuilder);
         }

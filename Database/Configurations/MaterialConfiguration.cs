@@ -25,7 +25,18 @@ namespace Diamond.Database.Configurations
                 .HasPrincipalKey(m => m.Id)
                 .HasForeignKey(r => r.MaterialOptionNowId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // Планиррование
+            builder.HasMany(m => m.Plans).WithOne(p => p.Material)
+                .HasPrincipalKey(m => m.Id)
+                .HasForeignKey(p => p.MaterialId)
+                .OnDelete(DeleteBehavior.Cascade);
+            // На складе
+            builder.HasMany(m => m.MaterialWarehouses).WithOne(mw => mw.Material)
+                .HasPrincipalKey(m => m.Id)
+                .HasForeignKey(mw => mw.MaterialId)
+                .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }
+
     }
 }

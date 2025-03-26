@@ -63,6 +63,25 @@ namespace Diamond.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Warehouses",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    FactoryId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Warehouses", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Warehouses_Factories_FactoryId",
+                        column: x => x.FactoryId,
+                        principalTable: "Factories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "ProductsGroup",
                 columns: table => new
                 {
@@ -91,10 +110,9 @@ namespace Diamond.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Type = table.Column<int>(type: "integer", nullable: false),
                     Workload = table.Column<int>(type: "integer", nullable: false),
-                    MaxVolume = table.Column<int>(type: "integer", nullable: false),
                     TransitTime = table.Column<int>(type: "integer", nullable: false),
+                    ReadjustmentTime = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
-                    UploadedNow = table.Column<int>(type: "integer", nullable: false),
                     FactoryId = table.Column<int>(type: "integer", nullable: false),
                     MaterialOptionNowId = table.Column<int>(type: "integer", nullable: true),
                     Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
@@ -112,6 +130,33 @@ namespace Diamond.Migrations
                         name: "FK_Regions_Materials_MaterialOptionNowId",
                         column: x => x.MaterialOptionNowId,
                         principalTable: "Materials",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MaterialsWarehouse",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    MaterialId = table.Column<int>(type: "integer", nullable: false),
+                    WarehouseId = table.Column<int>(type: "integer", nullable: false),
+                    Count = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MaterialsWarehouse", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MaterialsWarehouse_Materials_MaterialId",
+                        column: x => x.MaterialId,
+                        principalTable: "Materials",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MaterialsWarehouse_Warehouses_WarehouseId",
+                        column: x => x.WarehouseId,
+                        principalTable: "Warehouses",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -247,7 +292,8 @@ namespace Diamond.Migrations
                     FactoryId = table.Column<int>(type: "integer", nullable: false),
                     RouteId = table.Column<int>(type: "integer", nullable: false),
                     RegionId = table.Column<int>(type: "integer", nullable: true),
-                    ProductId = table.Column<int>(type: "integer", nullable: false)
+                    ProductId = table.Column<int>(type: "integer", nullable: false),
+                    MaterialId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -256,6 +302,12 @@ namespace Diamond.Migrations
                         name: "FK_Plans_Factories_FactoryId",
                         column: x => x.FactoryId,
                         principalTable: "Factories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Plans_Materials_MaterialId",
+                        column: x => x.MaterialId,
+                        principalTable: "Materials",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -274,6 +326,33 @@ namespace Diamond.Migrations
                         name: "FK_Plans_Routes_RouteId",
                         column: x => x.RouteId,
                         principalTable: "Routes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProductsSpecificWarehouse",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    ProductId = table.Column<int>(type: "integer", nullable: false),
+                    WarehouseId = table.Column<int>(type: "integer", nullable: false),
+                    Count = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProductsSpecificWarehouse", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ProductsSpecificWarehouse_ProductsSpecific_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "ProductsSpecific",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProductsSpecificWarehouse_Warehouses_WarehouseId",
+                        column: x => x.WarehouseId,
+                        principalTable: "Warehouses",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -323,9 +402,24 @@ namespace Diamond.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_MaterialsWarehouse_MaterialId",
+                table: "MaterialsWarehouse",
+                column: "MaterialId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_MaterialsWarehouse_WarehouseId",
+                table: "MaterialsWarehouse",
+                column: "WarehouseId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Plans_FactoryId",
                 table: "Plans",
                 column: "FactoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Plans_MaterialId",
+                table: "Plans",
+                column: "MaterialId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Plans_ProductId",
@@ -352,6 +446,16 @@ namespace Diamond.Migrations
                 name: "IX_ProductsSpecific_ProductGroupId",
                 table: "ProductsSpecific",
                 column: "ProductGroupId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductsSpecificWarehouse_ProductId",
+                table: "ProductsSpecificWarehouse",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProductsSpecificWarehouse_WarehouseId",
+                table: "ProductsSpecificWarehouse",
+                column: "WarehouseId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_RegionRegion_RegionsParentsId",
@@ -397,6 +501,12 @@ namespace Diamond.Migrations
                 name: "IX_Routes_FactoryId",
                 table: "Routes",
                 column: "FactoryId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Warehouses_FactoryId",
+                table: "Warehouses",
+                column: "FactoryId",
+                unique: true);
         }
 
         /// <inheritdoc />
@@ -406,7 +516,13 @@ namespace Diamond.Migrations
                 name: "Downtimes");
 
             migrationBuilder.DropTable(
+                name: "MaterialsWarehouse");
+
+            migrationBuilder.DropTable(
                 name: "Plans");
+
+            migrationBuilder.DropTable(
+                name: "ProductsSpecificWarehouse");
 
             migrationBuilder.DropTable(
                 name: "RegionRegion");
@@ -419,6 +535,9 @@ namespace Diamond.Migrations
 
             migrationBuilder.DropTable(
                 name: "Requests");
+
+            migrationBuilder.DropTable(
+                name: "Warehouses");
 
             migrationBuilder.DropTable(
                 name: "Routes");

@@ -25,6 +25,8 @@ namespace Diamond.Models.Factory
         public Region? Region { get; set; } // На каком участке на данный момент находится
         [ForeignKey("ProductId")]
         public ProductSpecific Product { get; set; } = null!; // Что необходимо произвести
+        [ForeignKey("MaterialId")]
+        public Material Material { get; set; } = null!; // На чём необходимо произвести
         #endregion
 
         #region Id ссылок
@@ -32,6 +34,7 @@ namespace Diamond.Models.Factory
         public int RouteId { get; set; } // Id маршрута
         public int? RegionId { get; set; } // На каком участке на данный момент находится
         public int ProductId { get; set; } // Что производим
+        public int MaterialId { get; set; } // Id сырья
         #endregion
         #endregion
 

@@ -1,5 +1,6 @@
 ﻿using Diamond.Database;
 using Diamond.Models.Factory;
+using Diamond.Models.Products;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -24,6 +25,7 @@ namespace Diamond.Models
         [ForeignKey("ProductGroupId")]
         public ProductGroup ProductGroup { get; set; } = new();
         public List<Plan> Plans { get; set; } = [];
+        public List<ProductSpecificWarehouse> ProductWarehouses { get; set; } = [];
         #endregion
 
         #region Id ссылок

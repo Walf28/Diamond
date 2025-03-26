@@ -11,7 +11,8 @@ namespace Diamond.Models
         #region Обычные
         public int Id { get; set; }
         [Range(1, int.MaxValue, ErrorMessage = "Разрешены только положительные значения")]
-        public int Count { get; set; } = 1;
+        public int Count { get; set; } = 1; // Сколько заказали
+        public int CountComplete = 0; // Сколько выполнено от заказа
         public DateTime DateOfReceipt { get; set; } // Дата поступления заявки
         public DateTime DateOfDesiredComplete { get; set; } // Дата желаемого выполнения заявки
         public DateTime? DateOfAcceptance { get; set; } // Дата принятия заявки
@@ -36,7 +37,7 @@ namespace Diamond.Models
 
         #region Свойства
         public ProductSpecific? GetProductSpecific => context.ProductsSpecific.Where(ps => ps.Id == ProductId).FirstOrDefault();
-        public ProductGroup? GetProductGroup => context.ProductsGroup.Where(pg => pg.Id == context.ProductsSpecific.First(ps=>ps.Id == ProductId).Id).FirstOrDefault();
+        public ProductGroup? GetProductGroup => context.ProductsGroup.Where(pg => pg.Id == context.ProductsSpecific.First(ps=>ps.Id == ProductId).ProductGroupId).FirstOrDefault();
         public string GetProductName
         {
             get

@@ -19,10 +19,16 @@ namespace Diamond.Models.Factory
         #region Ссылочные
         [NotMapped]
         private readonly DB context = new();
+        //[ForeignKey("WarehouseId")]
+        public Warehouse Warehouse { get; set; } = new();
         public List<Route> Routes { get; set; } = [];
         public List<Region> Regions { get; set; } = [];
         public List<Request> Requests { get; set; } = [];
         #endregion
+        #endregion
+
+        #region Id ссылок
+        //public int WarehouseId { get; set; }
         #endregion
 
         #region Методы
@@ -173,7 +179,7 @@ namespace Diamond.Models.Factory
                         PlanOuttime.Add(Plan[i]);
                         continue;
                     }
-                    
+
                     int MaxVolumeInRoute = Plan[i].Route.GetMaxVolume(Plan[i].GetMaterial!.Id);
                     if (MaxVolumeInRoute > Plan[i].Size)
                     {
@@ -206,7 +212,7 @@ namespace Diamond.Models.Factory
             {
                 int fastestRouteId = PotencialRoutes[0].Id;
                 DateTime dateTimeOfFastestRoute = DateTime.UtcNow.AddMinutes(NeedTimeForRoute(PotencialRoutes[0].Id));
-                for (int i = 1; i < PotencialRoutes.Count; ++i) // 
+                for (int i = 1; i < PotencialRoutes.Count; ++i)
                 {
                     DateTime dt = DateTime.UtcNow.AddMinutes(NeedTimeForRoute(PotencialRoutes[i].Id));
                     if (dateTimeOfFastestRoute > dt)
@@ -220,17 +226,20 @@ namespace Diamond.Models.Factory
                 DateTime? minTimePlan = PlanOuttime.Count > 0 ? PlanOuttime.Min(p => p.ComingSoon) : null;
                 if ((minTimePlan != null && dateTimeOfFastestRoute < minTimePlan) || minTimePlan == null)
                 {
-                    int idIndex = Routes.FindIndex(r=>r.Id == fastestRouteId);
-                    int volume = Routes[idIndex].GetMaxVolume(request.Product.GetMaterial!.Id);
+                    int idIndex = Routes.FindIndex(r => r.Id == fastestRouteId);
+                    int materialId = request.Product.GetMaterial!.Id;
+                    int volume = Routes[idIndex].GetMaxVolume(materialId);
                     Plan.Add(new()
                     {
                         Size = fullSize <= volume ? fullSize : volume,
                         ComingSoon = request.DateOfDesiredComplete,
                         Factory = this,
-                        FactoryId = Id,
                         Route = Routes[idIndex],
+                        Product = request.Product,
+                        FactoryId = Id,
                         RouteId = fastestRouteId,
-                        ProductId = request.Product.Id,
+                        ProductId = request.ProductId,
+                        MaterialId = materialId
                     });
                     Routes[idIndex].Plan.Add(Plan[^1]);
                     fullSize = fullSize <= volume ? 0 : fullSize - volume;
@@ -251,9 +260,9 @@ namespace Diamond.Models.Factory
                 }
             }
 
-            // Обновляем порядок по срокам
-            Plan = [.. Plan.OrderBy(p => p.ComingSoon)];
-            //StartPlan();
+            // Запускаем план
+            Server.Save(null, new(DateTime.Now));
+            StartPlan();
         }
 
         /// <summary>Запустить процесс по плану, если имеется такая возможность</summary>
@@ -262,22 +271,7 @@ namespace Diamond.Models.Factory
             UpdatePlan();
             for (int PlanIndex = 0; PlanIndex < Plan.Count; ++PlanIndex)
                 if (!Plan[PlanIndex].IsFabricating)
-                {
-                    bool find = false;
-                    for (int RouteIndex = 0; RouteIndex < Routes.Count; ++RouteIndex)
-                        if (Routes[RouteIndex].Id == Plan[PlanIndex].RouteId)
-                        {
-                            find = true;
-                            if (Routes[RouteIndex].ReadyToContinue)
-                                Routes[RouteIndex].Start(Plan[PlanIndex], out _);
-                            break;
-                        }
-                    if (!find)
-                    {
-                        UpdatePlan();
-                        PlanIndex = -1;
-                    }
-                }
+                    Plan[PlanIndex].Route.Start(Plan[PlanIndex]);
         }
 
         /// <summary>Обновить производственный план</summary>
@@ -286,6 +280,26 @@ namespace Diamond.Models.Factory
             // Тут в плане было полностью обновление плана, но пусть пока будет хоть что-то
             Plan = [.. Plan.OrderBy(p => p.ComingSoon)];
             return;
+        }
+
+        /// <summary>
+        /// Выполнение плана было завершено
+        /// </summary>
+        public void CompletePlan(int planId)
+        {
+            int planIndex = Plan.FindIndex(p => p.Id == planId);
+            if (planIndex < 0)
+                return;
+
+            Warehouse ??= new()
+            {
+                FactoryId = Id,
+                Factory = this
+            };
+
+            Warehouse.AddProduct(Plan[planIndex]);
+            RemoveInCommonPlan(Plan[planIndex].ProductId, Plan[planIndex].Size);
+            Plan.RemoveAt(planIndex);
         }
 
         /// <summary>
@@ -347,6 +361,14 @@ namespace Diamond.Models.Factory
                     }
                     return;
                 }
+        }
+        #endregion
+
+        #region Управление
+        public void LaunchAllRegions()
+        {
+            for (int i = 0; i < Regions.Count; ++i)
+                Regions[i].Launch();
         }
         #endregion
         #endregion

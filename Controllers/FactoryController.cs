@@ -24,13 +24,22 @@ namespace Diamond.Controllers
             if (Id == null)
                 return RedirectToAction(nameof(List));
             var f = context.Factories
-                .AsNoTracking()
-                .Include(f => f.Regions)
+                .Include(f => f.Regions).ThenInclude(r => r.Materials)
                 .Include(f => f.Routes)
                 .Include(f => f.Requests.Where(r => r.Status == RequestStatus.FABRICATING))
                 .Include(f => f.Plan).ThenInclude(p => p.Product).ThenInclude(ps => ps.ProductGroup)
                 .Include(f => f.Plan).ThenInclude(p => p.Route)
+                .Include(f => f.Plan).ThenInclude(p => p.Region)
                 .First(f => f.Id == Id);
+            ViewBag.PSNames = context.Factories
+                .AsNoTracking()
+                .Include(f => f.Requests.Where(r => r.Status == RequestStatus.FABRICATING))
+                .ThenInclude(r => r.Product)
+                .ThenInclude(ps => ps.ProductGroup)
+                .First()
+                .Requests.Select(r => r.Product)
+                .Select(p => p.ProductGroup)
+                .Select(pg => pg.Name).ToList();
             return View(f);
         }
         #endregion

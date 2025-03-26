@@ -1,5 +1,5 @@
 using Diamond.Database;
-using Diamond.Models.Factory;
+using Diamond.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Globalization;
 

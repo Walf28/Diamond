@@ -2,6 +2,7 @@
 using Diamond.Models.Materials;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Timers;
 
 namespace Diamond.Models.Factory
 {
@@ -11,16 +12,15 @@ namespace Diamond.Models.Factory
         #region Простые
         public Technology Type { get; set; } = Technology.NONE; // Тип участка
         public int Workload { get; set; } = 0; // Текущая загруженность
-        public int MaxVolume { get; set; } = 0; // Максимальная вместительность участка
         public int TransitTime { get; set; } = 0; // Время прохода продукции по участку
-        public RegionStatus Status { get; set; } = 0; // Текущий статус участка
-        public int UploadedNow { get; set; } = 0; // Сейчас загружено
+        public int ReadjustmentTime { get; set; } = 0; // Время, затрачиваемое на переналадку (в минутах)
+        public RegionStatus Status { get; set; } = RegionStatus.OFF; // Текущий статус участка
         #endregion
 
         #region Ссылочные
         [NotMapped]
         public DB context = new();
-        public Factory Factory { get; set; } = null!;// Фабрика
+        public Factory Factory { get; set; } = null!; // Фабрика
         public List<Route> Routes { get; set; } = []; // Маршруты, проходящие по данному участку
         public List<Region> RegionsParents { get; set; } = []; // Список родительских участков
         public List<Region> RegionsChildrens { get; set; } = []; // Список подчиннных участков, куда направляется изготовленная продукция
@@ -43,8 +43,9 @@ namespace Diamond.Models.Factory
         public int? MaterialOptionNowId { get; set; } // Под какое сырьё участок сейчас настроен
         #endregion
 
-        #region Временные
-        //private Timer timer = null!;
+        #region ВременнЫе
+        [NotMapped]
+        private System.Timers.Timer timer = null!;
         #endregion
         #endregion
 
@@ -159,7 +160,7 @@ namespace Diamond.Models.Factory
 
         /// <summary>
         /// Время (в минутах), которое понадобится участку для выполнения всего подготовленного плана.
-        /// Уже выполненные планы не берутся в расчёт.
+        /// Уже выполненные планы тоже берутся в расчёт.
         /// </summary>
         public double GetTime()
         {
@@ -197,7 +198,7 @@ namespace Diamond.Models.Factory
         {
             double time = double.PositiveInfinity;
             foreach (var m in Materials)
-                if (m.MaterialId == plan.GetMaterial!.Id)
+                if (m.MaterialId == plan.MaterialId || (plan.Material != null && plan.Material.Id == m.MaterialId))
                 {
                     int volume = (int)(m.Power / 60.0 * TransitTime);
                     int complete = 0;
@@ -209,37 +210,249 @@ namespace Diamond.Models.Factory
                 }
             return time;
         }
+
+        /// <summary>
+        /// Найти самый ранний план, который участок должен будет выполнить.
+        /// Ищутся только уже задействованные планы.
+        /// </summary>
+        public Plan? FindEarlyPlan()
+        {
+            return FindEarlyPlan(this);
+        }
+
+        /// <summary>
+        /// Найти самый ранний план, который участок должен будет выполнить.
+        /// Ищутся только уже задействованные планы.
+        /// </summary>
+        public static Plan? FindEarlyPlan(Region region)
+        {
+            // Если нет родительского участка (или у этого есть план), возвращаем значение
+            if (region.RegionsParents.Count == 0 || region.Plan != null)
+            {
+                if (region.Plan == null)
+                    return null;
+                else
+                    return region.Plan;
+            }
+
+            // Поиск в родительских участках
+            List<Plan> plans = [];
+            foreach (var r in region.RegionsParents)
+            {
+                Plan? p = FindEarlyPlan(r);
+                if (p != null)
+                    plans.Add(p);
+            }
+
+            // Конец
+            if (plans.Count == 0)
+                return null;
+            return plans[plans.FindIndex(p => p.ComingSoon == plans.Min(p => p.ComingSoon))];
+        }
         #endregion
 
         #region Работа с данным участком
-        // Обновить статус
-        private void SetStatus(RegionStatus status, bool SaveInDatabase = true)
+        /// <summary>
+        /// Установить план
+        /// </summary>
+        /// <returns>Если план успешно установлен, то возвращается true, иначе - false</returns>
+        public bool SetPlan(ref Plan Plan)
         {
-            Status = status;
-            if (SaveInDatabase)
-                SaveStatus();
+            // Проверка
+            int routeId = Plan.RouteId;
+            int routeIndex = Routes.FindIndex(r => r.Id == routeId);
+            if (Status != RegionStatus.FREE || routeIndex == -1)
+                return false;
+
+            // Установка плана
+            Plan.Region = this;
+            this.Plan = Plan;
+            if (MaterialOptionNowId == null || MaterialOptionNowId != Plan.MaterialId)
+                Plan.Route.RegionUpdateStatus(Id, RegionStatus.READJUSTMENT);
+            else
+                Plan.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_DOWNLOAD);
+
+            // Завршение выполнения метода
+            Plan.IsFabricating = true;
+            return true;
         }
 
-        // Выбрать, что производить
-        public void SetPlan(Plan Plan, out bool SaveSuccess)
+        /// <summary>
+        /// Включить участок.
+        /// </summary>
+        public void Launch()
         {
-            SaveSuccess = false;
-            if (Status != RegionStatus.READY_TO_WORK)
-                return;
-            Region? region = context.Regions
-                .Where(r => r.Id == Id)
-                .Include(r => r.Plan)
-                .FirstOrDefault();
+            switch (Status)
+            {
+                case RegionStatus.OFF: Status = RegionStatus.FREE; return;
+                case RegionStatus.IN_WORKING:
+                    {
+                        if (Plan == null)
+                        {
+                            Plan? earlyPlan = FindEarlyPlan();
+                            Workload = 0;
+                            Status = RegionStatus.FREE;
+                            if (earlyPlan != null)
+                                Routes[Routes.FindIndex(r => r.Id == earlyPlan.RouteId)].RegionUpdateStatus(Id);
+                            return;
+                        }
+                        timer = new(TimeSpan.FromSeconds(GetTime(Plan)));
+                        timer.Elapsed += Finish;
+                        timer.Start();
+                        Plan.Route.RegionUpdateStatus(Id, RegionStatus.IN_WORKING);
+                        return;
+                    }
+                case RegionStatus.READJUSTMENT:
+                case RegionStatus.FREE_READJUSTMENT:
+                    {
+                        timer = new(TimeSpan.FromSeconds(ReadjustmentTime + 1));
+                        timer.Elapsed += FinishReadjustment;
+                        timer.Start();
+                        return;
+                    }
+                case RegionStatus.AWAIT_DOWNLOAD:
+                case RegionStatus.AWAIT_UNLOADING:
+                    {
+                        if (Plan == null)
+                        {
+                            Plan? earlyPlan = FindEarlyPlan();
+                            Workload = 0;
+                            Status = RegionStatus.FREE;
+                            if (earlyPlan != null)
+                                Routes[Routes.FindIndex(r => r.Id == earlyPlan.RouteId)].RegionUpdateStatus(Id);
+                            return;
+                        }
+                        else
+                            Plan.Route.RegionUpdateStatus(Id);
+                        return;
+                    }
+                default: return;
+            }
+        }
 
-            this.Plan = Plan;
-            SaveSuccess = SavePlan();
+        /// <summary>
+        /// Запустить участок
+        /// </summary>
+        public bool Start()
+        {
+            if (Plan == null || Status != RegionStatus.AWAITING_LAUNCH)
+                return false;
+            timer = new(TimeSpan.FromSeconds(GetTime(Plan)));
+            timer.Elapsed += Finish;
+            timer.Start();
+            Plan.Route.RegionUpdateStatus(Id, RegionStatus.IN_WORKING);
+            return true;
+        }
 
-            if (MaterialOptionNowId == null || MaterialOptionNowId != Plan.GetMaterial!.Id)
-                SetStatus(RegionStatus.READJUSTMENT);
+        /// <summary>
+        /// Завершить работу участка
+        /// </summary>
+        public void Finish(object? o, ElapsedEventArgs eea)
+        {
+            timer.Stop();
+            timer.Dispose();
+            if (Plan == null)
+                throw new Exception("План не найден");
+            Plan.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_UNLOADING);
+        }
+
+        /// <summary>
+        /// Начало переналадки.
+        /// </summary>
+        public void StartReadjustment(int? materialId = null)
+        {
+            if (materialId != null)
+            {
+                MaterialOptionNowId = materialId;
+                Status = RegionStatus.FREE_READJUSTMENT;
+            }
+            else if (Plan != null)
+            {
+                MaterialOptionNowId = Plan.MaterialId;
+                Status = RegionStatus.READJUSTMENT;
+            }
             else
-                SetStatus(RegionStatus.AWAIT_DOWNLOAD);
+                throw new Exception("Неизвестно на что переналаживать");
 
-            //Start();
+            // Запуск таймера (считаем, что он действует мгновенно).
+            timer = new(TimeSpan.FromMilliseconds(ReadjustmentTime + 1));
+            timer.Elapsed += FinishReadjustment;
+            timer.Start();
+        }
+
+        /// <summary>
+        /// Завершение переналадки
+        /// </summary>
+        public void FinishReadjustment(object? o, ElapsedEventArgs eea)
+        {
+            timer.Stop();
+            timer.Dispose();
+            if (Plan == null)
+            {
+                Plan? plan = FindEarlyPlan();
+                if (plan == null)
+                    return;
+                else
+                    plan.Route.RegionUpdateStatus(Id, RegionStatus.FREE);
+            }
+            else
+                Plan!.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_DOWNLOAD);
+        }
+
+        /// <summary>
+        /// Загрузить участок. Когда он загружается по плану (или до лимита), статус меняется.
+        /// </summary>
+        public void AddWorkload(int Size, out int remains)
+        {
+            // Сначала узнаём допустимый объём под данное сырьё 
+            // и суммарное значение текущей нагруженности с тем, сколько пытаются загрузить
+            if (Status != RegionStatus.AWAIT_DOWNLOAD)
+            {
+                remains = Size;
+                return;
+            }    
+            int volume = GetVolume(MaterialOptionNowId!.Value);
+            int WorkloadAndSize = Workload + Size;
+
+            // Если объём больше этой суммы, значит место ещё хватает для заполнения.
+            // В ином случае, надо загрузить сколько возможно.
+            if (volume > WorkloadAndSize)
+            {
+                Workload = WorkloadAndSize;
+                remains = 0;
+            }
+            else
+            {
+                Workload = volume;
+                remains = WorkloadAndSize - volume;
+            }
+
+            // Если по плану загружены, то, значит, участок готов к запуску
+            if (Workload >= Plan!.Size)
+            {
+                Plan.Size = Workload;
+                Plan.Route.RegionUpdateStatus(Id, RegionStatus.AWAITING_LAUNCH);
+            }
+        }
+
+        /// <summary>
+        /// Разгрузить участок. Когда он разгружается полностью, статус меняется, а план отцепляется.
+        /// </summary>
+        public void SubWorkload(int Size)
+        {
+            if (Status != RegionStatus.AWAIT_UNLOADING)
+                return;
+
+            Workload -= Size;
+            // Если по плану разгружены, то, значит, участок свободен
+            if (Workload <= 0)
+            {
+                Status = RegionStatus.FREE;
+                Plan = null;
+                Plan? earlyPlan = FindEarlyPlan();
+                if (earlyPlan != null)
+                    Routes[Routes.FindIndex(r => r.Id == earlyPlan.RouteId)].RegionUpdateStatus(Id);
+            }
         }
         #endregion
         #endregion

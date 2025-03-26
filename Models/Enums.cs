@@ -41,16 +41,20 @@ namespace Diamond.Models
         [Display(Name = "Выключен")]
         OFF,
         [Display(Name = "Свободен")]
-        READY_TO_WORK,
-        [Display(Name = "Идёт переналадка")]
+        FREE,
+        [Display(Name = "Идёт переналадка свободного участка")]
+        FREE_READJUSTMENT,
+        [Display(Name = "Идёт переналадка под план")]
         READJUSTMENT,
         [Display(Name = "Ожидает загрузки")]
         AWAIT_DOWNLOAD,
+        [Display(Name = "Ожидает запуска")]
+        AWAITING_LAUNCH,
         [Display(Name = "Работает")]
         IN_WORKING,
         [Display(Name = "Ожидает разгрузки")]
         AWAIT_UNLOADING,
         [Display(Name = "Временно не работает")]
-        DOESNT_WORK
+        DOWNTIME
     }
 }

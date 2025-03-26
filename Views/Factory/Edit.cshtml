@@ -4,6 +4,7 @@
 @{
     ViewData["Title"] = $"Завод \"{Model.Name}\"";
 }
+<meta http-equiv="refresh" content="3" />
 
 <form>
     <div>
@@ -26,6 +27,8 @@
                 <td>№</td>
                 <td>Название</td>
                 <td>Тип участка</td>
+                <td>Статус</td>
+                <td>Загруженность</td>
                 <td></td>
             </tr>
             @foreach(var Region in Model.Regions) {
@@ -33,6 +36,8 @@
                     <td>@Region.Id</td>
                     <td>@Region.Name</td>
                     <td>@Html.DisplayFor(f => f.Regions!.First(r => r.Id == Region.Id).Type)</td>
+                    <td>@Html.DisplayFor(f => f.Regions!.First(r => r.Id == Region.Id).Status)</td>
+                    <td>@Region.Workload</td>
                     <td>
                         <a asp-controller="Region" asp-action="Edit" asp-route-Id="@Region.Id" class="btn btn-primary">Редактировать</a>
                         <a asp-controller="Factory" asp-action="DeleteRegion" asp-route-ModelId="@Model.Id" asp-route-RegionId="@Region.Id" class="btn btn-danger">Удалить</a>
@@ -50,7 +55,7 @@
             <tr>
                 <td>Название</td>
                 <td>Количество простаивающих участков</td>
-                <td>Мощность</td>
+                <td>Мощность (г/час)</td>
                 <td>Что может производить</td>
                 <td>Маршрут</td>
             </tr>
@@ -90,6 +95,21 @@
                 </tr>
             }
         </table>
+
+        <p>Итого</p>
+        <table class="table table-bordered">
+            <tr>
+                <td>Продукция</td>
+                <td>Количество</td>
+            </tr>
+            @for (int i = 0; i < Model.ProductsCommonId.Count; ++i)
+            {
+                <tr>
+                    <td>@(Model.ProductsCommonId[i])</td>
+                    <td>@(Model.ProductsCommonSize[i])</td>
+                </tr>
+            }
+        </table>
     }
 
     @if (Model.Plan.Count > 0){
@@ -103,6 +123,7 @@
                 <td>Количество</td>
                 <td>Маршрут</td>
                 <td>Статус</td>
+                <td>Время обработки</td>
             </tr>
             @foreach (var plan in Model.Plan)
             {
@@ -112,7 +133,8 @@
                     <td>@plan.Product</td>
                     <td>@plan.Size</td>
                     <td>@plan.Route!.GetContent</td>
-                    <td>@(plan.IsFabricating ? $"{Html.DisplayFor(p => plan.Region!.Type)}" : "Ожидание")</td>
+                    <td>@(plan.IsFabricating && plan.Region != null ? $"{plan.Region.Name}" : "Ожидание")</td>
+                    <td>@(plan.IsFabricating && plan.Region != null ? $"{plan.Region.GetTime(plan)}" : "-")</td>
                 </tr>
             }
         </table>

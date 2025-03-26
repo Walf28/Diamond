@@ -1,6 +1,5 @@
 ﻿using Diamond.Database;
 using Diamond.Models;
-using Diamond.Models.Factory;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 

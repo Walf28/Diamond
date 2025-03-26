@@ -28,6 +28,11 @@ namespace Diamond.Models.Factory
         #region Id ссылок
         public int FactoryId { get; set; }
         #endregion
+
+        #region ВременнЫе
+        /*[NotMapped]
+        private List<Timer> timers = [];*/
+        #endregion
         #endregion
 
         #region Свойства
@@ -54,7 +59,7 @@ namespace Diamond.Models.Factory
                         content = content.Remove(content.Length - 4);
                     }
                 }
-                catch 
+                catch
                 {
                     content = "ERROR";
                 }
@@ -66,7 +71,7 @@ namespace Diamond.Models.Factory
         {
             get
             {
-                if (Regions.Count == 0 || Regions[0].Status != RegionStatus.READY_TO_WORK)
+                if (Regions.Count == 0 || Regions[0].Status != RegionStatus.FREE)
                     return false;
                 else
                     return true;
@@ -138,7 +143,7 @@ namespace Diamond.Models.Factory
                 List<Technology> tech = [.. products[i].TechnologyProcessing];
                 for (int j = 0; j < tech.Count; ++j)
                 {
-                    Region r = Regions.Where(r=>r.Id == RegionsRoute[j]).First();
+                    Region r = Regions.Where(r => r.Id == RegionsRoute[j]).First();
                     if (r == null || r.Type != tech[j] || (j == tech.Count - 1 && r.IsRegionsChildrens))
                     {
                         products.RemoveAt(i);
@@ -201,14 +206,11 @@ namespace Diamond.Models.Factory
             {
                 int regionVolume = r.GetVolume(materialId);
                 if (regionVolume < volume)
-                {
                     volume = regionVolume;
-                    break;
-                }
             }
             return (int)volume;
         }
-        
+
         /// <summary>
         /// Время (в мин.), за которое маршрут обработает данную партию
         /// </summary>
@@ -288,22 +290,29 @@ namespace Diamond.Models.Factory
         public bool SavePlan()
         {
             Route? route = context.Routes
-                .Where(r=>r.Id == Id)
-                .Include(r=>r.Plan)
+                .Where(r => r.Id == Id)
+                .Include(r => r.Plan)
                 .FirstOrDefault();
             if (route == null)
                 return false;
-            
+
             route.Plan = Plan;
             context.SaveChanges();
             return true;
         }
         #endregion
 
-        #region Работа с данным участком
-        // Начать новый процесс
-        public void Start(Plan plan, out bool SaveSuccess)
+        #region Работа с данным маршрутом
+        /// <summary>
+        /// Начать новый процесс
+        /// </summary>
+        /// <param name="plan">План, который необходимо начать выполнять</param>
+        /// <param name="hardStart">Запустить даже если этого плана нет в списке у этого маршрута 
+        /// (если true, то добавится в список этого маршрута добавится данный план, в ином случае вернётся false)</param>
+        /// <returns>Возращает true, если запуск был успешен</returns>
+        public bool Start(Plan plan, bool hardStart = false)
         {
+            // Проверка на существование участков у данного маршрута, и что первый участок свободен
             if (Regions.Count == 0)
             {
                 Regions = [.. context.Routes
@@ -311,18 +320,157 @@ namespace Diamond.Models.Factory
                     .First()
                     .Regions];
                 if (Regions.Count == 0)
-                    throw new Exception("Участки не найдены");
-                else if (Regions[0].Status != RegionStatus.READY_TO_WORK)
-                    throw new Exception("Участок не готов принять следующую продукцию");
+                    return false;
+            }
+            if (Regions[0].Status != RegionStatus.FREE)
+                return false;
+
+            // Нахождение данного плана в имеющемся списке
+            int planIndex = Plan.FindIndex(p => p.Id == plan.Id);
+            if (planIndex == -1)
+            {
+                if (hardStart)
+                {
+                    plan.Route = this;
+                    plan.FactoryId = FactoryId;
+                    Plan.Add(plan);
+                    planIndex = Plan.Count - 1;
+                }
+                else
+                    return false;
             }
 
-            Regions[0].SetPlan(plan, out SaveSuccess);
-            
-            if(Plan.Where(p=>p.Id == plan.Id).FirstOrDefault() == null)
-                Plan.Add(context.Plans.Where(p=>p.Id == Id).First());
+            // Запуск
+            Regions[0].SetPlan(ref plan); // КИРИЛЛ, УБЕДИСЬ ЧТО В СПИСКЕ ЗНАЧЕНИЕ IsFabrication ТОЖЕ ИЗМЕНИЛОСЬ
+            return plan.IsFabricating;
+        }
 
-            if (SaveSuccess)
-                SaveSuccess = SavePlan();
+        /// <summary>
+        /// Уведомление маршрута о том, что статус одного из участков был обновлён
+        /// </summary>
+        /// <param name="regionId">id участка, который был обновлён</param>
+        public void RegionUpdateStatus(int regionId, RegionStatus? regionStatus = null)
+        {
+            int regionIndex = Regions.FindIndex(r => r.Id == regionId);
+            if (regionIndex == -1)
+                return;
+            if (regionStatus.HasValue)
+                Regions[regionIndex].Status = regionStatus!.Value;
+
+            int remain;
+            switch (Regions[regionIndex].Status)
+            {
+                case RegionStatus.OFF: Regions[regionIndex].Launch(); return;
+                case RegionStatus.FREE:
+                    {
+                        // Первому участку надо посмотреть новое задание, других надо подготовить к принятию плана
+                        if (Regions[regionIndex].RegionsParents.Count == 0)
+                        {
+                            Factory.StartPlan();
+                            return;
+                        }
+
+                        // Сначала проверка на то, что участок не просто так уведомил этот маршрут о своём статусе
+                        Plan? earlyPlan = Regions[regionIndex].FindEarlyPlan();
+                        if (earlyPlan == null)
+                            return;
+                        // Теперь проверка, что данному маршруту принадлежит участок, который надо сдвинуть с мёртвой точки
+                        int earlyRegionIndex = Regions.FindIndex(r => r.Id == earlyPlan.Region!.Id);
+                        if (earlyRegionIndex == -1)
+                            throw new Exception($"Участок ({regionId}) обратился не к тому маршруту ({Id})");
+
+                        // Теперь, если участок из плана готов разгружаться в данный, то устанавливаем новый план
+                        int regionRouteIndex = RegionsRoute.FindIndex(match => match == Regions[regionIndex].Id);
+                        int previousRegionIndex = Regions.FindIndex(r => r.Id == RegionsRoute[regionRouteIndex - 1]);
+                        if (earlyRegionIndex == previousRegionIndex && Regions[earlyRegionIndex].Status == RegionStatus.AWAIT_UNLOADING)
+                        {
+                            Plan plan = Plan.First(p => p.Id == earlyPlan.Id);
+                            Regions[regionIndex].SetPlan(ref plan);
+                        }
+
+                        return;
+                    }
+                case RegionStatus.FREE_READJUSTMENT:
+                case RegionStatus.READJUSTMENT:
+                    {
+                        Regions[regionIndex].StartReadjustment();
+                        return;
+                    }
+                case RegionStatus.AWAIT_DOWNLOAD:
+                    {
+                        // Загрузка для первого участка
+                        if (Regions[regionIndex].RegionsParents.Count == 0)
+                        {
+                            Regions[regionIndex].AddWorkload(Regions[regionIndex].Plan!.Size, out remain);
+                            return;
+                        }
+
+                        // В ином случае надо выгрузить продукцию из предыдущего участка
+                        int previousRegionIndex = Regions.FindIndex(r => r.Id == RegionsRoute[RegionsRoute.FindIndex(match => match == Regions[regionIndex].Id) - 1]);
+                        if (Regions[previousRegionIndex].Status == RegionStatus.AWAIT_UNLOADING)
+                        {
+                            Regions[regionIndex].AddWorkload(Regions[previousRegionIndex].Workload, out remain);
+                            if (remain >= 0)
+                                Regions[previousRegionIndex].SubWorkload(Regions[regionIndex].Workload);
+                            else
+                            {
+                                Regions[previousRegionIndex].SubWorkload(Regions[previousRegionIndex].Workload);
+                                throw new Exception("Необходимо расщепление плана");
+                            }    
+                        }
+
+                        // Завершение работы метода
+                        return;
+                    }
+                case RegionStatus.AWAITING_LAUNCH:
+                    {
+                        Regions[regionIndex].Start();
+                        return;
+                    }
+                case RegionStatus.IN_WORKING: return;
+                case RegionStatus.AWAIT_UNLOADING:
+                    {
+                        // Если это был последний участок, то выполнение плана завершено
+                        if (Regions[regionIndex].RegionsChildrens.Count == 0)
+                        {
+                            Factory.CompletePlan(Regions[regionIndex].Plan!.Id);
+                            Regions[regionIndex].SubWorkload(Regions[regionIndex].Workload);
+                            return;
+                        }
+
+                        // В ином случае надо загрузить продукцию в следующий участок
+                        int nextRegionIndex = Regions.FindIndex(r => r.Id == RegionsRoute[RegionsRoute.FindIndex(match => match == Regions[regionIndex].Id) + 1]);
+                        if (Regions[nextRegionIndex].Status == RegionStatus.AWAIT_DOWNLOAD)
+                        {
+                            Regions[nextRegionIndex].AddWorkload(Regions[regionIndex].Workload, out remain);
+                            if (remain <= 0)
+                            {
+                                Regions[regionIndex].SubWorkload(Regions[nextRegionIndex].Workload - remain);
+                                RegionUpdateStatus(Regions[regionIndex].Id, RegionStatus.FREE);
+                            }
+                            else
+                            {
+                                Regions[regionIndex].SubWorkload(Regions[regionIndex].Workload);
+                                throw new Exception("Необходимо расщепление плана");
+                            }
+                        }
+                        else if (Regions[nextRegionIndex].Status == RegionStatus.FREE)
+                        {
+                            Plan plan = Plan.First(p => p.Id == Regions[regionIndex].Plan!.Id);
+                            Regions[nextRegionIndex].SetPlan(ref plan);
+                        }
+
+                        // Завершение работы метода
+                        return;
+                    }
+                case RegionStatus.DOWNTIME:
+                    {
+                        // В разработке
+                        return;
+                    }
+
+                default: return;
+            }
         }
         #endregion
         #endregion
