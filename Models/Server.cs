@@ -48,7 +48,11 @@ namespace Diamond.Models
 
         public static void Save(object? o, ElapsedEventArgs eea)
         {
-            context.SaveChanges();
+            try
+            {
+                context.SaveChanges();
+            }
+            catch { }
         }
 
         public static void NullMethod()

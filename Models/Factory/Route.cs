@@ -28,11 +28,6 @@ namespace Diamond.Models.Factory
         #region Id ссылок
         public int FactoryId { get; set; }
         #endregion
-
-        #region ВременнЫе
-        /*[NotMapped]
-        private List<Timer> timers = [];*/
-        #endregion
         #endregion
 
         #region Свойства
@@ -457,7 +452,9 @@ namespace Diamond.Models.Factory
                         else if (Regions[nextRegionIndex].Status == RegionStatus.FREE)
                         {
                             Plan plan = Plan.First(p => p.Id == Regions[regionIndex].Plan!.Id);
-                            Regions[nextRegionIndex].SetPlan(ref plan);
+                            bool success = Regions[nextRegionIndex].SetPlan(ref plan);
+                            if (success && Regions[regionIndex].Workload == 0)
+                                RegionUpdateStatus(Regions[regionIndex].Id);
                         }
 
                         // Завершение работы метода

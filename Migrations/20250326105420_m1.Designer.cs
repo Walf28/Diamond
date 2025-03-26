@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Diamond.Migrations
 {
     [DbContext(typeof(DB))]
-    [Migration("20250326074427_m1")]
+    [Migration("20250326105420_m1")]
     partial class m1
     {
         /// <inheritdoc />
@@ -377,6 +377,9 @@ namespace Diamond.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Count")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CountComplete")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("DateOfAcceptance")

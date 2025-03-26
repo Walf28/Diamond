@@ -297,7 +297,7 @@ namespace Diamond.Models.Factory
                 Factory = this
             };
 
-            Warehouse.AddProduct(Plan[planIndex]);
+            Warehouse.AddProduct(Plan[planIndex], true);
             RemoveInCommonPlan(Plan[planIndex].ProductId, Plan[planIndex].Size);
             Plan.RemoveAt(planIndex);
         }

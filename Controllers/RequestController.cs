@@ -14,7 +14,6 @@ namespace Diamond.Controllers
         {
             List<Request> requests = [.. context.Requests
                 .AsNoTracking()
-                .Where(r=>r.Status < RequestStatus.DELIVERY)
                 .Include(r=> r.Product).ThenInclude(p=>p.ProductGroup)];
             return View(requests);
         }

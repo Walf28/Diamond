@@ -364,6 +364,7 @@ namespace Diamond.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Count = table.Column<int>(type: "integer", nullable: false),
+                    CountComplete = table.Column<int>(type: "integer", nullable: false),
                     DateOfReceipt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DateOfDesiredComplete = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DateOfAcceptance = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),

@@ -117,7 +117,6 @@
         <p>Планирование</p>
         <table class="table table-bordered">
             <tr>
-                <td>id</td>
                 <td>Сырьё</td>
                 <td>Продукция</td>
                 <td>Количество</td>
@@ -128,7 +127,6 @@
             @foreach (var plan in Model.Plan)
             {
                 <tr>
-                    <td>@plan.Id</td>
                     <td>@(plan.GetMaterial!.Name)</td>
                     <td>@plan.Product</td>
                     <td>@plan.Size</td>

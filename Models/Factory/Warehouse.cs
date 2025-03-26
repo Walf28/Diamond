@@ -18,7 +18,7 @@ namespace Diamond.Models.Factory
         #endregion
 
         #region Продукция
-        public void AddProduct(int productId, int count)
+        public void AddProduct(int productId, int count, bool AddToRequest = false)
         {
             bool find = false;
             foreach (var product in Products)
@@ -26,7 +26,7 @@ namespace Diamond.Models.Factory
                 {
                     product.Count += count;
                     find = true;
-                    return;
+                    break;
                 }
             if (!find)
             {
@@ -37,8 +37,10 @@ namespace Diamond.Models.Factory
                     Count = count
                 });
             }
+            if (AddToRequest)
+                AddToRequests();
         }
-        public void AddProduct(Plan plan)
+        public void AddProduct(Plan plan, bool AddToRequest = false)
         {
             bool find = false;
             foreach (var product in Products)
@@ -46,7 +48,7 @@ namespace Diamond.Models.Factory
                 {
                     product.Count += plan.Size;
                     find = true;
-                    return;
+                    break;
                 }
             if (!find)
             {
@@ -57,6 +59,8 @@ namespace Diamond.Models.Factory
                     Count = plan.Size
                 });
             }
+            if (AddToRequest)
+                AddToRequests();
         }
 
         public void SubProduct(int productId, int count)
@@ -104,6 +108,32 @@ namespace Diamond.Models.Factory
                         Materials.Remove(material);
                     return;
                 }
+        }
+        #endregion
+
+        #region Работа с заявками
+        public void AddToRequests()
+        {
+            List<Request> requests = [.. Factory.Requests.OrderBy(r => r.DateOfDesiredComplete)];
+            foreach (var request in requests)
+            {
+                foreach (var product in  Products)
+                    if (request.ProductId == product.ProductId)
+                    {
+                        if (request.Count >= product.Count)
+                        {
+                            request.CountComplete += product.Count;
+                            Products.Remove(product);
+                        }
+                        else
+                        {
+                            request.CountComplete += request.Count;
+                            product.Count -= product.Count;
+                        }
+                        break;
+                    }
+                request.UpdateStatus();
+            }
         }
         #endregion
     }

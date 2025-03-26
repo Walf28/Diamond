@@ -376,6 +376,9 @@ namespace Diamond.Migrations
                     b.Property<int>("Count")
                         .HasColumnType("integer");
 
+                    b.Property<int>("CountComplete")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("DateOfAcceptance")
                         .HasColumnType("timestamp with time zone");
 

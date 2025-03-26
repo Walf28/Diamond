@@ -451,7 +451,9 @@ namespace Diamond.Models.Factory
                 Plan = null;
                 Plan? earlyPlan = FindEarlyPlan();
                 if (earlyPlan != null)
-                    Routes[Routes.FindIndex(r => r.Id == earlyPlan.RouteId)].RegionUpdateStatus(Id);
+                    Routes[Routes.FindIndex(r => r.Id == earlyPlan.RouteId)].RegionUpdateStatus(Id, RegionStatus.FREE_READJUSTMENT);
+                else if (RegionsParents.Count == 0)
+                    Factory.StartPlan();
             }
         }
         #endregion

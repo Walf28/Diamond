@@ -12,7 +12,7 @@ namespace Diamond.Models
         public int Id { get; set; }
         [Range(1, int.MaxValue, ErrorMessage = "Разрешены только положительные значения")]
         public int Count { get; set; } = 1; // Сколько заказали
-        public int CountComplete = 0; // Сколько выполнено от заказа
+        public int CountComplete { get; set; } = 0; // Сколько выполнено от заказа
         public DateTime DateOfReceipt { get; set; } // Дата поступления заявки
         public DateTime DateOfDesiredComplete { get; set; } // Дата желаемого выполнения заявки
         public DateTime? DateOfAcceptance { get; set; } // Дата принятия заявки
@@ -62,6 +62,20 @@ namespace Diamond.Models
         public DateTime GetDateOfDesiredCompleteLocal => DateOfDesiredComplete.ToLocalTime();
         public DateTime? GetDateOfAcceptanceLocal => DateOfAcceptance?.ToLocalTime();
         public DateTime? GetDateOfCompleteLocal => DateOfComplete?.ToLocalTime();
+        #endregion
+
+        #region Методы
+        public void UpdateStatus()
+        {
+            switch (Status)
+            {
+                case RequestStatus.FABRICATING:
+                    if (CountComplete == Count)
+                        Status = RequestStatus.DELIVERY;
+                    return;
+                default: return;
+            }
+        }
         #endregion
     }
 }
