@@ -46,6 +46,8 @@ namespace Diamond.Models.Factory
         #region ВременнЫе
         [NotMapped]
         private System.Timers.Timer timer = null!;
+        [NotMapped]
+        private DateTime? startTimer = null;
         #endregion
         #endregion
 
@@ -161,10 +163,17 @@ namespace Diamond.Models.Factory
         /// <summary>
         /// Время (в минутах), которое понадобится участку для выполнения всего подготовленного плана.
         /// Уже выполненные планы тоже берутся в расчёт.
+        /// Простаивание берётся в расчёт
         /// </summary>
         public double GetTime()
         {
             double Time = 0;
+            if (Downtime != null)
+            {
+                if (Downtime.DowntimeFinish == null)
+                    return double.PositiveInfinity;
+                Time += Downtime.DowntimeFinish!.Value.Subtract(DateTime.UtcNow).TotalMinutes;
+            }
             foreach (var route in Routes)
                 foreach (var plan in route.Plan)
                     Time += GetTime(plan);
@@ -192,10 +201,22 @@ namespace Diamond.Models.Factory
         }
 
         /// <summary>
-        /// Время (в минутах), за сколько участок переработает данное сырьё в данном плане
+        /// Время (в минутах), за которое участок закончит выполнение данного плана.
+        /// Если данный план уже установлен участку и производится на данный момент,
+        /// то вернётся время, оставшееся до конца производства; если ожидает разгрузки - 0.
         /// </summary>
         public double GetTime(Plan plan)
         {
+            // Проверка
+            if (Plan != null && Plan.Id == plan.Id)
+            {
+                if (Status == RegionStatus.IN_WORKING && timer.Enabled)
+                    return DateTime.UtcNow.Subtract(startTimer!.Value).TotalMinutes;
+                else if (Status == RegionStatus.AWAIT_UNLOADING)
+                    return 0;
+            }
+            
+            // Подсчёт
             double time = double.PositiveInfinity;
             foreach (var m in Materials)
                 if (m.MaterialId == plan.MaterialId || (plan.Material != null && plan.Material.Id == m.MaterialId))
@@ -265,15 +286,17 @@ namespace Diamond.Models.Factory
                 return false;
 
             // Установка плана
-            Plan.Region = this;
             this.Plan = Plan;
+            Plan!.Region = this;
             if (MaterialOptionNowId == null || MaterialOptionNowId != Plan.MaterialId)
                 Plan.Route.RegionUpdateStatus(Id, RegionStatus.READJUSTMENT);
+            else if (Workload > 0)
+                throw new Exception("");
             else
                 Plan.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_DOWNLOAD);
 
             // Завршение выполнения метода
-            Plan.IsFabricating = true;
+            Plan.Status = PlanStatus.PRODUCTION;
             return true;
         }
 
@@ -285,6 +308,10 @@ namespace Diamond.Models.Factory
             switch (Status)
             {
                 case RegionStatus.OFF: Status = RegionStatus.FREE; return;
+                case RegionStatus.AWAIT_DOWNLOAD:
+                case RegionStatus.AWAIT_UNLOADING:
+                    Plan!.Route.RegionUpdateStatus(Id);
+                    return;
                 case RegionStatus.IN_WORKING:
                     {
                         if (Plan == null)
@@ -304,28 +331,11 @@ namespace Diamond.Models.Factory
                     }
                 case RegionStatus.READJUSTMENT:
                 case RegionStatus.FREE_READJUSTMENT:
-                    {
-                        timer = new(TimeSpan.FromSeconds(ReadjustmentTime + 1));
-                        timer.Elapsed += FinishReadjustment;
-                        timer.Start();
-                        return;
-                    }
-                case RegionStatus.AWAIT_DOWNLOAD:
-                case RegionStatus.AWAIT_UNLOADING:
-                    {
-                        if (Plan == null)
-                        {
-                            Plan? earlyPlan = FindEarlyPlan();
-                            Workload = 0;
-                            Status = RegionStatus.FREE;
-                            if (earlyPlan != null)
-                                Routes[Routes.FindIndex(r => r.Id == earlyPlan.RouteId)].RegionUpdateStatus(Id);
-                            return;
-                        }
-                        else
-                            Plan.Route.RegionUpdateStatus(Id);
-                        return;
-                    }
+                    StartReadjustment();
+                    return;
+                case RegionStatus.DOWNTIME:
+                    StartDowntime();
+                    return;
                 default: return;
             }
         }
@@ -337,6 +347,7 @@ namespace Diamond.Models.Factory
         {
             if (Plan == null || Status != RegionStatus.AWAITING_LAUNCH)
                 return false;
+            startTimer = DateTime.UtcNow;
             timer = new(TimeSpan.FromSeconds(GetTime(Plan)));
             timer.Elapsed += Finish;
             timer.Start();
@@ -350,7 +361,6 @@ namespace Diamond.Models.Factory
         public void Finish(object? o, ElapsedEventArgs eea)
         {
             timer.Stop();
-            timer.Dispose();
             if (Plan == null)
                 throw new Exception("План не найден");
             Plan.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_UNLOADING);
@@ -361,6 +371,10 @@ namespace Diamond.Models.Factory
         /// </summary>
         public void StartReadjustment(int? materialId = null)
         {
+            if (timer != null && timer.Enabled)
+                return;
+            if (Workload > 0)
+                throw new Exception("Нельзя начать переналадку, если что-то уже загружено");
             if (materialId != null)
             {
                 MaterialOptionNowId = materialId;
@@ -372,10 +386,14 @@ namespace Diamond.Models.Factory
                 Status = RegionStatus.READJUSTMENT;
             }
             else
-                throw new Exception("Неизвестно на что переналаживать");
+            {
+                Plan ePlan = FindEarlyPlan(this) ?? throw new Exception("Неизвестно на что переналаживать");
+                MaterialOptionNowId = ePlan.MaterialId;
+                Status = RegionStatus.FREE_READJUSTMENT;
+            }
 
             // Запуск таймера (считаем, что он действует мгновенно).
-            timer = new(TimeSpan.FromMilliseconds(ReadjustmentTime + 1));
+            timer = new(TimeSpan.FromSeconds(ReadjustmentTime + 1));
             timer.Elapsed += FinishReadjustment;
             timer.Start();
         }
@@ -385,13 +403,14 @@ namespace Diamond.Models.Factory
         /// </summary>
         public void FinishReadjustment(object? o, ElapsedEventArgs eea)
         {
+            if (Workload > 0)
+                throw new Exception();
             timer.Stop();
-            timer.Dispose();
             if (Plan == null)
             {
                 Plan? plan = FindEarlyPlan();
                 if (plan == null)
-                    return;
+                    throw new Exception("");
                 else
                     plan.Route.RegionUpdateStatus(Id, RegionStatus.FREE);
             }
@@ -416,7 +435,7 @@ namespace Diamond.Models.Factory
 
             // Если объём больше этой суммы, значит место ещё хватает для заполнения.
             // В ином случае, надо загрузить сколько возможно.
-            if (volume > WorkloadAndSize)
+            if (volume >= WorkloadAndSize)
             {
                 Workload = WorkloadAndSize;
                 remains = 0;
@@ -429,10 +448,9 @@ namespace Diamond.Models.Factory
 
             // Если по плану загружены, то, значит, участок готов к запуску
             if (Workload >= Plan!.Size)
-            {
-                Plan.Size = Workload;
                 Plan.Route.RegionUpdateStatus(Id, RegionStatus.AWAITING_LAUNCH);
-            }
+            else
+                throw new Exception();
         }
 
         /// <summary>
@@ -449,12 +467,90 @@ namespace Diamond.Models.Factory
             {
                 Status = RegionStatus.FREE;
                 Plan = null;
-                Plan? earlyPlan = FindEarlyPlan();
-                if (earlyPlan != null)
-                    Routes[Routes.FindIndex(r => r.Id == earlyPlan.RouteId)].RegionUpdateStatus(Id, RegionStatus.FREE_READJUSTMENT);
-                else if (RegionsParents.Count == 0)
+                Workload = 0;
+                if (RegionsParents.Count == 0)
                     Factory.StartPlan();
+                else
+                {
+                    Plan? earlyPlan = FindEarlyPlan();
+                    if (earlyPlan == null)
+                        return;
+                    int earlyRouteIndex = Routes.FindIndex(r => r.Id == earlyPlan.RouteId);
+                    if (earlyRouteIndex != -1)
+                        Routes[earlyRouteIndex].RegionUpdateStatus(Id);
+                }
             }
+        }
+
+        /// <summary>
+        /// Остановить идущий процесс
+        /// </summary>
+        public void StopProcess()
+        {
+            if (timer != null && timer.Enabled)
+                timer.Stop();
+        }
+
+        /// <summary>
+        /// Обнаружение поломки
+        /// </summary>
+        public void DowntimeDetected()
+        {
+            StopProcess();
+            Workload = 0;
+            Downtime = new Downtime()
+            {
+                Region = this,
+                RegionId = Id,
+                DowntimeStart = DateTime.UtcNow,
+                DowntimeDuration = int.MaxValue,
+                DowntimeReason = ""
+            };
+            Status = RegionStatus.DOWNTIME;
+            foreach (var route in Routes)
+                route.RegionUpdateStatus(Id);
+        }
+
+        /// <summary>
+        /// Установить простой
+        /// </summary>
+        public bool SetDowntime(Downtime downtime) // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        {
+            throw new Exception();
+            return true;
+        }
+
+        /// <summary>
+        /// Начать отсчёт поломки
+        /// </summary>
+        public void StartDowntime()
+        {
+            // Небольшая проверочка
+            if (Status != RegionStatus.DOWNTIME || Downtime == null || Downtime.DowntimeFinish == null)
+                return;
+
+            // Запуск отсчёта
+            timer = new(TimeSpan.FromMinutes(Downtime.DowntimeFinish!.Value.Subtract(Downtime.DowntimeStart).TotalMinutes));
+            timer.Elapsed += StopDowntime;
+        }
+
+        /// <summary>
+        /// Остановка отсчёта конца поломки
+        /// </summary>
+        public void StopDowntime(object? sender, ElapsedEventArgs e)
+        {
+            // Проверка небольшая
+            if (Status != RegionStatus.DOWNTIME)
+                return;
+
+            // Содержание метода
+            timer.Stop(); // Сброс таймера
+            Downtime = null; // Сброс простоя
+            Status = RegionStatus.DOWNTIME_FINISH; // Изменение статуса
+            foreach (var route in Routes) // Оповещение всех маршрутов о том, что по ним можно будет выполнить план
+                route.RegionUpdateStatus(Id);
+            // Уведомление, что участок готов к работе
+            FindEarlyPlan()?.Route.RegionUpdateStatus(Id, RegionStatus.FREE);
         }
         #endregion
         #endregion

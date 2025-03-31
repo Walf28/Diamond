@@ -15,5 +15,10 @@ namespace Diamond.Controllers
             Server.Save(null, new(DateTime.Now));
             return RedirectToAction("List", "Factory");
         }
+        public IActionResult NullAll()
+        {
+            Server.NullALL();
+            return RedirectToAction("List", "Factory");
+        }
     }
 }

@@ -51,7 +51,9 @@ namespace Diamond.Models.Factory
         #endregion
 
         #region Информационные
-        /// <summary>Найти все маршруты</summary>
+        /// <summary>
+        /// Найти все маршруты
+        /// </summary>
         public List<Route> FindAllRoutes()
         {
             if (Regions.Count == 0)
@@ -68,7 +70,9 @@ namespace Diamond.Models.Factory
             return routes;
         }
 
-        /// <summary>Найти неиспользуемые маршруты</summary>
+        /// <summary>
+        /// Найти неиспользуемые маршруты
+        /// </summary>
         public List<Route> FindUnusingRoutes()
         {
             if (Regions.Count == 0)
@@ -100,7 +104,9 @@ namespace Diamond.Models.Factory
             return routes;
         }
 
-        /// <summary>Найти маршруты, начинающиеся с данного участка</summary>
+        /// <summary>
+        /// Найти маршруты, начинающиеся с данного участка
+        /// </summary>
         private List<Route> FindRouteFor(Region region, List<Route>? routes = null, List<Region>? list = null)
         {
             list ??= [];
@@ -127,17 +133,73 @@ namespace Diamond.Models.Factory
         public double NeedTimeForRoute(int routeId)
         {
             // Поиск маршрута
-            double Time = 0;
+            double AllTime = 0;
             Route? route = Routes.Where(r => r.Id == routeId).FirstOrDefault();
             if (route == null)
-                return Time;
+                return AllTime;
 
             // Подобор интересущих участков
             List<Region> regions = route.Regions;
             foreach (var region in regions)
-                Time += region.GetTime();
+            {
+                double timeRegion = region.GetTime();
+                if (timeRegion == double.PositiveInfinity)
+                    return double.PositiveInfinity;
+                AllTime += timeRegion;
+            }
 
-            return Time;
+            return AllTime;
+        }
+
+        /// <summary>
+        /// Маршруты, которые могут завершить выполнение данного плана
+        /// </summary>
+        public List<Route> GetRoutesCanCompletePlan(Plan plan)
+        {
+            if (plan.ProductId == 0)
+                return [];
+
+            List<Route> routes = [];
+            foreach (var r in Routes)
+                if (r.CanProduceProduct(plan.ProductId))
+                    routes.Add(r);
+
+            return routes;
+        }
+
+        /// <summary>
+        /// На какие маршруты можно заменить маршрут из данного плана.
+        /// </summary>
+        public List<Route> GetRoutesToChangePlan(int planId)
+        {
+            // Проверка на существовани такого плана
+            Plan? plan = Plan.FirstOrDefault(p => p.Id == planId);
+            if (plan == null)
+                return [];
+
+            // Уберём из вариантов уже применяемый маршрут
+            var allRoutes = GetRoutesCanCompletePlan(plan);
+            foreach (var route in allRoutes)
+                if (route.Id == plan.RouteId)
+                {
+                    allRoutes.Remove(route);
+                    break;
+                }
+
+            // Найдём маршруты, которые могут стать заменой данному, если надо
+            if (plan.Region != null)
+            {
+                List<Route> halfRoutes = FindRouteFor(plan.Region);
+                List<Route> resultRoutes = [];
+                foreach (var variantRoute in halfRoutes)
+                    foreach (var route in allRoutes)
+                        if (!resultRoutes.Contains(route) &&
+                            variantRoute.RegionsRoute.All(vr => route.RegionsRoute.Contains(vr)))
+                            resultRoutes.Add(route);
+                return resultRoutes;
+            }
+            else
+                return allRoutes; // Конец
         }
         #endregion
 
@@ -161,7 +223,9 @@ namespace Diamond.Models.Factory
         #endregion
 
         #region Планирование производства
-        /// <summary>Добавить в производственный план</summary>
+        /// <summary>
+        /// Добавить в производственный план
+        /// </summary>
         private void AddToPlan(Request request)
         {
             // Добавляем в общий план
@@ -171,7 +235,7 @@ namespace Diamond.Models.Factory
             // Пытаемся запихнуть в свободное место в плане, если такое найдётся
             List<Plan> PlanOuttime = [];
             for (int i = 0; i < Plan.Count && fullSize > 0; ++i)
-                if (!Plan[i].IsFabricating && Plan[i].ProductId == request.ProductId) // Ищем свободное местечко в тех местах, где возможно подкорректировать план
+                if (Plan[i].Status == PlanStatus.AWAIT_CONFIRMATION && Plan[i].ProductId == request.ProductId) // Ищем свободное местечко в тех местах, где возможно подкорректировать план
                 {
                     // Если невозможно выполнить в назначенный срок вместе с этим планом, то запомним его на всякий случай
                     if (Plan[i].ComingSoon > request.DateOfDesiredComplete)
@@ -202,7 +266,7 @@ namespace Diamond.Models.Factory
             // Ищем, на каких маршрутах возможно произвести товар
             List<Route> PotencialRoutes = [];
             foreach (var route in Routes)
-                if (route.CanProduceProduct(request.GetProductGroup!.Id))
+                if (!route.IsHaveDowntimeRegion() && route.CanProduceProduct(request.GetProductGroup!.Id))
                     PotencialRoutes.Add(route);
             if (PotencialRoutes.Count == 0)
                 throw new Exception("Нет маршрутов, способных выполнить заказ");
@@ -211,7 +275,7 @@ namespace Diamond.Models.Factory
             while (fullSize > 0)
             {
                 int fastestRouteId = PotencialRoutes[0].Id;
-                DateTime dateTimeOfFastestRoute = DateTime.UtcNow.AddMinutes(NeedTimeForRoute(PotencialRoutes[0].Id));
+                DateTime dateTimeOfFastestRoute = DateTime.UtcNow.AddMinutes(fastestRouteId);
                 for (int i = 1; i < PotencialRoutes.Count; ++i)
                 {
                     DateTime dt = DateTime.UtcNow.AddMinutes(NeedTimeForRoute(PotencialRoutes[i].Id));
@@ -260,21 +324,24 @@ namespace Diamond.Models.Factory
                 }
             }
 
-            // Запускаем план
+            // Сохраняем изменения, чтобы получить Id
             Server.Save(null, new(DateTime.Now));
-            StartPlan();
         }
 
-        /// <summary>Запустить процесс по плану, если имеется такая возможность</summary>
+        /// <summary>
+        /// Запустить процесс по плану, если имеется такая возможность
+        /// </summary>
         public void StartPlan()
         {
             UpdatePlan();
             for (int PlanIndex = 0; PlanIndex < Plan.Count; ++PlanIndex)
-                if (!Plan[PlanIndex].IsFabricating)
+                if (Plan[PlanIndex].Status == PlanStatus.QUEUE && !Plan[PlanIndex].Route.IsHaveDowntimeRegion())
                     Plan[PlanIndex].Route.Start(Plan[PlanIndex]);
         }
 
-        /// <summary>Обновить производственный план</summary>
+        /// <summary>
+        /// Обновить производственный план
+        /// </summary>
         public void UpdatePlan()
         {
             // Тут в плане было полностью обновление плана, но пусть пока будет хоть что-то

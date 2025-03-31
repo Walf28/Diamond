@@ -71,7 +71,10 @@ namespace Diamond.Models
             {
                 case RequestStatus.FABRICATING:
                     if (CountComplete == Count)
+                    {
                         Status = RequestStatus.DELIVERY;
+                        DateOfComplete = DateTime.UtcNow;
+                    }
                     return;
                 default: return;
             }

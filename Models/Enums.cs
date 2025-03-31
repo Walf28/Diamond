@@ -54,7 +54,25 @@ namespace Diamond.Models
         IN_WORKING,
         [Display(Name = "Ожидает разгрузки")]
         AWAIT_UNLOADING,
-        [Display(Name = "Временно не работает")]
-        DOWNTIME
+        [Display(Name = "Не работает")]
+        DOWNTIME,
+        [Display(Name = "Синхронизация с маршрутами")]
+        DOWNTIME_FINISH
+    }
+
+    public enum PlanStatus
+    {
+        [Display(Name = "Ожидает подтверждения")]
+        AWAIT_CONFIRMATION,
+        [Display(Name = "В очереди")]
+        QUEUE,
+        [Display(Name = "В производстве")]
+        PRODUCTION,
+        [Display(Name = "Не может продолжить производство")]
+        STOP,
+        [Display(Name = "Ожидает возобновления производства")]
+        PAUSE,
+        [Display(Name = "Выполнен")]
+        DONE
     }
 }

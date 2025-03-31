@@ -1,0 +1,79 @@
+﻿@using Diamond.Models.Factory
+@model Plan
+@{
+    ViewData["Title"] = "Добавление плана";
+}
+
+<form method="post">
+    <input type="submit" value="Добавить"/>
+    <input id="factoryId" type="number" value="@ViewBag.FactoryId" asp-for="@Model.FactoryId" hidden readonly/>
+    <input id="materialId" type="number" asp-for="@Model.MaterialId" hidden readonly/>
+    
+    <p>Продукция
+        <select id="selectProduct"
+            asp-for="@Model.ProductId"
+            asp-items="@(new SelectList(ViewBag.Products, "Id", "ProductGroup.Name"))"
+            onchange="ProductIsSelected(factoryId.value, value)"
+            required></select></p>
+    <p>К какому сроку надо выполнить<input type="date" asp-for="@Model.ComingSoon" required/></p>
+    <p id="selectRouteBlock">Маршрут
+        <select 
+            id="selectRoute" 
+            asp-for="@Model.RouteId"
+            onchange="RouteIsSelected(this.value, selectProduct.value)"
+            required></select></p>
+    <p id="maxSizeBlock">Максимальный размер<input id="maxSize" type="number" readonly/></p>
+    <p id="selectSizeBlock">Выбранный размер
+        <input 
+            asp-for="@Model.Size"
+            id="selectSize"
+            type="number"
+            value="1"
+            min="1"
+            required/></p>
+</form>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function(){
+            document.getElementById("selectRouteBlock").style.display = 'none';
+            document.getElementById("maxSizeBlock").style.display = 'none';
+            document.getElementById("selectSizeBlock").style.display = 'none';
+        });
+        function ProductIsSelected(factoryId, productId) {
+            $.ajax({
+                url: '@Url.Action("GetRoutesAndMaterailId", "Plan")',
+                type: 'GET',
+                data: { factoryId, productId },
+                success: function (data) {
+                    document.getElementById("selectRouteBlock").style.display = 'block';
+                    document.getElementById("maxSizeBlock").style.display = 'none';
+                    document.getElementById("selectSizeBlock").style.display = 'none';
+                    const el = document.getElementById("selectRoute");
+                    el.replaceChildren();
+                    for (i = 0; i < data.routesContent.length; ++i)
+                    {
+                        const newOption = document.createElement('option');
+                        newOption.setAttribute('value', data.routesId[i]);
+                        newOption.setAttribute('label', data.routesContent[i]);
+                        el.appendChild(newOption);
+                    }
+                    document.getElementById("materialId").value = data.materialId;
+                }
+            });
+        }
+        function RouteIsSelected(routeId, productId) {
+            $.ajax({
+                url: '@Url.Action("GetVolumeRoute", "Plan")',
+                type: 'GET',
+                data: { routeId, productId },
+                success: function (data) {
+                    document.getElementById("maxSizeBlock").style.display = 'block';
+                    document.getElementById("selectSizeBlock").style.display = 'block';
+                    document.getElementById("maxSize").value = data.maxSize;
+                    document.getElementById("selectSize").setAttribute('max', data.maxSize);
+                }
+            });
+        }
+    </script>
+}

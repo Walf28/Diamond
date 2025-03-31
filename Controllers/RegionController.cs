@@ -44,6 +44,7 @@ namespace Diamond.Controllers
                 .Include(r => r.Factory)
                 .Include(r => r.Factory.Regions)
                 .Include(r => r.Materials)
+                .Include(r => r.Downtime)
                 .First(r => r.Id == Id);
 
             List<Material> AllMaterials = [.. context.Materials];

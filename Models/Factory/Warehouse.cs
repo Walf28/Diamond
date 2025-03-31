@@ -114,21 +114,24 @@ namespace Diamond.Models.Factory
         #region Работа с заявками
         public void AddToRequests()
         {
-            List<Request> requests = [.. Factory.Requests.OrderBy(r => r.DateOfDesiredComplete)];
+            List<Request> requests = [.. Factory.Requests
+                .Where(r => r.Status == RequestStatus.FABRICATING)
+                .OrderBy(r => r.DateOfDesiredComplete)];
             foreach (var request in requests)
             {
-                foreach (var product in  Products)
+                foreach (var product in Products)
                     if (request.ProductId == product.ProductId)
                     {
-                        if (request.Count >= product.Count)
+                        int requestCountNeed = request.Count - request.CountComplete;
+                        if (requestCountNeed >= product.Count) // Если продукции на складе меньше (или столько же), чем нужно
                         {
                             request.CountComplete += product.Count;
                             Products.Remove(product);
                         }
-                        else
+                        else // Если продукции на склае больше, чем нужно
                         {
-                            request.CountComplete += request.Count;
-                            product.Count -= product.Count;
+                            request.CountComplete = request.Count;
+                            product.Count -= requestCountNeed;
                         }
                         break;
                     }

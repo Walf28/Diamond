@@ -1,0 +1,35 @@
+﻿@using Diamond.Models.Factory
+@model Plan
+@{
+    ViewData["Title"] = "Изменение плана";
+}
+
+<form method="post">
+    <input type="submit" value="Сохранить"/>
+    <input type="number" value="@Model.FactoryId" asp-for="@Model.FactoryId" hidden readonly/>
+
+    <p>Продукция<input type="text" value="@ViewBag.ProductName" readonly/></p>
+    <p>К какому сроку надо выполнить<input value="@Model.ComingSoon.ToLocalTime()" readonly/></p>
+    <p>На каком участке находится<input value="@Model.Region?.Name" readonly/></p>
+    <p>Выбранный размер<input value="@Model.Size" readonly/></p>
+    <p>Маршрут
+        <select asp-for="@Model.RouteId" required>
+            <option value="@Model.RouteId">@Model.Route.GetContent</option>
+            @foreach(var r in (ViewBag.Routes as List<Route>)!)
+            {
+                if (r.IsHaveDowntimeRegion())
+                {
+                    <option value="@r.Id" style="background-color:red">@r.GetContent</option>
+                }
+                else
+                {
+                    <option value="@r.Id" style="background-color:lime">@r.GetContent</option>
+                }
+            }
+        </select></p>
+</form>
+
+@section Scripts {
+    <script>
+    </script>
+}

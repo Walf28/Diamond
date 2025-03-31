@@ -11,7 +11,7 @@ namespace Diamond.Models.Factory
         public int Id { get; set; }
         public int Size { get; set; } // Сколько производим
         public DateTime ComingSoon { get; set; } // Ближайшее время, за которое желательно произвести продукцию
-        public bool IsFabricating { get; set; } = false; // Начался ли процесс производства
+        public PlanStatus Status { get; set; } = PlanStatus.AWAIT_CONFIRMATION; // Статус плана
         #endregion
 
         #region Ссылки

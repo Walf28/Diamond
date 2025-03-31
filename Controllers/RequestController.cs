@@ -14,7 +14,8 @@ namespace Diamond.Controllers
         {
             List<Request> requests = [.. context.Requests
                 .AsNoTracking()
-                .Include(r=> r.Product).ThenInclude(p=>p.ProductGroup)];
+                .Include(r => r.Product).ThenInclude(p => p.ProductGroup)
+                .OrderBy(r => r.Id)];
             return View(requests);
         }
         [HttpGet]

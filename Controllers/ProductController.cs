@@ -13,7 +13,7 @@ namespace Diamond.Controllers
         #region Отображение
         public IActionResult ListGroup()
         {
-            return View(context.ProductsGroup.AsNoTracking().Include(pg => pg.Material).ToList());
+            return View(context.ProductsGroup.AsNoTracking().Include(pg => pg.Material).OrderBy(pg=>pg.Id).ToList());
         }
         [HttpGet]
         public IActionResult CreateGroup()

@@ -1,0 +1,172 @@
+﻿@using Diamond.Models.Factory
+@model List<Plan>
+@{
+    ViewData["Title"] = $"Планирование производства на заводе \"{ViewBag.FactoryName}\"";
+}
+<meta http-equiv="refresh" content="2" />
+
+<div>
+    <input type="number" name="factoryId" value="@ViewBag.FactoryId" readonly hidden />
+    <h1>Планирование</h1>
+    <button onclick="location.href='@Url.Action("Create", "Plan", new { factoryId = ViewBag.FactoryId })'">Добавить</button>
+
+    <!-- Ожидают утверждения -->
+    @if (Model.FirstOrDefault(p => p.Status == PlanStatus.AWAIT_CONFIRMATION) != null)
+    {
+        <div>
+            <footer class="border-top footer" />
+            <h1>Ожидают утверждения</h1>
+            <a class="btn btn-primary"
+                asp-action="ApproveAll"
+                asp-controller="Plan"
+                asp-route-Id="@ViewBag.FactoryId">Утвердить всё</a>
+            <table class="table table-bordered">
+                <tr>
+                    <td>Маршрут</td>
+                    <td>Продукция</td>
+                    <td>Количество</td>
+                    <td>Сырьё</td>
+                    <td></td>
+                </tr>
+                @foreach (var plan in Model.Where(p => p.Status == PlanStatus.AWAIT_CONFIRMATION).OrderBy(p => p.Id))
+                {
+                    <tr>
+                        <td>@plan.Route!.GetContent</td>
+                        <td>@plan.Product</td>
+                        <td>@plan.Size</td>
+                        <td>@plan.GetMaterial?.Name</td>
+                        <td>
+                            <a class="btn btn-primary"
+                                asp-action="Approve"
+                                asp-controller="Plan"
+                                asp-route-Id="@plan.Id">Утвердить</a>
+                            <a class="btn btn-danger"
+                                asp-action="Delete"
+                                asp-controller="Plan"
+                                asp-route-Id="@plan.Id">Удалить</a>
+                        </td>
+                    </tr>
+                }
+            </table>
+        </div>
+    }
+
+    <!-- Не могут продолжить движение по маршруту -->
+    @if (Model.FirstOrDefault(p => p.Status == PlanStatus.STOP) != null)
+    {
+        <form method="post">
+            <footer class="border-top footer" />
+            <h1>Не могут продолжить движение</h1>
+            <table class="table table-bordered">
+                <tr>
+                    <td>Маршрут</td>
+                    <td>Участок</td>
+                    <td>Продукция</td>
+                    <td>Количество</td>
+                    <td>Сырьё</td>
+                    <td></td>
+                </tr>
+                @foreach (var plan in Model.Where(p => p.Status == PlanStatus.STOP).OrderBy(p=>p.Id))
+                {
+                    <tr>
+                        <td>@plan.Route?.GetContent</td>
+                        <td>@plan.Region?.Name</td>
+                        <td>@plan.Product</td>
+                        <td>@plan.Size</td>
+                        <td>@plan.GetMaterial?.Name</td>
+                        <td>
+                            <a class="btn btn-primary" asp-action="Await" asp-route-Id="@plan.Id">Ждать</a>
+                            <a class="btn btn-primary" asp-action="Edit" asp-route-Id="@plan.Id">Изменить</a>
+                        </td>
+                    </tr>
+                }
+            </table>
+        </form>
+    }
+
+    <!-- В ожидании -->
+    @if (Model.FirstOrDefault(p => p.Status == PlanStatus.QUEUE) != null)
+    {
+        <div>
+            <footer class="border-top footer" />
+            <h1>В ожидании</h1>
+            <table class="table table-bordered">
+                <tr>
+                    <td>Маршрут</td>
+                    <td>Продукция</td>
+                    <td>Количество</td>
+                    <td>Сырьё</td>
+                    <td></td>
+                </tr>
+                @foreach (var plan in Model.Where(p => p.Status == PlanStatus.QUEUE).OrderBy(p => p.Id))
+                {
+                    <tr>
+                        <td>@plan.Route?.GetContent</td>
+                        <td>@plan.Product</td>
+                        <td>@plan.Size</td>
+                        <td>@plan.GetMaterial?.Name</td>
+                        <td><a class="btn btn-danger" asp-action="Delete" asp-route-Id="@plan.Id">Удалить</a></td>
+                    </tr>
+                }
+            </table>
+        </div>
+    }
+
+    <!-- В ожидании на производстве -->
+    @if (Model.FirstOrDefault(p => p.Status == PlanStatus.PAUSE) != null)
+    {
+        <div>
+            <footer class="border-top footer" />
+            <h1>В ожидании</h1>
+            <table class="table table-bordered">
+                <tr>
+                    <td>Маршрут</td>
+                    <td>Участок</td>
+                    <td>Продукция</td>
+                    <td>Количество</td>
+                    <td>Сырьё</td>
+                </tr>
+                @foreach (var plan in Model.Where(p => p.Status == PlanStatus.PAUSE).OrderBy(p => p.Id))
+                {
+                    <tr>
+                        <td>@plan.Route?.GetContent</td>
+                        <td>@plan.Region?.Name</td>
+                        <td>@plan.Product</td>
+                        <td>@plan.Size</td>
+                        <td>@plan.GetMaterial?.Name</td>
+                    </tr>
+                }
+            </table>
+        </div>
+    }
+
+    <!-- В производстве -->
+    @if (Model.FirstOrDefault(p => p.Status == PlanStatus.PRODUCTION) != null)
+    {
+        <div>
+            <footer class="border-top footer" />
+            <h1>В производстве</h1>
+            <table class="table table-bordered">
+                <tr>
+                    <td>Маршрут</td>
+                    <td>Участок</td>
+                    <td>Продукция</td>
+                    <td>Количество</td>
+                    <td>Сырьё</td>
+                    <td>Осталось минут</td>
+                </tr>
+                @foreach (var plan in Model.Where(p => p.Status == PlanStatus.PRODUCTION).OrderBy(p => p.Id))
+                {
+                    <tr>
+                        <td>@plan.Route?.GetContent</td>
+                        <td>@plan.Region?.Name</td>
+                        <td>@plan.Product</td>
+                        <td>@plan.Size</td>
+                        <td>@plan.GetMaterial?.Name</td>
+                        <td>@plan.Region?.GetTime(plan)</td>
+                    </tr>
+                }
+            </table>
+        </div>
+    }
+</div>

@@ -103,4 +103,12 @@
             </div>
         }
     }
+
+    @if (Model.Downtime != null)
+    {
+        <p>Начало простоя<input asp-for="@Model.Downtime.DowntimeStart" value="@Model.Downtime.DowntimeStart" readonly/></p>
+        <p>Конец простоя<input type="date" asp-for="@Model.Downtime.DowntimeFinish" value="@Model.Downtime.DowntimeFinish"/></p>
+        <p>Продолжительность<input type="number" asp-for="@Model.Downtime.DowntimeDuration" value="@Model.Downtime.DowntimeDuration"/></p>
+        <p>Причина<input type="text" asp-for="@Model.Downtime.DowntimeFinish" value="@Model.Downtime.DowntimeFinish"/></p>
+    }
 </form>

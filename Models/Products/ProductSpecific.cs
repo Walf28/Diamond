@@ -64,7 +64,7 @@ namespace Diamond.Models
         {
             try
             {
-                return context.ProductsGroup.AsNoTracking().Where(pg=>pg.Id == ProductGroupId).First().Name;
+                return context.ProductsGroup.AsNoTracking().Where(pg => pg.Id == ProductGroupId).First().Name + $" {Size} гр.";
             }
             catch
             {
