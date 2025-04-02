@@ -26,7 +26,9 @@ namespace Diamond.Controllers
         {
             if (Id == null)
                 return new EmptyResult();
-            return View(context.Downtimes.Include(d => d.Region).First(d => d.Id == Id));
+            Downtime downtime = context.Downtimes.Include(d => d.Region).First(d => d.Id == Id);
+            string? df = downtime.DowntimeFinish?.ToLocalTime().ToString("yyyy-MM-ddTHH:mm");
+            return View(downtime);
         }
         #endregion
 

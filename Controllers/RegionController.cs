@@ -16,16 +16,16 @@ namespace Diamond.Controllers
         {
             return View(context.Regions.AsNoTracking().ToList());
         }
-        public async Task<IActionResult> Create(Factory factory)
+        public IActionResult Create(Factory factory)
         {
             Region region = new()
             {
                 FactoryId = factory.Id,
-                Factory = await context.Factories
+                Factory = context.Factories
                     .AsNoTracking()
                     .Where(f => f.Id == factory.Id)
                     .Include(f => f.Regions)
-                    .FirstAsync(),
+                    .First(),
                 Materials = []
             };
             foreach (var item in context.Materials)

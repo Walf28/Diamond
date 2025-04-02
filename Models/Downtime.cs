@@ -10,7 +10,7 @@ namespace Diamond.Models
         public int Id { get; set; }
         public DateTime DowntimeStart { get; set; } = DateTime.UtcNow; // Начало простоя
         public double DowntimeDuration { get; set; } = double.PositiveInfinity; // Продолжительность простоя (в минутах)
-        public string DowntimeReason { get; set; } = ""; // Причина простоя
+        public string? DowntimeReason { get; set; } = ""; // Причина простоя
         public DateTime? DowntimeFinish { get; set; } = null; // Конец простоя
         #endregion
 

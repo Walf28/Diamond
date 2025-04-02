@@ -7,6 +7,7 @@
 
 <form>
     <div>
+        <input type="submit" value="Назад" asp-controller="Factory" asp-action="List"/>
         <input type="submit" value="Сохранить" asp-controller="Factory" asp-action="Update" asp-route-factory="@Model"/>
         <input type="submit" value="Удалить" asp-controller="Factory" asp-action="Delete" asp-route-Id="@Model.Id">
         <input type="submit" value="Добавить участок" asp-controller="Region" asp-action="Create" asp-route-Factory="@Model"/>

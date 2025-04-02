@@ -5,7 +5,10 @@
 }
 
 <form asp-controller="Route" asp-action="Update">
-    <input type="submit" value="Сохранить"/>
+    <div>
+        <input type="submit" asp-controller="Factory" asp-action="Edit" asp-route-Id="@ViewBag.FactoryId" value="Назад" formnovalidate/>
+        <input type="submit" value="Сохранить"/>
+    </div>
     <input type="number" name="FactoryId" value="@ViewBag.FactoryId" hidden />
     <h1>Список маршрутов</h1>
     <table class="table table-bordered">

@@ -8,7 +8,10 @@
 <div>
     <input type="number" name="factoryId" value="@ViewBag.FactoryId" readonly hidden />
     <h1>Планирование</h1>
-    <button onclick="location.href='@Url.Action("Create", "Plan", new { factoryId = ViewBag.FactoryId })'">Добавить</button>
+    <div>
+        <button onclick="location.href='@Url.Action("Edit", "Factory", new { Id = ViewBag.FactoryId })'">Назад</button>
+        <button onclick="location.href='@Url.Action("Create", "Plan", new { factoryId = ViewBag.FactoryId })'">Добавить</button>
+    </div>
 
     <!-- Ожидают утверждения -->
     @if (Model.FirstOrDefault(p => p.Status == PlanStatus.AWAIT_CONFIRMATION) != null)

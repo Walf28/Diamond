@@ -62,9 +62,12 @@ namespace Diamond.Controllers
         [HttpPost]
         public IActionResult Create(Plan plan)
         {
-            plan.Status = PlanStatus.QUEUE;
-            plan.ComingSoon = plan.ComingSoon.ToUniversalTime();
-            Server.PlanCreate(plan);
+            if (plan.RouteId != 0 && plan.ProductId != 0 && plan.Size > 0)
+            {
+                plan.Status = PlanStatus.QUEUE;
+                plan.ComingSoon = plan.ComingSoon.ToUniversalTime();
+                Server.PlanCreate(plan);
+            }
             return RedirectToAction(nameof(List), new { Id = plan.FactoryId });
         }
         [HttpPost]
@@ -134,7 +137,7 @@ namespace Diamond.Controllers
                     .AsNoTracking()
                     .Include(r => r.Regions).ThenInclude(r => r.Materials)
                     .First(r => r.Id == routeId)
-                    .GetMaxVolumeSizeMaterial(materialId)
+                    .GetMaxVolumeCountProduct(materialId)
             });
         }
         #endregion

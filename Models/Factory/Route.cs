@@ -329,6 +329,62 @@ namespace Diamond.Models.Factory
                     ++Count;
             return Count;
         }
+
+        /// <summary>
+        /// Был ли пройден план по данному участку.
+        /// </summary>
+        /// <returns>
+        /// -1, если не был пройдён;
+        /// 0, если находится на данном участке;
+        /// 1, если прошёл данный участок;
+        /// null, если план или участок не были найдены
+        /// </returns>
+        public int? PlanWasCompletedInRegion(int planId, int regionId)
+        {
+            // Сначала проверка, что план и участок имеются у данного маршрута
+            Plan? plan = Plan.FirstOrDefault(p => p.Id == planId);
+            if (plan == null || Regions.FirstOrDefault(r => r.Id == regionId) == null)
+                return null;
+            else if (plan.Status == PlanStatus.DONE)
+                return 1;
+
+            // Находим индексы
+            int itRegionIndex = RegionsRoute.FindIndex(rr => rr == regionId); // Интересующий участок
+            int factRegionIndex = RegionsRoute.FindIndex(rr => rr == plan.RegionId); // Фактический участок
+
+            // Проверяем
+            if (factRegionIndex < itRegionIndex)
+                return -1;
+            else if (factRegionIndex == itRegionIndex)
+                return 0;
+            else if (factRegionIndex > itRegionIndex)
+                return 1;
+            else
+                return null;
+        }
+
+        /// <summary>
+        /// Время (в минутах), оставшееся до полного конца всех простоев на маршруте
+        /// </summary>
+        public double GetTimeToEndDowntime()
+        {
+            DateTime? dtEnd = null;
+            foreach (Region r in Regions)
+                if (r.Downtime != null)
+                {
+                    // Если хотя бы на одном участке не указано время окончания простоя, то не имеет смысла продолжать поиски
+                    if (r.Downtime.DowntimeFinish == null)
+                        return double.PositiveInfinity;
+
+                    if (dtEnd == null || r.Downtime.DowntimeFinish > dtEnd)
+                        dtEnd = r.Downtime.DowntimeFinish;
+                }
+
+            // Если dtEnd ничему не равен, то значит у маршута нет простоев. В ином случае надо посчитать, сколько осталось.
+            if (dtEnd == null)
+                return 0;
+            return DateTime.UtcNow.Subtract(dtEnd!.Value).TotalMinutes;
+        }
         #endregion
 
         #region Взаимодействие с БД

@@ -5,7 +5,13 @@
 }
 
 <form method="post">
-    <input type="submit" value="Добавить"/>
+    <input type="submit" value="Назад"
+        asp-controller="Plan"
+        asp-action="List"
+           asp-route-Id="@ViewBag.FactoryId"
+        formmethod="get"
+        formnovalidate/>
+    <input id="bAdd" type="submit" value="Добавить" disabled/>
     <input id="factoryId" type="number" value="@ViewBag.FactoryId" asp-for="@Model.FactoryId" hidden readonly/>
     <input id="materialId" type="number" asp-for="@Model.MaterialId" hidden readonly/>
     
@@ -14,22 +20,32 @@
             asp-for="@Model.ProductId"
             asp-items="@(new SelectList(ViewBag.Products, "Id", "ProductGroup.Name"))"
             onchange="ProductIsSelected(factoryId.value, value)"
-            required></select></p>
-    <p>К какому сроку надо выполнить<input type="date" asp-for="@Model.ComingSoon" required/></p>
+            required>
+            <option value="0">Отсутствует</option>
+        </select></p>
+    <p>К какому сроку надо выполнить
+        <input 
+            type="datetime-local" 
+            asp-for="@Model.ComingSoon"
+            min="@DateTime.Now.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")"
+            required/></p>
     <p id="selectRouteBlock">Маршрут
-        <select 
+        <select
             id="selectRoute" 
             asp-for="@Model.RouteId"
             onchange="RouteIsSelected(this.value, selectProduct.value)"
-            required></select></p>
+            required>
+            <option value="0">Отсутствует</option>
+        </select></p>
     <p id="maxSizeBlock">Максимальный размер<input id="maxSize" type="number" readonly/></p>
     <p id="selectSizeBlock">Выбранный размер
-        <input 
+        <input id="selectSize"
             asp-for="@Model.Size"
             id="selectSize"
             type="number"
-            value="1"
-            min="1"
+            value="0"
+            min="0"
+            onchange="SizeWasUpdate(value)"
             required/></p>
 </form>
 
@@ -41,6 +57,14 @@
             document.getElementById("selectSizeBlock").style.display = 'none';
         });
         function ProductIsSelected(factoryId, productId) {
+            if (productId == 0)
+            {
+                document.getElementById("bAdd").setAttribute('disabled', 'disabled');
+                document.getElementById("selectRouteBlock").style.display = 'none';
+                document.getElementById("maxSizeBlock").style.display = 'none';
+                document.getElementById("selectSizeBlock").style.display = 'none';
+                return;
+            }
             $.ajax({
                 url: '@Url.Action("GetRoutesAndMaterailId", "Plan")',
                 type: 'GET',
@@ -51,6 +75,14 @@
                     document.getElementById("selectSizeBlock").style.display = 'none';
                     const el = document.getElementById("selectRoute");
                     el.replaceChildren();
+                    
+                    // Обязательный элемент
+                    const newDefaultOption = document.createElement('option');
+                    newDefaultOption.setAttribute('value', 0);
+                    newDefaultOption.setAttribute('label', 'Отсутствует');
+                    el.appendChild(newDefaultOption);
+                    
+                    // Остальные элементы
                     for (i = 0; i < data.routesContent.length; ++i)
                     {
                         const newOption = document.createElement('option');
@@ -63,6 +95,14 @@
             });
         }
         function RouteIsSelected(routeId, productId) {
+            if (routeId == 0)
+            {
+                document.getElementById("maxSizeBlock").style.display = 'none';
+                document.getElementById("selectSizeBlock").style.display = 'none';
+                document.getElementById("selectSize").setAttribute('value', 0);
+                SizeWasUpdate(0);
+                return;
+            }
             $.ajax({
                 url: '@Url.Action("GetVolumeRoute", "Plan")',
                 type: 'GET',
@@ -72,8 +112,17 @@
                     document.getElementById("selectSizeBlock").style.display = 'block';
                     document.getElementById("maxSize").value = data.maxSize;
                     document.getElementById("selectSize").setAttribute('max', data.maxSize);
+                    document.getElementById("selectSize").setAttribute('value', data.maxSize);
+                    SizeWasUpdate(data.maxSize);
                 }
             });
+        }
+        function SizeWasUpdate(value)
+        {
+            if (value > 0)
+                document.getElementById("bAdd").removeAttribute("disabled");
+            else
+                document.getElementById("bAdd").setAttribute('disabled', 'disabled');
         }
     </script>
 }

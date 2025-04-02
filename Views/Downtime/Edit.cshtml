@@ -21,13 +21,18 @@
                readonly />
     </p>
     <p>Конец простоя
-        <input id="dFinish"
-               type="datetime-local"
-               asp-for="@Model.DowntimeFinish"
-               value="=@(Model.DowntimeFinish?.ToLocalTime().ToString("yyyy-MM-ddTHH:mm"))"
-               min="@DateTime.Now.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")"
-               onchange="dFinishWasUpdate(dStart.value, value)" 
-               required/>
+        @{
+            string? str = Model.GetDowntimeFinishLocal?.ToString("yyyy-MM-ddTHH:mm");
+            string? str1 = DateTime.Now.ToLocalTime().ToString("yyyy-MM-ddTHH:mm");
+            string? str2 = DateTime.Now.ToLocalTime().ToString("yyyy-MM-ddTHH:mm");
+            <input id="dFinish"
+                   type="datetime-local"
+                   asp-for="@Model.DowntimeFinish"
+                   value="=@Model.DowntimeStart.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")"
+                   
+                   onchange="dFinishWasUpdate(dStart.value, value)"
+                   required />
+        }
     </p>
     <p>Продолжительность (мин.)
         <input id="dDuration"

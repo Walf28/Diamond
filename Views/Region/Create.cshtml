@@ -6,7 +6,10 @@
 
 <form method="post">
     @* Обычные поля *@
-    <input type="submit" value="Добавить" asp-controller="Region" asp-action="Add" asp-route-region="@Model"/>
+    <div>
+        <input type="submit" asp-controller="Factory" asp-action="Edit" asp-route-Id="@Model.FactoryId" value="Назад" formnovalidate />
+        <input type="submit" value="Добавить" asp-controller="Region" asp-action="Add" asp-route-region="@Model"/>
+    </div>
     <p>Номер завода<input name="FactoryId" asp-for="@Model.FactoryId" value="@Model.FactoryId" readonly/></p>
     <p>Название участка<input type="text" asp-for="@Model.Name" value="@Model.Name" required/></p>
     <p>Тип участка<select name="Type" asp-for="@Model.Type" asp-items="Html.GetEnumSelectList<Technology>()"></select></p>

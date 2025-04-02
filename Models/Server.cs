@@ -173,7 +173,6 @@ namespace Diamond.Models
             Factories.Values.Select(f => f.Regions
                 .First(r => r.Id == downtime.RegionId))
                 .First().SetDowntime(downtime);
-            context.Downtimes.Add(downtime);
             context.SaveChanges();
         }
         public static void DowntimeStop(int regionId)
