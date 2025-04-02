@@ -42,9 +42,12 @@ namespace Diamond.Models.Materials
         {
             string s = "";
             if (materials.Count > 0)
+            {
                 foreach (var material in materials)
-                    s += $"{material.GetName} - {material.Power}\n";
-            return s.TrimEnd();
+                    s += $" | {material.GetName} - {material.Power}";
+                s = s.Remove(0, 3);
+            }
+            return s;
         }
         #endregion
     }

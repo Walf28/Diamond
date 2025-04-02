@@ -1,14 +1,20 @@
 ﻿using Diamond.Database;
 using Diamond.Models.Materials;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Diamond.Models.Factory
 {
-    public class Route : FactoryObject
+    public class Route
     {
         #region Поля
         #region Обычные
+        public int Id { get; set; } // Номер объекта в БД
+
+        [Required(ErrorMessage = "Название обязательно")]
+        [StringLength(50, ErrorMessage = "Название должно быть не длиннее 50 символов")]
+        public string Name { get; set; } = ""; // Название объекта
         public List<int> RegionsRoute { get; set; } = []; // послежовательность id, составляющая последовательность участков
         #endregion
 
@@ -194,16 +200,38 @@ namespace Diamond.Models.Factory
         /// <summary>
         /// Максимальный объём (в граммах) сырья, которое маршрут может обработать в одной партии
         /// </summary>
-        public int GetMaxVolume(int materialId)
+        public int GetMaxVolumeSizeMaterial(int materialId)
         {
             int volume = int.MaxValue;
             foreach (var r in Regions)
             {
-                int regionVolume = r.GetVolume(materialId);
+                int regionVolume = r.GetVolumeSizeMaterial(materialId);
                 if (regionVolume < volume)
                     volume = regionVolume;
             }
-            return (int)volume;
+            return volume;
+        }
+
+        /// <summary>
+        /// Максимальный объём продукции (в пачках), которое маршрут может производить в одной партии
+        /// </summary>
+        public int GetMaxVolumeCountProduct(int productId)
+        {
+            // Находим саму продукцию из БД
+            ProductSpecific product = context.ProductsSpecific
+                .AsNoTracking()
+                .Where(ps => ps.Id == productId)
+                .Include(ps => ps.ProductGroup)
+                .First();
+            
+            // Узнаём максимальную мощность по требуемому сырью
+            int MaxVolumeOnMaterial = GetMaxVolumeSizeMaterial(product.ProductGroup.MaterialId);
+            
+            // Выводим результат
+            if (MaxVolumeOnMaterial > 0)
+                return MaxVolumeOnMaterial / product.Size;
+            else
+                return 0;
         }
 
         /// <summary>
@@ -452,7 +480,7 @@ namespace Diamond.Models.Factory
                     // В ином случае надо загрузить продукцию в следующий участок
                     int nextRegionIndex = Regions.FindIndex(r => r.Id == RegionsRoute[RegionsRoute.FindIndex(match => match == Regions[regionIndex].Id) + 1]);
                     if (Regions[nextRegionIndex].Status == RegionStatus.AWAIT_DOWNLOAD
-                        && Regions[regionIndex].Workload <= Regions[nextRegionIndex].GetVolume(Regions[regionIndex].MaterialOptionNowId!.Value))
+                        && Regions[regionIndex].Workload <= Regions[nextRegionIndex].GetVolumeSizeMaterial(Regions[regionIndex].MaterialOptionNowId!.Value))
                     {
                         if (Regions[nextRegionIndex].Workload > 0)
                             throw new Exception();
@@ -465,7 +493,7 @@ namespace Diamond.Models.Factory
                         else
                             throw new Exception("Необходимо расщепление плана");
                     }
-                    else if (Regions[regionIndex].Workload > Regions[nextRegionIndex].GetVolume(Regions[regionIndex].MaterialOptionNowId!.Value))
+                    else if (Regions[regionIndex].Workload > Regions[nextRegionIndex].GetVolumeSizeMaterial(Regions[regionIndex].MaterialOptionNowId!.Value))
                         throw new Exception($"Следующий участок не может принять слишком огромную партию ({Regions[regionIndex].Id} - {Regions[nextRegionIndex].Id})");
                     else if (Regions[nextRegionIndex].Status == RegionStatus.FREE)
                     {
@@ -508,6 +536,15 @@ namespace Diamond.Models.Factory
                     return;
                 default: return;
             }
+        }
+        #endregion
+
+        #region Статические и переопределяющие
+        public override string ToString()
+        {
+            if (Name != "")
+                return Name;
+            return GetContent;
         }
         #endregion
         #endregion

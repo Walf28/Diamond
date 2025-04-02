@@ -134,7 +134,7 @@ namespace Diamond.Controllers
                     .AsNoTracking()
                     .Include(r => r.Regions).ThenInclude(r => r.Materials)
                     .First(r => r.Id == routeId)
-                    .GetMaxVolume(materialId)
+                    .GetMaxVolumeSizeMaterial(materialId)
             });
         }
         #endregion

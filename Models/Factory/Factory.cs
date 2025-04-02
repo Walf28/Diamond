@@ -1,15 +1,19 @@
 ﻿using Diamond.Database;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Diamond.Models.Factory
 {
-    public class Factory : FactoryObject
+    public class Factory
     {
         #region Поля
         #region Обычные
-        // Это план - что и где производим
-        public List<Plan> Plan { get; set; } = [];
+        public int Id { get; set; } // Номер объекта в БД
+
+        [Required(ErrorMessage = "Название обязательно")]
+        [StringLength(50, ErrorMessage = "Название должно быть не длиннее 50 символов")]
+        public string Name { get; set; } = ""; // Название объекта
 
         // Эти два - это суммарно, сколько и чего надо произвести
         public List<int> ProductsCommonId { get; set; } = []; // Что имеется в очереди
@@ -19,16 +23,13 @@ namespace Diamond.Models.Factory
         #region Ссылочные
         [NotMapped]
         private readonly DB context = new();
-        //[ForeignKey("WarehouseId")]
+        // Это план - что и где производим
+        public List<Plan> Plan { get; set; } = [];
         public Warehouse Warehouse { get; set; } = new();
         public List<Route> Routes { get; set; } = [];
         public List<Region> Regions { get; set; } = [];
         public List<Request> Requests { get; set; } = [];
         #endregion
-        #endregion
-
-        #region Id ссылок
-        //public int WarehouseId { get; set; }
         #endregion
 
         #region Методы
@@ -204,7 +205,9 @@ namespace Diamond.Models.Factory
         #endregion
 
         #region Заявки
-        /// <summary>Добавить заявку</summary>
+        /// <summary>
+        /// Добавить заявку
+        /// </summary>
         public void AddRequest(int requestId)
         {
             Request? request = context.Requests
@@ -229,44 +232,56 @@ namespace Diamond.Models.Factory
         private void AddToPlan(Request request)
         {
             // Добавляем в общий план
-            int fullSize = request.Count * request.Product.Size;
+            int productSize = request.Product.Size;
+            int fullSize = request.Count * productSize;
             AddInCommonPlan(request.ProductId, fullSize);
 
-            // Пытаемся запихнуть в свободное место в плане, если такое найдётся
+            // Пытаемся запихнуть в свободное место в плане, если такое найдётся.
             List<Plan> PlanOuttime = [];
             for (int i = 0; i < Plan.Count && fullSize > 0; ++i)
-                if (Plan[i].Status == PlanStatus.AWAIT_CONFIRMATION && Plan[i].ProductId == request.ProductId) // Ищем свободное местечко в тех местах, где возможно подкорректировать план
-                {
-                    // Если невозможно выполнить в назначенный срок вместе с этим планом, то запомним его на всякий случай
-                    if (Plan[i].ComingSoon > request.DateOfDesiredComplete)
-                    {
-                        PlanOuttime.Add(Plan[i]);
-                        continue;
-                    }
+            {
+                // Первичная проверка, можно ли произвести по данному плану данную продукцию
+                if (Plan[i].Status != PlanStatus.AWAIT_CONFIRMATION && Plan[i].ProductId != request.ProductId)
+                    continue;
 
-                    int MaxVolumeInRoute = Plan[i].Route.GetMaxVolume(Plan[i].GetMaterial!.Id);
-                    if (MaxVolumeInRoute > Plan[i].Size)
-                    {
-                        int PlanAndSize = Plan[i].Size + fullSize;
-                        if (PlanAndSize > MaxVolumeInRoute)
-                        {
-                            Plan[i].Size = MaxVolumeInRoute;
-                            fullSize = PlanAndSize - MaxVolumeInRoute;
-                        }
-                        else
-                        {
-                            Plan[i].Size = PlanAndSize;
-                            fullSize = 0;
-                        }
-                    }
+                // Проверка с подсчётами, есть ли место для дополнения плана
+                // volumeCountInRoute - количество продукции, которое может быть произведено по маршруту из этого плана
+                // volumeSizeInRoute - общий объём сколько можно отправить в маршрут по данному плану
+                int volumeCountInRoute = Plan[i].Route.GetMaxVolumeCountProduct(request.ProductId);
+                int volumeSizeInRoute = volumeCountInRoute * productSize;
+                if (volumeSizeInRoute <= Plan[i].Size)
+                    continue;
+
+                // Если невозможно выполнить в назначенный срок вместе с этим планом, то просто запомним его на всякий случай
+                if (Plan[i].ComingSoon > request.DateOfDesiredComplete)
+                {
+                    PlanOuttime.Add(Plan[i]);
+                    continue;
                 }
+
+                // Дополняем наконец-то
+                int PlanAndSize = Plan[i].Size + fullSize;
+                if (PlanAndSize > volumeSizeInRoute)
+                {
+                    fullSize -= volumeSizeInRoute - Plan[i].Size;
+                    Plan[i].Size = volumeSizeInRoute;
+                }
+                else
+                {
+                    Plan[i].Size = PlanAndSize;
+                    fullSize = 0;
+                    break;
+                }
+            }
             if (fullSize == 0)
                 return;
 
             // Ищем, на каких маршрутах возможно произвести товар
             List<Route> PotencialRoutes = [];
             foreach (var route in Routes)
-                if (!route.IsHaveDowntimeRegion() && route.CanProduceProduct(request.GetProductGroup!.Id))
+                if (!route.IsHaveDowntimeRegion() && 
+                    route.CanProduceProduct(request.GetProductGroup!.Id) && 
+                    route.GetMaxVolumeCountProduct(request.ProductId) > 0)
                     PotencialRoutes.Add(route);
             if (PotencialRoutes.Count == 0)
                 throw new Exception("Нет маршрутов, способных выполнить заказ");
@@ -292,10 +307,13 @@ namespace Diamond.Models.Factory
                 {
                     int idIndex = Routes.FindIndex(r => r.Id == fastestRouteId);
                     int materialId = request.Product.GetMaterial!.Id;
-                    int volume = Routes[idIndex].GetMaxVolume(materialId);
+                    int volumeProductCount = Routes[idIndex].GetMaxVolumeCountProduct(request.ProductId);
+                    int needCount = fullSize / productSize;
+                    int volumeMaterialSize = volumeProductCount * request.Count;
                     Plan.Add(new()
                     {
-                        Size = fullSize <= volume ? fullSize : volume,
+                        //Size = fullSize <= volumeMaterialSize ? fullSize : volumeMaterialSize,
+                        Size = needCount <= volumeProductCount ? needCount * productSize : volumeProductCount * productSize,
                         ComingSoon = request.DateOfDesiredComplete,
                         Factory = this,
                         Route = Routes[idIndex],
@@ -303,10 +321,12 @@ namespace Diamond.Models.Factory
                         FactoryId = Id,
                         RouteId = fastestRouteId,
                         ProductId = request.ProductId,
-                        MaterialId = materialId
+                        MaterialId = materialId,
+                        Status = PlanStatus.AWAIT_CONFIRMATION
                     });
                     Routes[idIndex].Plan.Add(Plan[^1]);
-                    fullSize = fullSize <= volume ? 0 : fullSize - volume;
+                    //fullSize = fullSize <= volumeMaterialSize ? 0 : fullSize - volumeMaterialSize;
+                    fullSize = needCount <= volumeProductCount ? 0 : fullSize - Plan[^1].Size;
                 }
                 else
                 {
@@ -316,11 +336,23 @@ namespace Diamond.Models.Factory
 
                     // Определим, какой будет размер у плана и максимальный объём
                     int PlanAndSize = Plan[index].Size + fullSize; // Общий объём
-                    int volume = Plan[index].Route.GetMaxVolume(request.GetProductGroup!.MaterialId); // Максимальный объём
+                    int volumeSizeInRoute = Plan[index].Route.GetMaxVolumeCountProduct(request.GetProductGroup!.MaterialId) * productSize; // Максимальный объём
 
-                    // Расчёты
-                    Plan[index].Size = PlanAndSize <= volume ? PlanAndSize : volume;
-                    fullSize = PlanAndSize <= volume ? 0 : (PlanAndSize - volume);
+                    // Дополняем наконец-то
+                    if (PlanAndSize > volumeSizeInRoute)
+                    {
+                        fullSize -= volumeSizeInRoute - Plan[index].Size;
+                        Plan[index].Size = volumeSizeInRoute;
+                    }
+                    else
+                    {
+                        Plan[index].Size = PlanAndSize;
+                        fullSize = 0;
+                        break;
+                    }
+
+                    // Убираем из списка
+                    PlanOuttime.Remove(po);
                 }
             }
 
@@ -364,6 +396,7 @@ namespace Diamond.Models.Factory
                 Factory = this
             };
 
+            Plan[planIndex].Status = PlanStatus.DONE;
             Warehouse.AddProduct(Plan[planIndex], true);
             RemoveInCommonPlan(Plan[planIndex].ProductId, Plan[planIndex].Size);
             Plan.RemoveAt(planIndex);
@@ -436,6 +469,13 @@ namespace Diamond.Models.Factory
         {
             for (int i = 0; i < Regions.Count; ++i)
                 Regions[i].Launch();
+        }
+        #endregion
+
+        #region Статические и переопределяющие
+        public override string ToString()
+        {
+            return Name;
         }
         #endregion
         #endregion

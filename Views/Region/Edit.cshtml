@@ -5,7 +5,18 @@
 }
 
 <form>
-    <input type="submit" value="Сохранить" asp-controller="Region" asp-action="Update" asp-route-region="@Model" />
+    <div>
+        <input type="submit" value="Назад" asp-controller="Factory" asp-action="Edit" asp-route-Id="@Model.FactoryId"/>
+        <input type="submit" value="Сохранить" asp-controller="Region" asp-action="Update" asp-route-region="@Model"/>
+        @if (Model.Downtime == null)
+        {
+            <input type="submit" value="Управление простаиванием" asp-controller="Downtime" asp-action="Create" asp-route-Id="@Model.Id" formmethod="get"/>
+        }
+        else
+        {
+            <input type="submit" value="Управление простаиванием" asp-controller="Downtime" asp-action="Edit" asp-route-Id="@Model.Downtime.Id" formmethod="get"/>
+        }
+    </div>
     <p>Номер завода<input name="FactoryId" asp-for="@Model.FactoryId" value="@Model.FactoryId" readonly /></p>
     <input asp-for="@Model.Id" value="@Model.Id" readonly hidden/>
     <p>Название участка<input type="text" asp-for="@Model.Name" value="@Model.Name" required /></p>
@@ -102,13 +113,5 @@
                 <p>@RemainingMaterial[i].Name<input type="number" asp-for="@Model.Materials[k].Power" min="0" value="0" /></p>
             </div>
         }
-    }
-
-    @if (Model.Downtime != null)
-    {
-        <p>Начало простоя<input asp-for="@Model.Downtime.DowntimeStart" value="@Model.Downtime.DowntimeStart" readonly/></p>
-        <p>Конец простоя<input type="date" asp-for="@Model.Downtime.DowntimeFinish" value="@Model.Downtime.DowntimeFinish"/></p>
-        <p>Продолжительность<input type="number" asp-for="@Model.Downtime.DowntimeDuration" value="@Model.Downtime.DowntimeDuration"/></p>
-        <p>Причина<input type="text" asp-for="@Model.Downtime.DowntimeFinish" value="@Model.Downtime.DowntimeFinish"/></p>
     }
 </form>

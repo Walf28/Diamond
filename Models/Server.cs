@@ -1,7 +1,6 @@
 ﻿using Diamond.Database;
 using Diamond.Models.Factory;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Immutable;
 using System.Timers;
 using Route = Diamond.Models.Factory.Route;
 
@@ -12,8 +11,9 @@ namespace Diamond.Models
         private static readonly DB context = new();
         private static readonly System.Timers.Timer timer = new(TimeSpan.FromSeconds(1));
         private static List<Factory.Factory> factories = [];
-        private static Dictionary<int, Factory.Factory> Factories = [];
+        private static readonly Dictionary<int, Factory.Factory> Factories = [];
 
+        #region Обращение к БД
         public static void FactoryLoad()
         {
             try
@@ -56,6 +56,16 @@ namespace Diamond.Models
             timer.Elapsed += Save;
             timer.Start();
         }
+        
+        public static void Save(object? o, ElapsedEventArgs eea)
+        {
+            try
+            {
+                context.SaveChanges();
+            }
+            catch { }
+        }
+        #endregion
 
         #region Для отладки
         public static void NullMethod()
@@ -77,27 +87,11 @@ namespace Diamond.Models
             context.SaveChanges();
         }
         #endregion
-        
-        public static void Save(object? o, ElapsedEventArgs eea)
-        {
-            try
-            {
-                context.SaveChanges();
-            }
-            catch { }
-        }
 
         #region Заявки
         public static void AddRequest(Request request)
         {
             Factories[request.FactoryId!.Value].AddRequest(request.Id);
-            /*for (int i = 0; i < factories.Count; ++i)
-                if (factories[i].Id == request.FactoryId)
-                {
-                    factories[i].AddRequest(request.Id);
-                    break;
-                }*/
-            context.SaveChanges();
         }
         #endregion
 
@@ -172,12 +166,23 @@ namespace Diamond.Models
                 .DowntimeDetected();
             context.SaveChanges();
         }
-        public static void DowntimeCreate(int regionId, Downtime downtime)
+        public static void DowntimeSet(Downtime downtime)
         {
-            _ = Factories.Values
-                .FirstOrDefault(f => f.Regions.FirstOrDefault(r => r.Id == regionId) != null)?
-                .Regions.First(r => r.Id == regionId)
-                .SetDowntime(downtime);
+            if (downtime.RegionId == 0)
+                return;
+            Factories.Values.Select(f => f.Regions
+                .First(r => r.Id == downtime.RegionId))
+                .First().SetDowntime(downtime);
+            context.Downtimes.Add(downtime);
+            context.SaveChanges();
+        }
+        public static void DowntimeStop(int regionId)
+        {
+            if (regionId == 0)
+                return;
+            Factories.Values.Select(f => f.Regions
+                .First(r => r.Id == regionId))
+                .First().StopDowntime();
             context.SaveChanges();
         }
         #endregion

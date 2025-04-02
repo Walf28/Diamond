@@ -46,7 +46,7 @@ namespace Diamond.Models.Factory
             foreach (var product in Products)
                 if (product.ProductId == plan.ProductId)
                 {
-                    product.Count += plan.Size;
+                    product.Count += plan.GetCountProduct;
                     find = true;
                     break;
                 }
@@ -56,7 +56,7 @@ namespace Diamond.Models.Factory
                 {
                     WarehouseId = Id,
                     ProductId = plan.ProductId,
-                    Count = plan.Size
+                    Count = plan.GetCountProduct
                 });
             }
             if (AddToRequest)

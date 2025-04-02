@@ -32,7 +32,6 @@
                 <td>Название</td>
                 <td>Тип участка</td>
                 <td>Статус</td>
-                <td>Загруженность</td>
                 <td></td>
             </tr>
             @foreach(var Region in Model.Regions.OrderBy(r=>r.Id)) {
@@ -40,17 +39,31 @@
                     <td>@Region.Name</td>
                     <td>@Html.DisplayFor(f => f.Regions!.First(r => r.Id == Region.Id).Type)</td>
                     <td>@Html.DisplayFor(f => f.Regions!.First(r => r.Id == Region.Id).Status)</td>
-                    <td>@Region.Workload</td>
                     <td>
                         <a asp-controller="Region" asp-action="Edit" 
-                            asp-route-Id="@Region.Id" 
-                            class="btn btn-primary">Редактировать</a>
+                        asp-route-Id="@Region.Id" 
+                        class="btn btn-primary">Подробнее</a>
+                        @if (Region.Downtime != null)
+                        {
+                            if (Region.Downtime.DowntimeFinish != null)
+                            {
+                                <a asp-controller="Downtime" asp-action="Edit"
+                                asp-route-Id="@Region.Downtime.Id"
+                                class="btn btn-warning">Управление простаиванием</a>
+                            }
+                            else
+                            {
+                                <a asp-controller="Downtime" asp-action="Edit"
+                                asp-route-Id="@Region.Downtime.Id"
+                                class="btn btn-danger">Управление простаиванием</a>
+                            }
+                        }
                         <a asp-controller="Factory" asp-action="DeleteRegion"
-                            asp-route-ModelId="@Model.Id" asp-route-RegionId="@Region.Id" 
-                            class="btn btn-danger">Удалить</a>
+                        asp-route-ModelId="@Model.Id" asp-route-RegionId="@Region.Id"
+                        class="btn btn-danger">Удалить</a>
                         <a asp-controller="Factory" asp-action="SetDowntime"
-                           asp-route-RegionId="@Region.Id"
-                           class="btn btn-warning">Сломать (отладка)</a>
+                        asp-route-RegionId="@Region.Id"
+                        class="btn btn-warning">Сломать (отладка)</a>
                     </td>
                 </tr>
             }
@@ -64,26 +77,31 @@
         <table class="table table-bordered">
             <tr>
                 <td>Название</td>
-                <td>Простои</td>
-                <td>Мощность (г/час)</td>
-                <td>Максимальная вместимость</td>
-                <td>Что может производить</td>
                 <td>Маршрут</td>
+                <td>Какую продукцию может произвести</td>
+                <td>Мощность участка под каждое сырьё (гр/час)</td>
+                <td>Максимальная вместимость сырья в партии(гр.)</td>
+                <td>Количество простаивающих участков</td>
             </tr>
             @foreach (var Route in Model.Routes)
             {
+                List<Material> materials = Route.GetAcceptableMaterials();
                 string MaxVolume = "";
-                foreach (var m in Route.GetAcceptableMaterials())
+                if (materials.Count > 0)
                 {
-                    MaxVolume += $"{m.Name} - {Route.GetMaxVolume(m.Id)} | ";
+                    foreach (var m in materials)
+                    {
+                        MaxVolume += $" | {m.Name} - {Route.GetMaxVolumeSizeMaterial(m.Id)}";
+                    }
+                    MaxVolume = MaxVolume.Remove(0, 3);
                 }
                 <tr>
                     <td>@Route.Name</td>
-                    <td>@Route.GetDowntimeCount()</td>
-                    <td>@MaterialForRegion.ToString(Route.GetMaxPowerOnMaterial()).Replace("\n", " | ")</td>
-                    <td>@MaxVolume</td>
-                    <td>@ProductGroup.ToString(Route.GetAvailableProducts())</td>
                     <td>@Route.GetContent</td>
+                    <td>@ProductGroup.ToString(Route.GetAvailableProducts())</td>
+                    <td>@MaterialForRegion.ToString(Route.GetMaxPowerOnMaterial())</td>
+                    <td>@MaxVolume</td>
+                    <td>@Route.GetDowntimeCount()</td>
                 </tr>
             }
         </table>
@@ -112,20 +130,7 @@
                 </tr>
             }
         </table>
-
-        <p>Итого</p>
-        <table class="table table-bordered">
-            <tr>
-                <td>Продукция</td>
-                <td>Количество</td>
-            </tr>
-            @for (int i = 0; i < Model.ProductsCommonId.Count; ++i)
-            {
-                <tr>
-                    <td>@(Model.ProductsCommonId[i])</td>
-                    <td>@(Model.ProductsCommonSize[i])</td>
-                </tr>
-            }
-        </table>
     }
+
+
 </form>

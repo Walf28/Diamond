@@ -1,0 +1,79 @@
+﻿@model Downtime
+@{
+    ViewData["Title"] = $"Простаивание участка \"{ViewBag.RegionName}\"";
+}
+
+<form method="post">
+    <div>
+        <input type="submit" value="Назад" asp-controller="Region" asp-action="Edit" formmethod="get" asp-route-Id="@ViewBag.RegionId" formnovalidate />
+        <input type="submit" value="Сохранить" />
+    </div>
+    <input type="number" asp-for="@Model.RegionId" value="@ViewBag.RegionId" readonly hidden />
+    <input type="number" asp-for="@Model.Id" value="0" readonly hidden />
+    <p>Начало простоя
+        <input id="dStart"
+            type="datetime-local"
+            asp-for="@Model.DowntimeStart"
+            value="@DateTime.Now.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")"
+            min="@DateTime.Now.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")"
+            onchange="dStartWasUpdate(value, dFinish.value)"
+            required />
+    </p>
+    <p>Конец простоя
+        <input id="dFinish"
+            type="datetime-local"
+            asp-for="@Model.DowntimeFinish"
+            value="@DateTime.Now.ToLocalTime().AddDays(1).ToString("yyyy-MM-ddTHH:mm")"
+            min="@DateTime.Now.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")"
+            onchange="dFinishWasUpdate(dStart.value, value)" 
+            required/></p>
+    <p>Продолжительность (мин.)
+        <input id="dDuration"
+            type="number"
+            asp-for="@Model.DowntimeDuration"
+            value="@((int)DateTime.Now.AddDays(1).Subtract(DateTime.Now).TotalMinutes + 1)"
+            min="1"
+            onchange="dDurationWasUpdate(dStart.value, value)"
+            required />
+    </p>
+    <p>Причина
+        <input
+            type="text"
+            asp-for="@Model.DowntimeReason"/></p>
+</form>
+
+@section Scripts
+{
+    <script>
+        function dFinishWasUpdate(dtStart, dtFinish)
+        {
+            $.ajax({
+                url: '@Url.Action("GetDuration", "Downtime")',
+                type: 'GET',
+                data: { dtStart, dtFinish },
+                success: function (data) {
+                    document.getElementById("dDuration").value = data.value;
+                    document.getElementById("dStart").setAttribute('max', dtFinish);
+                }
+            });
+        }
+        function dDurationWasUpdate(dtStart, Duration)
+        {
+            $.ajax({
+                url: '@Url.Action("GetDtFinish", "Downtime")',
+                type: 'GET',
+                data: { dtStart, Duration },
+                success: function (data) {
+                    document.getElementById("dFinish").value = data.value;
+                    document.getElementById("dStart").setAttribute('max', data.value);
+                }
+            });
+        }
+        function dStartWasUpdate(dtStart, dtFinish)
+        {
+            const min = document.getElementById("dStart").value;
+            document.getElementById("dFinish").setAttribute('min', min);
+            dFinishWasUpdate(dtStart, dtFinish);
+        }
+    </script>
+}

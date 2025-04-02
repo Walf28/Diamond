@@ -53,6 +53,7 @@ namespace Diamond.Models.Factory
                 return ps.ProductGroup.Material;
             }
         }
+        public int GetCountProduct => Size / context.ProductsSpecific.AsNoTracking().First(ps=>ps.Id == ProductId).Size;
         #endregion
     }
 }

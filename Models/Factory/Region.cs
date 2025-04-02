@@ -1,15 +1,20 @@
 ﻿using Diamond.Database;
 using Diamond.Models.Materials;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Timers;
 
 namespace Diamond.Models.Factory
 {
-    public class Region : FactoryObject
+    public class Region
     {
         #region Поля
         #region Простые
+        public int Id { get; set; } // Номер объекта в БД
+        [Required(ErrorMessage = "Название обязательно")]
+        [StringLength(50, ErrorMessage = "Название должно быть не длиннее 50 символов")]
+        public string Name { get; set; } = ""; // Название объекта
         public Technology Type { get; set; } = Technology.NONE; // Тип участка
         public int Workload { get; set; } = 0; // Текущая загруженность
         public int TransitTime { get; set; } = 0; // Время прохода продукции по участку
@@ -148,7 +153,7 @@ namespace Diamond.Models.Factory
         /// <summary>
         /// Объём (в граммах) сырья, которое может принять участок
         /// </summary>
-        public int GetVolume(int materialId)
+        public int GetVolumeSizeMaterial(int materialId)
         {
             double volume = 0;
             foreach (var m in Materials)
@@ -157,6 +162,23 @@ namespace Diamond.Models.Factory
                     volume = (m.Power / 60.0) * TransitTime;
                     break;
                 }
+            return (int)volume;
+        }
+
+        /// <summary>
+        /// Количество продукции (в пачках), которое может произвести участок
+        /// </summary>
+        public int GetVolumeCountProduct(int productId)
+        {
+            ProductSpecific product = context.ProductsSpecific
+                .AsNoTracking()
+                .Where(p => p.Id == productId)
+                .Include(p => p.ProductGroup)
+                .First();
+            double volume = 0;
+            var m = Materials.FirstOrDefault(m => m.Id == product.ProductGroup.MaterialId);
+            if (m!= null)
+                volume = ((m.Power / 60.0) * TransitTime) / product.Size;
             return (int)volume;
         }
 
@@ -210,7 +232,7 @@ namespace Diamond.Models.Factory
             // Проверка
             if (Plan != null && Plan.Id == plan.Id)
             {
-                if (Status == RegionStatus.IN_WORKING && timer.Enabled)
+                if (Status == RegionStatus.IN_WORKING && timer != null && timer.Enabled)
                     return DateTime.UtcNow.Subtract(startTimer!.Value).TotalMinutes;
                 else if (Status == RegionStatus.AWAIT_UNLOADING)
                     return 0;
@@ -310,6 +332,11 @@ namespace Diamond.Models.Factory
                 case RegionStatus.OFF: Status = RegionStatus.FREE; return;
                 case RegionStatus.AWAIT_DOWNLOAD:
                 case RegionStatus.AWAIT_UNLOADING:
+                    if (Workload <= 0)
+                    {
+                        Workload = 0;
+                        Status = RegionStatus.FREE;
+                    }
                     Plan!.Route.RegionUpdateStatus(Id);
                     return;
                 case RegionStatus.IN_WORKING:
@@ -430,7 +457,7 @@ namespace Diamond.Models.Factory
                 remains = Size;
                 return;
             }    
-            int volume = GetVolume(MaterialOptionNowId!.Value);
+            int volume = GetVolumeSizeMaterial(MaterialOptionNowId!.Value);
             int WorkloadAndSize = Workload + Size;
 
             // Если объём больше этой суммы, значит место ещё хватает для заполнения.
@@ -514,10 +541,34 @@ namespace Diamond.Models.Factory
         /// <summary>
         /// Установить простой
         /// </summary>
-        public bool SetDowntime(Downtime downtime) // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        public bool SetDowntime(Downtime downtime)
         {
-            throw new Exception();
-            return true;
+            try
+            {
+                if (Downtime == null)
+                {
+                    // Если простой ещё не установлен
+                    Downtime = downtime;
+                    Status = RegionStatus.DOWNTIME;
+                    foreach (var route in Routes)
+                        route.RegionUpdateStatus(Id);
+                }
+                else
+                {
+                    // Установка некоторых новых значений
+                    Status = RegionStatus.DOWNTIME;
+                    Downtime.SetDowntimeDuration = downtime.DowntimeDuration;
+                    Downtime.SetDowntimeFinish = downtime.DowntimeFinish;
+                    Downtime.DowntimeReason = downtime.DowntimeReason;
+                }
+
+                // Начало отсчёта
+                StartDowntime();
+
+                // Конец
+                return true;
+            }
+            catch { return false; }
         }
 
         /// <summary>
@@ -532,25 +583,54 @@ namespace Diamond.Models.Factory
             // Запуск отсчёта
             timer = new(TimeSpan.FromMinutes(Downtime.DowntimeFinish!.Value.Subtract(Downtime.DowntimeStart).TotalMinutes));
             timer.Elapsed += StopDowntime;
+            timer.Start();
         }
 
         /// <summary>
         /// Остановка отсчёта конца поломки
         /// </summary>
-        public void StopDowntime(object? sender, ElapsedEventArgs e)
+        private void StopDowntime(object? sender, ElapsedEventArgs e)
         {
             // Проверка небольшая
             if (Status != RegionStatus.DOWNTIME)
                 return;
 
             // Содержание метода
-            timer.Stop(); // Сброс таймера
+            timer?.Stop(); // Сброс таймера
             Downtime = null; // Сброс простоя
             Status = RegionStatus.DOWNTIME_FINISH; // Изменение статуса
             foreach (var route in Routes) // Оповещение всех маршрутов о том, что по ним можно будет выполнить план
                 route.RegionUpdateStatus(Id);
             // Уведомление, что участок готов к работе
-            FindEarlyPlan()?.Route.RegionUpdateStatus(Id, RegionStatus.FREE);
+            Status = RegionStatus.FREE;
+            FindEarlyPlan()?.Route.RegionUpdateStatus(Id);
+        }
+
+        /// <summary>
+        /// Объявить простаивающий участок работающим досрочно
+        /// </summary>
+        public void StopDowntime()
+        {
+            // Проверка небольшая
+            if (Status != RegionStatus.DOWNTIME)
+                return;
+
+            // Содержание метода
+            timer?.Stop(); // Сброс таймера
+            Downtime = null; // Сброс простоя
+            Status = RegionStatus.DOWNTIME_FINISH; // Изменение статуса
+            foreach (var route in Routes) // Оповещение всех маршрутов о том, что по ним можно будет выполнить план
+                route.RegionUpdateStatus(Id);
+            // Уведомление, что участок готов к работе
+            Status = RegionStatus.FREE;
+            FindEarlyPlan()?.Route.RegionUpdateStatus(Id);
+        }
+        #endregion
+
+        #region Статические и переопределяющие
+        public override string ToString()
+        {
+            return Name;
         }
         #endregion
         #endregion
