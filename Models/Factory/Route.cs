@@ -308,6 +308,23 @@ namespace Diamond.Models.Factory
         }
 
         /// <summary>
+        /// Время (в минутах), требуемое для завершения данного плана.
+        /// Другие планы не берутся в расчёт.
+        /// </summary>
+        public double MinutesToCompletePlan(Plan plan)
+        {
+            double Time = 0;
+            foreach (var region in Regions)
+            {
+                double time = region.GetTime(plan);
+                if (double.IsInfinity(time))
+                    return double.PositiveInfinity;
+                Time += time;
+            }
+            return Time;
+        }
+
+        /// <summary>
         /// Есть ли на маршруте простаивающий участок
         /// </summary>
         public bool IsHaveDowntimeRegion()
@@ -383,7 +400,7 @@ namespace Diamond.Models.Factory
             // Если dtEnd ничему не равен, то значит у маршута нет простоев. В ином случае надо посчитать, сколько осталось.
             if (dtEnd == null)
                 return 0;
-            return DateTime.UtcNow.Subtract(dtEnd!.Value).TotalMinutes;
+            return dtEnd!.Value.ToUniversalTime().Subtract(DateTime.UtcNow).TotalMinutes;
         }
         #endregion
 
@@ -588,7 +605,12 @@ namespace Diamond.Models.Factory
                     // Обновляем статус всех планов
                     foreach (var p in Plan)
                         if (p.Status == PlanStatus.STOP || p.Status == PlanStatus.PAUSE)
-                            p.Status = PlanStatus.PRODUCTION;
+                        {
+                            if (p.RegionId == null)
+                                p.Status = PlanStatus.QUEUE;
+                            else
+                                p.Status = PlanStatus.PRODUCTION;
+                        }
                     return;
                 default: return;
             }

@@ -134,12 +134,12 @@ namespace Diamond.Models.Factory
         public double NeedTimeForRoute(int routeId)
         {
             // Поиск маршрута
-            double AllTime = 0;
             Route? route = Routes.Where(r => r.Id == routeId).FirstOrDefault();
             if (route == null)
-                return AllTime;
+                return double.PositiveInfinity;
 
             // Подобор интересущих участков
+            double AllTime = 0;
             List<Region> regions = route.Regions;
             foreach (var region in regions)
             {

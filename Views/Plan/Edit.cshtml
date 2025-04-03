@@ -5,8 +5,17 @@
 }
 
 <form method="post">
-    <input type="submit" value="Сохранить"/>
-    <input type="number" value="@Model.FactoryId" asp-for="@Model.FactoryId" hidden readonly/>
+    <div>
+        <input type="submit" value="Назад"
+               asp-controller="Plan"
+               asp-action="List"
+               asp-route-Id="@Model.FactoryId"
+               formmethod="get"
+               formnovalidate />
+        <input type="submit" value="Сохранить"/>
+    </div>
+    <input id="factoryId" type="number" value="@Model.FactoryId" asp-for="@Model.FactoryId" hidden readonly/>
+    <input id="planId" type="number" value="@Model.Id" asp-for="@Model.Id" hidden readonly/>
 
     <p>Продукция<input type="text" value="@ViewBag.ProductName" readonly/></p>
     <p>К какому сроку надо выполнить
@@ -14,30 +23,49 @@
             value="@Model.ComingSoon.ToLocalTime()"
             min="@DateTime.Now.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")"
             readonly/></p>
-    <p>На каком участке находится<input value="@Model.Region?.Name" readonly/></p>
+    <p>На каком участке находится<input value="@(Model.Region == null ? "-" :Model.Region.Name)" readonly/></p>
     <p>Выбранный размер<input value="@Model.Size" readonly/></p>
     <p>Маршрут
-        <select asp-for="@Model.RouteId" required>
-            <option value="@Model.RouteId">@Model.Route.GetContent</option>
+        <select id="selectedRoute" asp-for="@Model.RouteId" onchange="GetResultTime(value, planId.value)" required>
+            <option value="@Model.RouteId">
+                @($"{Model.Route.GetContent} | {TimeSpan.FromMinutes(Model.Factory.NeedTimeForRoute(Model.RouteId)).TotalHours:f2} ч.")</option>
             @foreach(var r in (ViewBag.Routes as List<Route>)!)
             {
                 double time = r.GetTimeToEndDowntime();
                 if (time == 0)
                 {
-                    <option value="@r.Id" style="background-color:lime">@r.GetContent</option>
+                    <option value="@r.Id" style="background-color:lime">
+                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.Factory.NeedTimeForRoute(r.Id)).TotalHours:f2} ч.")</option>
                 }
                 else if (double.IsInfinity(time))
                 {
-                    <option value="@r.Id" style="background-color:orangered">@r.GetContent</option>
+                    <option value="@r.Id" style="background-color:red">
+                        @($"{r.GetContent} | {r.Factory.NeedTimeForRoute(r.Id)}")</option>
                 }
                 else
                 {
-                    <option value="@r.Id" style="background-color:red">@r.GetContent</option>
+                    <option value="@r.Id" style="background-color:orange">
+                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.Factory.NeedTimeForRoute(r.Id)).TotalHours:f2} ч.")</option>
                 }
             }
         </select></p>
+    <p>Необходимое время (с учётом имеющихся заказов)
+        <input id="resultTime"
+            type="text"
+            readonly/></p>
 </form>
 @section Scripts {
     <script>
+        function GetResultTime(routeId, planId)
+        {
+            $.ajax({
+                url: '@Url.Action("GetResultTimeOnRoute", "Plan")',
+                type: 'GET',
+                data: { routeId, planId },
+                success: function (data) {
+                    document.getElementById("resultTime").setAttribute('value', `${data.hours}:${data.minutes}:${data.seconds}`);
+                }
+            });
+        }
     </script>
 }

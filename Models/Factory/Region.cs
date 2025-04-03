@@ -184,8 +184,8 @@ namespace Diamond.Models.Factory
 
         /// <summary>
         /// Время (в минутах), которое понадобится участку для выполнения всего подготовленного плана.
-        /// Уже выполненные планы тоже берутся в расчёт.
-        /// Простаивание берётся в расчёт
+        /// Уже выполненные планы не берутся в расчёт.
+        /// Простаивание берётся в расчёт.
         /// </summary>
         public double GetTime()
         {
@@ -198,7 +198,15 @@ namespace Diamond.Models.Factory
             }
             foreach (var route in Routes)
                 foreach (var plan in route.Plan)
-                    Time += GetTime(plan);
+                {
+                    int res = route.PlanWasCompletedInRegion(plan.Id, Id)!.Value;
+                    if (res > 0 || (res == 0 && Status == RegionStatus.AWAIT_UNLOADING))
+                        continue;
+                    else if (res == 0 && Status == RegionStatus.IN_WORKING && timer != null)
+                        Time += startTimer!.Value.ToLocalTime().AddMilliseconds(timer.Interval).Subtract(DateTime.Now).TotalMinutes;
+                    else
+                        Time += GetTime(plan);
+                }
             return Time;
         }
 
@@ -237,7 +245,7 @@ namespace Diamond.Models.Factory
                 else if (Status == RegionStatus.AWAIT_UNLOADING)
                     return 0;
             }
-            
+
             // Подсчёт
             double time = double.PositiveInfinity;
             foreach (var m in Materials)
