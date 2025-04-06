@@ -1,5 +1,4 @@
 ﻿using Diamond.Database;
-using Diamond.Models;
 using Diamond.Models.Factory;
 using Diamond.Models.Materials;
 using Microsoft.AspNetCore.Mvc;

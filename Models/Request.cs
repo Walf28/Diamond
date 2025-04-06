@@ -1,4 +1,5 @@
 ﻿using Diamond.Database;
+using Diamond.Models.Products;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;

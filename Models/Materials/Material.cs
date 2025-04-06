@@ -1,7 +1,7 @@
 ﻿using Diamond.Models.Factory;
-using Diamond.Models.Materials;
+using Diamond.Models.Products;
 
-namespace Diamond.Models
+namespace Diamond.Models.Materials
 {
     public class Material
     {
@@ -24,7 +24,7 @@ namespace Diamond.Models
         public static string ToString(List<Material> materials)
         {
             string s = "";
-            
+
             if (materials.Count > 0)
             {
                 foreach (var material in materials)

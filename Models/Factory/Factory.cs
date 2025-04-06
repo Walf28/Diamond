@@ -23,8 +23,7 @@ namespace Diamond.Models.Factory
         #region Ссылочные
         [NotMapped]
         private readonly DB context = new();
-        // Это план - что и где производим
-        public List<Plan> Plan { get; set; } = [];
+        public List<Plan> Plan { get; set; } = []; // Это план - что и где производим
         public Warehouse Warehouse { get; set; } = new();
         public List<Route> Routes { get; set; } = [];
         public List<Region> Regions { get; set; } = [];

@@ -1,11 +1,11 @@
 ﻿using Diamond.Database;
 using Diamond.Models.Factory;
-using Diamond.Models.Products;
+using Diamond.Models.Materials;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Diamond.Models
+namespace Diamond.Models.Products
 {
     public class ProductSpecific
     {
@@ -35,8 +35,9 @@ namespace Diamond.Models
 
         #region Свойства
         public ProductGroup? GetProductGroup => context.ProductsGroup.AsNoTracking().Where(pg => pg.Id == ProductGroupId).FirstOrDefault();
-        public Material? GetMaterial {
-            get 
+        public Material? GetMaterial
+        {
+            get
             {
                 var pg = context.ProductsGroup
                     .AsNoTracking()

@@ -1,7 +1,6 @@
-﻿using Diamond.Models.Factory;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
-namespace Diamond.Models
+namespace Diamond.Models.Factory
 {
     public class Downtime
     {
@@ -23,10 +22,10 @@ namespace Diamond.Models
         public int RegionId { get; set; }
         #endregion
 
-        #region ВременнЫе
+        /*#region ВременнЫе
         [NotMapped]
         private System.Timers.Timer Timer { get; set; } = new();
-        #endregion
+        #endregion*/
         #endregion
 
         #region Свойства

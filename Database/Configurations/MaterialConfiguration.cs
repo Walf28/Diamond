@@ -1,4 +1,4 @@
-﻿using Diamond.Models;
+﻿using Diamond.Models.Materials;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

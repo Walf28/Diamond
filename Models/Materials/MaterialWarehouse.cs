@@ -8,9 +8,9 @@ namespace Diamond.Models.Materials
         #region Поля
         #region Обычные
         public int Id { get; set; }
+        public int Count { get; set; } = 0;
         public required int MaterialId { get; set; }
         public required int WarehouseId { get; set; }
-        public int Count { get; set; } = 0;
         #endregion
 
         #region Ссылочные

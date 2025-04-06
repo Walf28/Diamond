@@ -1,5 +1,4 @@
-﻿using Diamond.Models;
-using Diamond.Models.Factory;
+﻿using Diamond.Models.Factory;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
