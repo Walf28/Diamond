@@ -23,7 +23,7 @@ namespace Diamond.Database.Configurations
                 .HasForeignKey(r => r.FactoryId)
                 .OnDelete(DeleteBehavior.Cascade);
             // С заказами
-            builder.HasMany(f => f.Requests).WithOne(r => r.Factory)
+            builder.HasMany(f => f.Orders).WithOne(r => r.Factory)
                 .HasForeignKey(r => r.FactoryId)
                 .OnDelete(DeleteBehavior.Cascade);
             // С планом

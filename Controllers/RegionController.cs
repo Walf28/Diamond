@@ -29,7 +29,7 @@ namespace Diamond.Controllers
             };
             foreach (var item in context.Materials)
                 region.Materials.Add(new MaterialForRegion() { Material = item, MaterialId = item.Id, Region = region, RegionId = region.Id });
-            
+
             return View(region);
         }
         public IActionResult Edit(int? Id)
@@ -70,20 +70,20 @@ namespace Diamond.Controllers
         #endregion
 
         #region Управление
-        public async Task<IActionResult> Add(Region region)
+        public async Task<IActionResult> Add(Region region, List<int> parentRegions, List<int> childrenRegions)
         {
             region.RegionsParents = [];
             region.RegionsChildrens = [];
 
-            // Добавление подчинённых участков
-            if (region.RegionsChildrensId != null && region.RegionsChildrensId.Count > 0)
-                foreach (var cId in region.RegionsChildrensId)
-                    region.RegionsChildrens.Add(context.Regions.Where(r => r.Id == cId).First());
-            
             // Добавление родительских участков
-            if (region.RegionsParentsId != null && region.RegionsParentsId.Count > 0)
-                foreach (var pId in region.RegionsParentsId)
+            if (parentRegions != null && parentRegions.Count > 0)
+                foreach (var pId in parentRegions.Where(value => value > 0))
                     region.RegionsParents.Add(context.Regions.Where(r => r.Id == pId).First());
+
+            // Добавление подчинённых участков
+            if (childrenRegions != null && childrenRegions.Count > 0)
+                foreach (var cId in childrenRegions.Where(value => value > 0))
+                    region.RegionsChildrens.Add(context.Regions.Where(r => r.Id == cId).First());
 
             // Добавление производительности
             if (region.Materials != null)
@@ -97,13 +97,13 @@ namespace Diamond.Controllers
                     else
                         region.Materials[i].Material = context.Materials.Where(m => m.Id == region.Materials[i].MaterialId).First();
                 }
-            
+
             // Добавление в БД
             await context.Regions.AddAsync(region);
             await context.SaveChangesAsync();
             return RedirectToAction("Edit", "Factory", new { Id = region.FactoryId });
         }
-        public async Task<IActionResult> Update(Region region)
+        public async Task<IActionResult> Update(Region region, List<int> parentRegions, List<int> childrenRegions)
         {
             var DBRegion = context.Regions
                 .Where(r => r.Id == region.Id)
@@ -117,29 +117,29 @@ namespace Diamond.Controllers
             DBRegion.Type = region.Type;
             DBRegion.TransitTime = region.TransitTime;
 
-            // Обновление подчинённых участков
-            DBRegion.RegionsChildrens!.Clear();
-            if (region.RegionsChildrensId != null && region.RegionsChildrensId.Count > 0)
-                foreach (var cId in region.RegionsChildrensId)
-                    DBRegion.RegionsChildrens!.Add(context.Regions.Where(r => r.Id == cId).First());
-
-            // Обновление родительских участков
+            // Добавление родительских участков
             DBRegion.RegionsParents!.Clear();
-            if (region.RegionsParentsId != null && region.RegionsParentsId.Count > 0)
-                foreach (var pId in region.RegionsParentsId)
-                    DBRegion.RegionsParents!.Add(context.Regions.Where(r => r.Id == pId).First());
+            if (parentRegions != null && parentRegions.Count > 0)
+                foreach (var pId in parentRegions.Where(value => value > 0))
+                    DBRegion.RegionsParents.Add(context.Regions.Where(r => r.Id == pId).First());
+
+            // Добавление подчинённых участков
+            DBRegion.RegionsChildrens!.Clear();
+            if (childrenRegions != null && childrenRegions.Count > 0)
+                foreach (var cId in childrenRegions.Where(value => value > 0))
+                    DBRegion.RegionsChildrens.Add(context.Regions.Where(r => r.Id == cId).First());
 
             // Обновление производительности
             for (int i = 0; i < region.Materials.Count; ++i)
+            {
+                if (region.Materials[i].Power <= 0)
                 {
-                    if (region.Materials[i].Power <= 0)
-                    {
-                        region.Materials.RemoveAt(i);
-                        --i;
-                    }
-                    else
-                        region.Materials[i].Material = context.Materials.Where(m => m.Id == region.Materials[i].MaterialId).First();
+                    region.Materials.RemoveAt(i);
+                    --i;
                 }
+                else
+                    region.Materials[i].Material = context.Materials.Where(m => m.Id == region.Materials[i].MaterialId).First();
+            }
             DBRegion.Materials = region.Materials;
 
             // Сохранение всех изменений
@@ -151,6 +151,20 @@ namespace Diamond.Controllers
             await context.Regions.Where(r => r.Id == Id).ExecuteDeleteAsync();
             await context.SaveChangesAsync();
             return View();
+        }
+        #endregion
+
+        #region JS-запросы
+        [HttpGet]
+        public IActionResult GetNameTypeRegion(int regionId)
+        {
+            return Json(new
+            {
+                value = context.Regions
+                .AsNoTracking()
+                .First(r => r.Id == regionId)
+                .Type.ToString()
+            });
         }
         #endregion
     }

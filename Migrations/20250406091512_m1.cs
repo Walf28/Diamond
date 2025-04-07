@@ -19,9 +19,9 @@ namespace Diamond.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     ProductsCommonId = table.Column<List<int>>(type: "integer[]", nullable: false),
-                    ProductsCommonSize = table.Column<List<int>>(type: "integer[]", nullable: false),
-                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
+                    ProductsCommonSize = table.Column<List<int>>(type: "integer[]", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -42,14 +42,39 @@ namespace Diamond.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Orders",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    DateOfReceipt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DateOfDesiredComplete = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DateOfAcceptance = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DateOfComplete = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    Status = table.Column<int>(type: "integer", nullable: false),
+                    FactoryId = table.Column<int>(type: "integer", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Orders", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Orders_Factories_FactoryId",
+                        column: x => x.FactoryId,
+                        principalTable: "Factories",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Routes",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     RegionsRoute = table.Column<List<int>>(type: "integer[]", nullable: false),
                     FactoryId = table.Column<int>(type: "integer", nullable: false),
-                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
+                    OrderId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -108,14 +133,14 @@ namespace Diamond.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     Type = table.Column<int>(type: "integer", nullable: false),
                     Workload = table.Column<int>(type: "integer", nullable: false),
                     TransitTime = table.Column<int>(type: "integer", nullable: false),
                     ReadjustmentTime = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
                     FactoryId = table.Column<int>(type: "integer", nullable: false),
-                    MaterialOptionNowId = table.Column<int>(type: "integer", nullable: true),
-                    Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false)
+                    MaterialOptionNowId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -140,9 +165,9 @@ namespace Diamond.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Count = table.Column<int>(type: "integer", nullable: false),
                     MaterialId = table.Column<int>(type: "integer", nullable: false),
-                    WarehouseId = table.Column<int>(type: "integer", nullable: false),
-                    Count = table.Column<int>(type: "integer", nullable: false)
+                    WarehouseId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -188,8 +213,8 @@ namespace Diamond.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    DowntimeStart = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DowntimeDuration = table.Column<int>(type: "integer", nullable: true),
+                    DowntimeStart = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    DowntimeDuration = table.Column<double>(type: "double precision", nullable: false),
                     DowntimeReason = table.Column<string>(type: "text", nullable: true),
                     DowntimeFinish = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     RegionId = table.Column<int>(type: "integer", nullable: false)
@@ -281,6 +306,34 @@ namespace Diamond.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "OrderParts",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Count = table.Column<int>(type: "integer", nullable: false),
+                    CountComplete = table.Column<int>(type: "integer", nullable: false),
+                    OrderId = table.Column<int>(type: "integer", nullable: true),
+                    ProductId = table.Column<int>(type: "integer", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OrderParts", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OrderParts_Orders_OrderId",
+                        column: x => x.OrderId,
+                        principalTable: "Orders",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_OrderParts_ProductsSpecific_ProductId",
+                        column: x => x.ProductId,
+                        principalTable: "ProductsSpecific",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Plans",
                 columns: table => new
                 {
@@ -288,12 +341,14 @@ namespace Diamond.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Size = table.Column<int>(type: "integer", nullable: false),
                     ComingSoon = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    IsFabricating = table.Column<bool>(type: "boolean", nullable: false),
+                    Status = table.Column<int>(type: "integer", nullable: false),
                     FactoryId = table.Column<int>(type: "integer", nullable: false),
                     RouteId = table.Column<int>(type: "integer", nullable: false),
                     RegionId = table.Column<int>(type: "integer", nullable: true),
                     ProductId = table.Column<int>(type: "integer", nullable: false),
-                    MaterialId = table.Column<int>(type: "integer", nullable: false)
+                    MaterialId = table.Column<int>(type: "integer", nullable: false),
+                    OrderId = table.Column<int>(type: "integer", nullable: false),
+                    ProductsId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -357,39 +412,6 @@ namespace Diamond.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "Requests",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Count = table.Column<int>(type: "integer", nullable: false),
-                    CountComplete = table.Column<int>(type: "integer", nullable: false),
-                    DateOfReceipt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    DateOfDesiredComplete = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    DateOfAcceptance = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DateOfComplete = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Status = table.Column<int>(type: "integer", nullable: false),
-                    FactoryId = table.Column<int>(type: "integer", nullable: true),
-                    ProductId = table.Column<int>(type: "integer", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Requests", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Requests_Factories_FactoryId",
-                        column: x => x.FactoryId,
-                        principalTable: "Factories",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_Requests_ProductsSpecific_ProductId",
-                        column: x => x.ProductId,
-                        principalTable: "ProductsSpecific",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
             migrationBuilder.CreateIndex(
                 name: "IX_Downtimes_RegionId",
                 table: "Downtimes",
@@ -411,6 +433,21 @@ namespace Diamond.Migrations
                 name: "IX_MaterialsWarehouse_WarehouseId",
                 table: "MaterialsWarehouse",
                 column: "WarehouseId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderParts_OrderId",
+                table: "OrderParts",
+                column: "OrderId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OrderParts_ProductId",
+                table: "OrderParts",
+                column: "ProductId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Orders_FactoryId",
+                table: "Orders",
+                column: "FactoryId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Plans_FactoryId",
@@ -489,16 +526,6 @@ namespace Diamond.Migrations
                 column: "RegionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Requests_FactoryId",
-                table: "Requests",
-                column: "FactoryId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Requests_ProductId",
-                table: "Requests",
-                column: "ProductId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Routes_FactoryId",
                 table: "Routes",
                 column: "FactoryId");
@@ -520,6 +547,9 @@ namespace Diamond.Migrations
                 name: "MaterialsWarehouse");
 
             migrationBuilder.DropTable(
+                name: "OrderParts");
+
+            migrationBuilder.DropTable(
                 name: "Plans");
 
             migrationBuilder.DropTable(
@@ -535,7 +565,10 @@ namespace Diamond.Migrations
                 name: "RegionsMaterials");
 
             migrationBuilder.DropTable(
-                name: "Requests");
+                name: "Orders");
+
+            migrationBuilder.DropTable(
+                name: "ProductsSpecific");
 
             migrationBuilder.DropTable(
                 name: "Warehouses");
@@ -547,13 +580,10 @@ namespace Diamond.Migrations
                 name: "Regions");
 
             migrationBuilder.DropTable(
-                name: "ProductsSpecific");
+                name: "ProductsGroup");
 
             migrationBuilder.DropTable(
                 name: "Factories");
-
-            migrationBuilder.DropTable(
-                name: "ProductsGroup");
 
             migrationBuilder.DropTable(
                 name: "Materials");

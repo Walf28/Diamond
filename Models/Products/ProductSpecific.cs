@@ -1,6 +1,7 @@
 ﻿using Diamond.Database;
 using Diamond.Models.Factory;
 using Diamond.Models.Materials;
+using Diamond.Models.Orders;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -21,8 +22,8 @@ namespace Diamond.Models.Products
         #region Ссылочные
         [NotMapped]
         private readonly DB context = new();
-        public List<Request> Requests { get; set; } = []; // Заявки
-        [ForeignKey("ProductGroupId")]
+        public List<OrderPart> OrderParts { get; set; } = []; // Заявки
+        [ForeignKey(nameof(ProductGroupId))]
         public ProductGroup ProductGroup { get; set; } = new();
         public List<Plan> Plans { get; set; } = [];
         public List<ProductSpecificWarehouse> ProductWarehouses { get; set; } = [];
@@ -53,9 +54,14 @@ namespace Diamond.Models.Products
         {
             get
             {
-                ProductGroup? pg = GetProductGroup;
-                if (pg == null) return null;
-                return $"{pg.Name} - {Size} гр.";
+                try
+                {
+                    return context.ProductsGroup.AsNoTracking().Where(pg => pg.Id == ProductGroupId).First().Name + $" {Size} гр.";
+                }
+                catch
+                {
+                    return "";
+                }
             }
         }
         #endregion

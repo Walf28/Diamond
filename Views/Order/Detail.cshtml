@@ -1,12 +1,13 @@
-﻿@using Diamond.Models.Factory
-@model Diamond.Models.Request
+﻿@using Diamond.Models.Orders
+@using Diamond.Models.Factory
+@model Order
 @{
     ViewData["Title"] = $"Рассмотрение заявки";
 }
 
 <form method="post">
     <div>
-        <button onclick="location.href='@Url.Action("List", "Request")'" formmethod="get">Назад</button>
+        <button onclick="location.href='@Url.Action("List", "Order")'" formmethod="get">Назад</button>
         @if(Model.Status == RequestStatus.ANALYZE){
             <input type="submit" value="Сохранить"/>
         }
@@ -14,8 +15,8 @@
 
     <p>Номер заявки<input type="number" asp-for="@Model.Id" value="@Model.Id" readonly/></p>
     <p>Дата желаемого выполнения заявки<input type="text" value="@Model.DateOfDesiredComplete.ToString("dd.MM.yyyy")" readonly/></p>
-    <p>Товар<input type="text" value="@(Model.Product.GetNameAndCount)" readonly /></p>
-    <p>Количество<input type="number" value="@Model.Count" readonly/></p>
+    <p>Товар<input type="text" value="@(Model.OrderParts[0].Product.GetNameAndCount)" readonly /></p>
+    <p>Количество<input type="number" value="@Model.OrderParts[0].Count" readonly/></p>
 
     <p>Завод
         @if (Model.Status != RequestStatus.ANALYZE) {

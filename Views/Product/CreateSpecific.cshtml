@@ -5,7 +5,10 @@
 }
 
 <form method="post">
-    <input type="submit" value="Добавить"/>
+    <div>
+        <input type="submit" asp-controller="Product" asp-action="ListSpecific" asp-route-groupId="@Model.ProductGroup.Id" value="Назад" formnovalidate/>
+        <input type="submit" value="Добавить"/>
+    </div>
     <input type="number" asp-for="@Model.ProductGroupId" value="@Model.ProductGroup.Id" hidden />
     <p>Размер (гр.)<input asp-for="@Model.Size" type="number" min="1" value="1" required/></p>
     <p>Цена (руб.)<input asp-for="@Model.Price" type="number" min="1" value="1" required/></p>

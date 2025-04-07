@@ -19,13 +19,13 @@ namespace Diamond.Models.Factory
         #region Ссылки
         [NotMapped]
         private readonly DB context = new();
-        [ForeignKey("FactoryId")]
+        [ForeignKey("OrderId")]
         public Factory Factory { get; set; } = null!; // Какому заводу принадлежит
         [ForeignKey("RouteId")]
         public Route Route { get; set; } = null!; // На каком маршруте выполняется процесс
         [ForeignKey("RegionId")]
         public Region? Region { get; set; } // На каком участке на данный момент находится
-        [ForeignKey("ProductId")]
+        [ForeignKey("ProductsId")]
         public ProductSpecific Product { get; set; } = null!; // Что необходимо произвести
         [ForeignKey("MaterialId")]
         public Material Material { get; set; } = null!; // На чём необходимо произвести

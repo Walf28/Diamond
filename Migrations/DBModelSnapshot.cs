@@ -23,7 +23,7 @@ namespace Diamond.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("Diamond.Models.Downtime", b =>
+            modelBuilder.Entity("Diamond.Models.Factory.Downtime", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -31,8 +31,8 @@ namespace Diamond.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("DowntimeDuration")
-                        .HasColumnType("integer");
+                    b.Property<double>("DowntimeDuration")
+                        .HasColumnType("double precision");
 
                     b.Property<DateTime?>("DowntimeFinish")
                         .HasColumnType("timestamp with time zone");
@@ -40,7 +40,7 @@ namespace Diamond.Migrations
                     b.Property<string>("DowntimeReason")
                         .HasColumnType("text");
 
-                    b.Property<DateTime?>("DowntimeStart")
+                    b.Property<DateTime>("DowntimeStart")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<int>("RegionId")
@@ -97,13 +97,16 @@ namespace Diamond.Migrations
                     b.Property<int>("FactoryId")
                         .HasColumnType("integer");
 
-                    b.Property<bool>("IsFabricating")
-                        .HasColumnType("boolean");
-
                     b.Property<int>("MaterialId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductsId")
                         .HasColumnType("integer");
 
                     b.Property<int?>("RegionId")
@@ -113,6 +116,9 @@ namespace Diamond.Migrations
                         .HasColumnType("integer");
 
                     b.Property<int>("Size")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -190,6 +196,9 @@ namespace Diamond.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<int>("OrderId")
+                        .HasColumnType("integer");
+
                     b.PrimitiveCollection<List<int>>("RegionsRoute")
                         .IsRequired()
                         .HasColumnType("integer[]");
@@ -220,7 +229,7 @@ namespace Diamond.Migrations
                     b.ToTable("Warehouses");
                 });
 
-            modelBuilder.Entity("Diamond.Models.Material", b =>
+            modelBuilder.Entity("Diamond.Models.Materials.Material", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -289,7 +298,69 @@ namespace Diamond.Migrations
                     b.ToTable("MaterialsWarehouse");
                 });
 
-            modelBuilder.Entity("Diamond.Models.ProductGroup", b =>
+            modelBuilder.Entity("Diamond.Models.Orders.Order", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime?>("DateOfAcceptance")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("DateOfComplete")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DateOfDesiredComplete")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DateOfReceipt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("FactoryId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FactoryId");
+
+                    b.ToTable("Orders");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Orders.OrderPart", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("Count")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("CountComplete")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("ProductId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("OrderParts");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Products.ProductGroup", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -315,7 +386,7 @@ namespace Diamond.Migrations
                     b.ToTable("ProductsGroup");
                 });
 
-            modelBuilder.Entity("Diamond.Models.ProductSpecific", b =>
+            modelBuilder.Entity("Diamond.Models.Products.ProductSpecific", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -365,50 +436,6 @@ namespace Diamond.Migrations
                     b.ToTable("ProductsSpecificWarehouse");
                 });
 
-            modelBuilder.Entity("Diamond.Models.Request", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("Count")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("CountComplete")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("DateOfAcceptance")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime?>("DateOfComplete")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("DateOfDesiredComplete")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("DateOfReceipt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("FactoryId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("ProductId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("FactoryId");
-
-                    b.HasIndex("ProductId");
-
-                    b.ToTable("Requests");
-                });
-
             modelBuilder.Entity("RegionRegion", b =>
                 {
                     b.Property<int>("RegionsChildrensId")
@@ -439,11 +466,11 @@ namespace Diamond.Migrations
                     b.ToTable("RegionRoute");
                 });
 
-            modelBuilder.Entity("Diamond.Models.Downtime", b =>
+            modelBuilder.Entity("Diamond.Models.Factory.Downtime", b =>
                 {
                     b.HasOne("Diamond.Models.Factory.Region", "Region")
                         .WithOne("Downtime")
-                        .HasForeignKey("Diamond.Models.Downtime", "RegionId")
+                        .HasForeignKey("Diamond.Models.Factory.Downtime", "RegionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -458,13 +485,13 @@ namespace Diamond.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Diamond.Models.Material", "Material")
+                    b.HasOne("Diamond.Models.Materials.Material", "Material")
                         .WithMany("Plans")
                         .HasForeignKey("MaterialId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Diamond.Models.ProductSpecific", "Product")
+                    b.HasOne("Diamond.Models.Products.ProductSpecific", "Product")
                         .WithMany("Plans")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -500,7 +527,7 @@ namespace Diamond.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("Diamond.Models.Material", "MaterialOptionNow")
+                    b.HasOne("Diamond.Models.Materials.Material", "MaterialOptionNow")
                         .WithMany("RegionsOptions")
                         .HasForeignKey("MaterialOptionNowId")
                         .OnDelete(DeleteBehavior.Cascade);
@@ -534,7 +561,7 @@ namespace Diamond.Migrations
 
             modelBuilder.Entity("Diamond.Models.Materials.MaterialForRegion", b =>
                 {
-                    b.HasOne("Diamond.Models.Material", "Material")
+                    b.HasOne("Diamond.Models.Materials.Material", "Material")
                         .WithMany("Materials")
                         .HasForeignKey("MaterialId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -553,7 +580,7 @@ namespace Diamond.Migrations
 
             modelBuilder.Entity("Diamond.Models.Materials.MaterialWarehouse", b =>
                 {
-                    b.HasOne("Diamond.Models.Material", "Material")
+                    b.HasOne("Diamond.Models.Materials.Material", "Material")
                         .WithMany("MaterialWarehouses")
                         .HasForeignKey("MaterialId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -570,9 +597,37 @@ namespace Diamond.Migrations
                     b.Navigation("Warehouse");
                 });
 
-            modelBuilder.Entity("Diamond.Models.ProductGroup", b =>
+            modelBuilder.Entity("Diamond.Models.Orders.Order", b =>
                 {
-                    b.HasOne("Diamond.Models.Material", "Material")
+                    b.HasOne("Diamond.Models.Factory.Factory", "Factory")
+                        .WithMany("Orders")
+                        .HasForeignKey("FactoryId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Factory");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Orders.OrderPart", b =>
+                {
+                    b.HasOne("Diamond.Models.Orders.Order", "Order")
+                        .WithMany("OrderParts")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("Diamond.Models.Products.ProductSpecific", "Product")
+                        .WithMany("OrderParts")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+
+                    b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Products.ProductGroup", b =>
+                {
+                    b.HasOne("Diamond.Models.Materials.Material", "Material")
                         .WithMany("Products")
                         .HasForeignKey("MaterialId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -581,9 +636,9 @@ namespace Diamond.Migrations
                     b.Navigation("Material");
                 });
 
-            modelBuilder.Entity("Diamond.Models.ProductSpecific", b =>
+            modelBuilder.Entity("Diamond.Models.Products.ProductSpecific", b =>
                 {
-                    b.HasOne("Diamond.Models.ProductGroup", "ProductGroup")
+                    b.HasOne("Diamond.Models.Products.ProductGroup", "ProductGroup")
                         .WithMany("ProductsSpecific")
                         .HasForeignKey("ProductGroupId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -594,7 +649,7 @@ namespace Diamond.Migrations
 
             modelBuilder.Entity("Diamond.Models.Products.ProductSpecificWarehouse", b =>
                 {
-                    b.HasOne("Diamond.Models.ProductSpecific", "Product")
+                    b.HasOne("Diamond.Models.Products.ProductSpecific", "Product")
                         .WithMany("ProductWarehouses")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -609,24 +664,6 @@ namespace Diamond.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("Warehouse");
-                });
-
-            modelBuilder.Entity("Diamond.Models.Request", b =>
-                {
-                    b.HasOne("Diamond.Models.Factory.Factory", "Factory")
-                        .WithMany("Requests")
-                        .HasForeignKey("FactoryId")
-                        .OnDelete(DeleteBehavior.Cascade);
-
-                    b.HasOne("Diamond.Models.ProductSpecific", "Product")
-                        .WithMany("Requests")
-                        .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Factory");
-
-                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("RegionRegion", b =>
@@ -661,11 +698,11 @@ namespace Diamond.Migrations
 
             modelBuilder.Entity("Diamond.Models.Factory.Factory", b =>
                 {
+                    b.Navigation("Orders");
+
                     b.Navigation("Plan");
 
                     b.Navigation("Regions");
-
-                    b.Navigation("Requests");
 
                     b.Navigation("Routes");
 
@@ -694,7 +731,7 @@ namespace Diamond.Migrations
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("Diamond.Models.Material", b =>
+            modelBuilder.Entity("Diamond.Models.Materials.Material", b =>
                 {
                     b.Navigation("MaterialWarehouses");
 
@@ -707,18 +744,23 @@ namespace Diamond.Migrations
                     b.Navigation("RegionsOptions");
                 });
 
-            modelBuilder.Entity("Diamond.Models.ProductGroup", b =>
+            modelBuilder.Entity("Diamond.Models.Orders.Order", b =>
+                {
+                    b.Navigation("OrderParts");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Products.ProductGroup", b =>
                 {
                     b.Navigation("ProductsSpecific");
                 });
 
-            modelBuilder.Entity("Diamond.Models.ProductSpecific", b =>
+            modelBuilder.Entity("Diamond.Models.Products.ProductSpecific", b =>
                 {
+                    b.Navigation("OrderParts");
+
                     b.Navigation("Plans");
 
                     b.Navigation("ProductWarehouses");
-
-                    b.Navigation("Requests");
                 });
 #pragma warning restore 612, 618
         }

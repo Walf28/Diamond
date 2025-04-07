@@ -1,0 +1,33 @@
+﻿@using Diamond.Models.Orders
+@model List<Order>
+@{
+    ViewData["Title"] = $"Список заявок";
+}
+
+<input type="button" onclick="location.href='@Url.Action("Create", "Order")'" value="Добавить"/>
+
+<h1>Список заявок</h1>
+<table class="table table-bordered">
+    <tr>
+        <td>Номер</td>
+        <td>Содержание</td>
+        <td>Количество</td>
+        <td>Дата поступления заявки</td>
+        <td>Дата принятия</td>
+        <td>Дата желаемого выполнения</td>
+        <td>Статус</td>
+        <td></td>
+    </tr>
+    @foreach (var order in Model){
+        <tr>
+            <td>@order.Id</td>
+            <td>@($"{order.OrderParts[0].Product.ProductGroup.Name} - {order.OrderParts[0].Product.Size} гр.")</td>
+            <td>@order.OrderParts[0].Count</td>
+            <td>@order.GetDateOfReceiptLocal</td>
+            <td>@order.GetDateOfAcceptanceLocal</td>
+            <td>@order.DateOfDesiredComplete.ToString("dd.MM.yyyy")</td>
+            <td>@Html.DisplayFor(l=>l.Where(r=>r.Id == order.Id).First().Status)</td>
+            <td><a asp-controller="Request" asp-action="Detail" asp-route-requestId="@order.Id" class="btn btn-primary">Рассмотреть</a></td>
+        </tr>
+    }
+</table>

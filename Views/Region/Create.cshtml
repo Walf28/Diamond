@@ -18,25 +18,37 @@
     @* Связи с другими участками *@
     @if (Model.Factory != null && Model.Factory.Regions != null && Model.Factory.Regions.Count > 0)
     {
+        <footer class="border-top footer" />
+        <p>Предыдущие участки<button type="button" onclick="tParentAdd()">Добавить</button></p>
         <table class="table table-bordered">
-            <tr>
-                <td>Предшествующие участки</td>
-                <td>Последующие участки</td>
-            </tr>
-            <tr>
-                <td>
-                    <select asp-for="@Model.RegionsParentsId" asp-items="@(new MultiSelectList(@Model.Factory.Regions, "Id", "Name"))"></select>
-                </td>
-                <td>
-                    <select asp-for="@Model.RegionsChildrensId" asp-items="@(new MultiSelectList(@Model.Factory.Regions, "Id", "Name"))"></select>
-                </td>
-            </tr>
+            <thead>
+                <tr>
+                    <td>Название</td>
+                    <td>Тип</td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody id="tParents"></tbody>
+        </table>
+
+        <footer class="border-top footer" />
+        <p>Последующие участки<button type="button" onclick="tChildrenAdd()">Добавить</button></p>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <td>Название</td>
+                    <td>Тип</td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody id="tChildren"></tbody>
         </table>
     }
 
     @* Производительность на каждом сырье *@
     @if (Model.Materials != null && Model.Materials.Count > 0)
     {
+        <footer class="border-top footer" />
         <p>Настройка производительности (г/час)</p>
         for (int i = 0;i< Model.Materials.Count;++i)
         {
@@ -47,3 +59,102 @@
         }
     }
 </form>
+
+@section Scripts {
+    <script>
+        let tParentIndex = 0;
+        let tChildrenIndex = 0;
+        const elementParent = document.getElementById("tParents");
+        const elementChildren = document.getElementById("tChildren");
+
+        function tParentAdd(){
+            const newElement = document.createElement("tr");
+            newElement.setAttribute('id', `tParentsTR${tParentIndex}`)
+            newElement.innerHTML = `
+            <td>
+                <select name="parentRegions" onchange="tParentSelected(value, ${tParentIndex})">
+                    <option value="0">Не выбрано</option>
+                    @foreach (var item in Model.Factory!.Regions!)
+                    {
+                        <option value="@item.Id">@item.Name</option>
+                    }
+                </select>
+            </td>
+            <td>
+                <input id="tParentsTRType${tParentIndex}" type="text" value="" readonly/>
+            </td>
+            <td>
+                <button type="button" onclick="tParentDelete(${tParentIndex})" class="btn btn-danger">Удалить</button>
+            </td>`;
+            elementParent.appendChild(newElement);
+            tParentIndex++;
+        }
+
+        function tParentDelete(id){
+            const newElement = document.getElementById(`tParentsTR${id}`);
+            newElement.remove();
+        }
+
+        function tParentSelected(regionId, index){
+            const newElement = document.getElementById(`tParentsTRType${index}`);
+            if (regionId == 0)
+            {
+                newElement.setAttribute('value', "");
+                return;
+            }
+            $.ajax({
+                url: '@Url.Action("GetNameTypeRegion", "Region")',
+                type: 'GET',
+                data: { regionId },
+                success: function (data) {
+                    newElement.setAttribute('value', data.value);
+                }
+            });
+        }
+
+        function tChildrenAdd(){
+            const newElement = document.createElement("tr");
+            newElement.setAttribute('id', `tChildrenTR${tChildrenIndex}`)
+            newElement.innerHTML = `
+            <td>
+                <select name="childrenRegions" onchange="tChildrenSelected(value, ${tChildrenIndex})">
+                    <option value="0">Не выбрано</option>
+        @foreach (var item in Model.Factory!.Regions!)
+        {
+                            <option value="@item.Id">@item.Name</option>
+        }
+                </select>
+            </td>
+            <td>
+                <input id="tChildrenTRType${tChildrenIndex}" type="text" value="" readonly/>
+            </td>
+            <td>
+                <button type="button" onclick="tChildrenDelete(${tChildrenIndex})" class="btn btn-danger">Удалить</button>
+            </td>`;
+            elementChildren.appendChild(newElement);
+            tChildrenIndex++;
+        }
+
+        function tChildrenDelete(id){
+            const newElement = document.getElementById(`tChildrenTR${id}`);
+            newElement.remove();
+        }
+
+        function tChildrenSelected(regionId, index){
+            const newElement = document.getElementById(`tChildrenTRType${index}`);
+            if (regionId == 0)
+            {
+                newElement.setAttribute('value', "");
+                return;
+            }
+            $.ajax({
+                url: '@Url.Action("GetNameTypeRegion", "Region")',
+                type: 'GET',
+                data: { regionId },
+                success: function (data) {
+                    newElement.setAttribute('value', data.value);
+                }
+            });
+        }
+    </script>
+}

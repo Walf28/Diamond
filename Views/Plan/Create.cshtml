@@ -18,7 +18,7 @@
     <p>Продукция
         <select id="selectProduct"
             asp-for="@Model.ProductId"
-            asp-items="@(new SelectList(ViewBag.Products, "Id", "ProductGroup.Name"))"
+                asp-items="@(new SelectList(ViewBag.Products, "Id", "GetNameAndCount"))"
             onchange="ProductIsSelected(factoryId.value, value)"
             required>
             <option value="0">Отсутствует</option>

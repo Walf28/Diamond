@@ -1,4 +1,5 @@
 ﻿using Diamond.Models.Materials;
+using Diamond.Models.Orders;
 using Diamond.Models.Products;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -113,28 +114,29 @@ namespace Diamond.Models.Factory
         #region Работа с заявками
         public void AddToRequests()
         {
-            List<Request> requests = [.. Factory.Requests
+            List<Order> orders = [.. Factory.Orders
                 .Where(r => r.Status == RequestStatus.FABRICATING)
                 .OrderBy(r => r.DateOfDesiredComplete)];
-            foreach (var request in requests)
+            foreach (var order in orders)
             {
-                foreach (var product in Products)
-                    if (request.ProductId == product.ProductId)
-                    {
-                        int requestCountNeed = request.Count - request.CountComplete;
-                        if (requestCountNeed >= product.Count) // Если продукции на складе меньше (или столько же), чем нужно
+                foreach (var orderPart in order.OrderParts)
+                    foreach (var product in Products)
+                        if (orderPart.ProductId == product.ProductId)
                         {
-                            request.CountComplete += product.Count;
-                            Products.Remove(product);
+                            int requestCountNeed = orderPart.Count - orderPart.CountComplete;
+                            if (requestCountNeed >= product.Count) // Если продукции на складе меньше (или столько же), чем нужно
+                            {
+                                orderPart.CountComplete += product.Count;
+                                Products.Remove(product);
+                            }
+                            else // Если продукции на склае больше, чем нужно
+                            {
+                                orderPart.CountComplete = orderPart.Count;
+                                product.Count -= requestCountNeed;
+                            }
+                            break;
                         }
-                        else // Если продукции на склае больше, чем нужно
-                        {
-                            request.CountComplete = request.Count;
-                            product.Count -= requestCountNeed;
-                        }
-                        break;
-                    }
-                request.UpdateStatus();
+                order.UpdateStatus();
             }
         }
         #endregion

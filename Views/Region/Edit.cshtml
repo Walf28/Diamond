@@ -26,65 +26,96 @@
 
     @if (Model.Factory != null && Model.Factory.Regions != null && Model.Factory.Regions.Count > 0 && !(Model.Factory.Regions.Count == 1 && Model.Factory.Regions[0].Id == Model.Id))
     {
+        <footer class="border-top footer" />
+        <p>Предыдущие участки<button type="button" onclick="tParentAdd()">Добавить</button></p>
         <table class="table table-bordered">
-            <tr>
-                <td>Предшествующие участки</td>
-                <td>Последующие участки</td>
-            </tr>
-            <tr>
-                <td>
-                    <select asp-for="@Model.RegionsParentsId" multiple>
-                        @foreach(var r in Model.Factory.Regions)
-                        {
-                            if (r.Id != Model.Id)
-                            {
-                                bool find = false;
-                                if (Model.RegionsParents!= null)
-                                    foreach (var r1 in Model.RegionsParents)
-                                        if (r.Id == r1.Id)
+            <thead>
+                <tr>
+                    <td>Название</td>
+                    <td>Тип</td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody id="tParents">
+                @if (Model.RegionsParents.Count > 0)
+                {
+                    int index = 0;
+                    foreach(var region in Model.RegionsParents)
+                    {
+                        <tr id="tParentsTR@(index)">
+                            <td>
+                                <select name="parentRegions" onchange="tParentSelected(value, @index)">
+                                    @foreach (var allRegions in Model.Factory.Regions)
+                                    {
+                                        if (allRegions.Id == Model.Id)
+                                            continue;
+                                        if (region.Id == allRegions.Id)
                                         {
-                                            find = true;
-                                            break;
+                                            <option value="@allRegions.Id" selected>@allRegions.Name</option>
                                         }
-                                if(find)
-                                {
-                                    <option value="@r.Id" selected="selected">@r</option>
-                                }
-                                else
-                                {
-                                    <option value="@r.Id">@r</option>
-                                }
-                            }
-                        }
-                    </select>
-                </td>
-                <td>
-                    <select asp-for="@Model.RegionsChildrensId" multiple>
-                        @foreach (var r in Model.Factory.Regions)
-                        {
-                            if (r.Id != Model.Id)
-                            {
-                                bool find = false;
-                                if (Model.RegionsChildrens != null)
-                                    foreach (var r1 in Model.RegionsChildrens!)
-                                        if (r.Id == r1.Id)
+                                        else
                                         {
-                                            find = true;
-                                            break;
+                                            <option value="@allRegions.Id">@allRegions.Name</option>
                                         }
-                                if (find)
-                                {
-                                    <option value="@r.Id" selected="selected">@r</option>
                                 }
-                                else
-                                {
-                                    <option value="@r.Id">@r</option>
-                                }
-                            }
-                        }
-                    </select>
-                </td>
-            </tr>
+                                </select>
+                            </td>
+                            <td>
+                                <input id="tParentsTRType@(index)" type="text" value="" readonly />
+                            </td>
+                            <td>
+                                <button type="button" onclick="tParentDelete(@(index++))" class="btn btn-danger">Удалить</button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+
+        <footer class="border-top footer" />
+        <p>Последующие участки<button type="button" onclick="tChildrenAdd()">Добавить</button></p>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <td>Название</td>
+                    <td>Тип</td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody id="tChildren">
+                @if (Model.RegionsChildrens.Count > 0)
+                {
+                    int index = 0;
+                    foreach (var region in Model.RegionsChildrens)
+                    {
+                        <tr id="tChildrenTR@(index)">
+                            <td>
+                                <select name="childrenRegions" onchange="tChildrenSelected(value, @index)">
+                                    @foreach (var allRegions in Model.Factory!.Regions!)
+                                    {
+                                        if (allRegions.Id == Model.Id)
+                                            continue;
+                                        else if (allRegions.Id == region.Id)
+                                        {
+                                            <option value="@allRegions.Id" selected>@allRegions.Name</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@allRegions.Id">@allRegions.Name</option>
+                                        }
+                                    }
+                                </select>
+                            </td>
+                            <td>
+                                <input id="tChildrenTRType@(index)" type="text" value="" readonly />
+                            </td>
+                            <td>
+                                <button type="button" onclick="tChildrenDelete(@(index++))" class="btn btn-danger">Удалить</button>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
         </table>
     }
 
@@ -116,3 +147,102 @@
         }
     }
 </form>
+
+@section Scripts {
+    <script>
+        const elementParent = document.getElementById("tParents");
+        const elementChildren = document.getElementById("tChildren");
+        let tParentIndex = Number(`@Model.RegionsParents.Count`);
+        let tChildrenIndex = Number(`@Model.RegionsChildrens.Count`);
+
+        function tParentAdd(){
+            const newElement = document.createElement("tr");
+            newElement.setAttribute('id', `tParentsTR${tParentIndex}`)
+            newElement.innerHTML = `
+            <td>
+                <select name="parentRegions" onchange="tParentSelected(value, ${tParentIndex})">
+                    <option value="0">Не выбрано</option>
+        @foreach (var item in Model.Factory!.Regions!.Where(r=>r.Id != Model.Id))
+        {
+                            <option value="@item.Id">@item.Name</option>
+        }
+                </select>
+            </td>
+            <td>
+                <input id="tParentsTRType${tParentIndex}" type="text" value="" readonly/>
+            </td>
+            <td>
+                <button type="button" onclick="tParentDelete(${tParentIndex})" class="btn btn-danger">Удалить</button>
+            </td>`;
+            elementParent.appendChild(newElement);
+            tParentIndex++;
+        }
+
+        function tParentDelete(id){
+            const newElement = document.getElementById(`tParentsTR${id}`);
+            newElement.remove();
+        }
+
+        function tParentSelected(regionId, index){
+            const newElement = document.getElementById(`tParentsTRType${index}`);
+            if (regionId == 0)
+            {
+                newElement.setAttribute('value', "");
+                return;
+            }
+            $.ajax({
+                url: '@Url.Action("GetNameTypeRegion", "Region")',
+                type: 'GET',
+                data: { regionId },
+                success: function (data) {
+                    newElement.setAttribute('value', data.value);
+                }
+            });
+        }
+
+        function tChildrenAdd(){
+            const newElement = document.createElement("tr");
+            newElement.setAttribute('id', `tChildrenTR${tChildrenIndex}`)
+            newElement.innerHTML = `
+            <td>
+                <select name="childrenRegions" onchange="tChildrenSelected(value, ${tChildrenIndex})">
+                    <option value="0">Не выбрано</option>
+        @foreach (var item in Model.Factory!.Regions!.Where(r => r.Id != Model.Id))
+        {
+                                <option value="@item.Id">@item.Name</option>
+        }
+                </select>
+            </td>
+            <td>
+                <input id="tChildrenTRType${tChildrenIndex}" type="text" value="" readonly/>
+            </td>
+            <td>
+                <button type="button" onclick="tChildrenDelete(${tChildrenIndex})" class="btn btn-danger">Удалить</button>
+            </td>`;
+            elementChildren.appendChild(newElement);
+            tChildrenIndex++;
+        }
+
+        function tChildrenDelete(id){
+            const newElement = document.getElementById(`tChildrenTR${id}`);
+            newElement.remove();
+        }
+
+        function tChildrenSelected(regionId, index){
+            const newElement = document.getElementById(`tChildrenTRType${index}`);
+            if (regionId == 0)
+            {
+                newElement.setAttribute('value', "");
+                return;
+            }
+            $.ajax({
+                url: '@Url.Action("GetNameTypeRegion", "Region")',
+                type: 'GET',
+                data: { regionId },
+                success: function (data) {
+                    newElement.setAttribute('value', data.value);
+                }
+            });
+        }
+    </script>
+}

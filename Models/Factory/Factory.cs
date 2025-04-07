@@ -1,4 +1,5 @@
 ﻿using Diamond.Database;
+using Diamond.Models.Orders;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -27,7 +28,7 @@ namespace Diamond.Models.Factory
         public Warehouse Warehouse { get; set; } = new();
         public List<Route> Routes { get; set; } = [];
         public List<Region> Regions { get; set; } = [];
-        public List<Request> Requests { get; set; } = [];
+        public List<Order> Orders { get; set; } = [];
         #endregion
         #endregion
 
@@ -40,13 +41,13 @@ namespace Diamond.Models.Factory
                 .Where(f => f.Id == Id)
                 .Include(f => f.Routes).ThenInclude(r => r.Regions)
                 .Include(f => f.Regions)
-                .Include(f => f.Requests.Where(r => r.Status == RequestStatus.FABRICATING))
+                .Include(f => f.Orders.Where(r => r.Status == RequestStatus.FABRICATING))
                 .FirstOrDefault();
             if (factory == null)
                 return;
             Routes = factory.Routes;
             Regions = factory.Regions;
-            Requests = factory.Requests;
+            Orders = factory.Orders;
         }
         #endregion
 
@@ -209,17 +210,17 @@ namespace Diamond.Models.Factory
         /// </summary>
         public void AddRequest(int requestId)
         {
-            Request? request = context.Requests
+            Order? request = context.Orders
                 .AsNoTracking()
                 .Where(r => r.Id == requestId)
-                .Include(r => r.Product).ThenInclude(p => p.ProductGroup)
+                .Include(r => r.OrderParts).ThenInclude(op=> op.Product).ThenInclude(p => p.ProductGroup)
                 .FirstOrDefault() ?? throw new Exception("Заказ не найден");
             request.DateOfAcceptance = DateTime.UtcNow;
             request.FactoryId = Id;
             request.Status = RequestStatus.FABRICATING;
 
             // Добавление заявки в список заявок
-            Requests.Add(request);
+            Orders.Add(request);
             AddToPlan(request);
         }
         #endregion
@@ -228,130 +229,133 @@ namespace Diamond.Models.Factory
         /// <summary>
         /// Добавить в производственный план
         /// </summary>
-        private void AddToPlan(Request request)
+        private void AddToPlan(Order request)
         {
-            // Добавляем в общий план
-            int productSize = request.Product.Size;
-            int fullSize = request.Count * productSize;
-            AddInCommonPlan(request.ProductId, fullSize);
-
-            // Пытаемся запихнуть в свободное место в плане, если такое найдётся.
-            List<Plan> PlanOuttime = [];
-            for (int i = 0; i < Plan.Count && fullSize > 0; ++i)
+            foreach (var orderPart in request.OrderParts)
             {
-                // Первичная проверка, можно ли произвести по данному плану данную продукцию
-                if (Plan[i].Status != PlanStatus.AWAIT_CONFIRMATION && Plan[i].ProductId != request.ProductId)
-                    continue;
+                // Добавляем в общий план
+                int productSize = orderPart.Product.Size;
+                int fullSize = orderPart.Count * productSize;
+                AddInCommonPlan(orderPart.ProductId, fullSize);
 
-                // Проверка с подсчётами, есть ли место для дополнения плана
-                // volumeCountInRoute - количество продукции, которое может быть произведено по маршруту из этого плана
-                // volumeSizeInRoute - общий объём сколько можно отправить в маршрут по данному плану
-                int volumeCountInRoute = Plan[i].Route.GetMaxVolumeCountProduct(request.ProductId);
-                int volumeSizeInRoute = volumeCountInRoute * productSize;
-                if (volumeSizeInRoute <= Plan[i].Size)
-                    continue;
-
-                // Если невозможно выполнить в назначенный срок вместе с этим планом, то просто запомним его на всякий случай
-                if (Plan[i].ComingSoon > request.DateOfDesiredComplete)
+                // Пытаемся запихнуть в свободное место в плане, если такое найдётся.
+                List<Plan> PlanOuttime = [];
+                for (int i = 0; i < Plan.Count && fullSize > 0; ++i)
                 {
-                    PlanOuttime.Add(Plan[i]);
-                    continue;
-                }
+                    // Первичная проверка, можно ли произвести по данному плану данную продукцию
+                    if (Plan[i].Status != PlanStatus.AWAIT_CONFIRMATION && Plan[i].ProductId != orderPart.ProductId)
+                        continue;
 
-                // Дополняем наконец-то
-                int PlanAndSize = Plan[i].Size + fullSize;
-                if (PlanAndSize > volumeSizeInRoute)
-                {
-                    fullSize -= volumeSizeInRoute - Plan[i].Size;
-                    Plan[i].Size = volumeSizeInRoute;
-                }
-                else
-                {
-                    Plan[i].Size = PlanAndSize;
-                    fullSize = 0;
-                    break;
-                }
-            }
-            if (fullSize == 0)
-                return;
+                    // Проверка с подсчётами, есть ли место для дополнения плана
+                    // volumeCountInRoute - количество продукции, которое может быть произведено по маршруту из этого плана
+                    // volumeSizeInRoute - общий объём сколько можно отправить в маршрут по данному плану
+                    int volumeCountInRoute = Plan[i].Route.GetMaxVolumeCountProduct(orderPart.ProductId);
+                    int volumeSizeInRoute = volumeCountInRoute * productSize;
+                    if (volumeSizeInRoute <= Plan[i].Size)
+                        continue;
 
-            // Ищем, на каких маршрутах возможно произвести товар
-            List<Route> PotencialRoutes = [];
-            foreach (var route in Routes)
-                if (!route.IsHaveDowntimeRegion() && 
-                    route.CanProduceProduct(request.GetProductGroup!.Id) && 
-                    route.GetMaxVolumeCountProduct(request.ProductId) > 0)
-                    PotencialRoutes.Add(route);
-            if (PotencialRoutes.Count == 0)
-                throw new Exception("Нет маршрутов, способных выполнить заказ");
-
-            // Заполняем план
-            while (fullSize > 0)
-            {
-                int fastestRouteId = PotencialRoutes[0].Id;
-                DateTime dateTimeOfFastestRoute = DateTime.UtcNow.AddMinutes(fastestRouteId);
-                for (int i = 1; i < PotencialRoutes.Count; ++i)
-                {
-                    DateTime dt = DateTime.UtcNow.AddMinutes(NeedTimeForRoute(PotencialRoutes[i].Id));
-                    if (dateTimeOfFastestRoute > dt)
+                    // Если невозможно выполнить в назначенный срок вместе с этим планом, то просто запомним его на всякий случай
+                    if (Plan[i].ComingSoon > request.DateOfDesiredComplete)
                     {
-                        dateTimeOfFastestRoute = dt;
-                        fastestRouteId = PotencialRoutes[i].Id;
+                        PlanOuttime.Add(Plan[i]);
+                        continue;
                     }
-                }
-
-                // Проверка, не будет ли лучше по времени дополнить уже отстающий по срокам план
-                DateTime? minTimePlan = PlanOuttime.Count > 0 ? PlanOuttime.Min(p => p.ComingSoon) : null;
-                if ((minTimePlan != null && dateTimeOfFastestRoute < minTimePlan) || minTimePlan == null)
-                {
-                    int idIndex = Routes.FindIndex(r => r.Id == fastestRouteId);
-                    int materialId = request.Product.GetMaterial!.Id;
-                    int volumeProductCount = Routes[idIndex].GetMaxVolumeCountProduct(request.ProductId);
-                    int needCount = fullSize / productSize;
-                    int volumeMaterialSize = volumeProductCount * request.Count;
-                    Plan.Add(new()
-                    {
-                        //Size = fullSize <= volumeMaterialSize ? fullSize : volumeMaterialSize,
-                        Size = needCount <= volumeProductCount ? needCount * productSize : volumeProductCount * productSize,
-                        ComingSoon = request.DateOfDesiredComplete,
-                        Factory = this,
-                        Route = Routes[idIndex],
-                        Product = request.Product,
-                        FactoryId = Id,
-                        RouteId = fastestRouteId,
-                        ProductId = request.ProductId,
-                        MaterialId = materialId,
-                        Status = PlanStatus.AWAIT_CONFIRMATION
-                    });
-                    Routes[idIndex].Plan.Add(Plan[^1]);
-                    //fullSize = fullSize <= volumeMaterialSize ? 0 : fullSize - volumeMaterialSize;
-                    fullSize = needCount <= volumeProductCount ? 0 : fullSize - Plan[^1].Size;
-                }
-                else
-                {
-                    // Определим индекс из плана, где план выполняется раньше всех
-                    Plan po = PlanOuttime.First(po => po.ComingSoon == minTimePlan);
-                    int index = Plan.FindIndex(p => p.Id == po.Id);
-
-                    // Определим, какой будет размер у плана и максимальный объём
-                    int PlanAndSize = Plan[index].Size + fullSize; // Общий объём
-                    int volumeSizeInRoute = Plan[index].Route.GetMaxVolumeCountProduct(request.GetProductGroup!.MaterialId) * productSize; // Максимальный объём
 
                     // Дополняем наконец-то
+                    int PlanAndSize = Plan[i].Size + fullSize;
                     if (PlanAndSize > volumeSizeInRoute)
                     {
-                        fullSize -= volumeSizeInRoute - Plan[index].Size;
-                        Plan[index].Size = volumeSizeInRoute;
+                        fullSize -= volumeSizeInRoute - Plan[i].Size;
+                        Plan[i].Size = volumeSizeInRoute;
                     }
                     else
                     {
-                        Plan[index].Size = PlanAndSize;
+                        Plan[i].Size = PlanAndSize;
                         fullSize = 0;
                         break;
                     }
+                }
+                if (fullSize == 0)
+                    return;
 
-                    // Убираем из списка
-                    PlanOuttime.Remove(po);
+                // Ищем, на каких маршрутах возможно произвести товар
+                List<Route> PotencialRoutes = [];
+                foreach (var route in Routes)
+                    if (!route.IsHaveDowntimeRegion() && 
+                        route.CanProduceProduct(orderPart.Product.ProductGroupId) && 
+                        route.GetMaxVolumeCountProduct(orderPart.ProductId) > 0)
+                        PotencialRoutes.Add(route);
+                if (PotencialRoutes.Count == 0)
+                    throw new Exception("Нет маршрутов, способных выполнить заказ");
+
+                // Заполняем план
+                while (fullSize > 0)
+                {
+                    int fastestRouteId = PotencialRoutes[0].Id;
+                    DateTime dateTimeOfFastestRoute = DateTime.UtcNow.AddMinutes(fastestRouteId);
+                    for (int i = 1; i < PotencialRoutes.Count; ++i)
+                    {
+                        DateTime dt = DateTime.UtcNow.AddMinutes(NeedTimeForRoute(PotencialRoutes[i].Id));
+                        if (dateTimeOfFastestRoute > dt)
+                        {
+                            dateTimeOfFastestRoute = dt;
+                            fastestRouteId = PotencialRoutes[i].Id;
+                        }
+                    }
+
+                    // Проверка, не будет ли лучше по времени дополнить уже отстающий по срокам план
+                    DateTime? minTimePlan = PlanOuttime.Count > 0 ? PlanOuttime.Min(p => p.ComingSoon) : null;
+                    if ((minTimePlan != null && dateTimeOfFastestRoute < minTimePlan) || minTimePlan == null)
+                    {
+                        int idIndex = Routes.FindIndex(r => r.Id == fastestRouteId);
+                        int materialId = orderPart.Product.ProductGroup.MaterialId;
+                        int volumeProductCount = Routes[idIndex].GetMaxVolumeCountProduct(orderPart.ProductId);
+                        int needCount = fullSize / productSize;
+                        int volumeMaterialSize = volumeProductCount * orderPart.Count;
+                        Plan.Add(new()
+                        {
+                            //Size = fullSize <= volumeMaterialSize ? fullSize : volumeMaterialSize,
+                            Size = needCount <= volumeProductCount ? needCount * productSize : volumeProductCount * productSize,
+                            ComingSoon = request.DateOfDesiredComplete,
+                            Factory = this,
+                            Route = Routes[idIndex],
+                            Product = orderPart.Product,
+                            FactoryId = Id,
+                            RouteId = fastestRouteId,
+                            ProductId = orderPart.ProductId,
+                            MaterialId = materialId,
+                            Status = PlanStatus.AWAIT_CONFIRMATION
+                        });
+                        Routes[idIndex].Plan.Add(Plan[^1]);
+                        //fullSize = fullSize <= volumeMaterialSize ? 0 : fullSize - volumeMaterialSize;
+                        fullSize = needCount <= volumeProductCount ? 0 : fullSize - Plan[^1].Size;
+                    }
+                    else
+                    {
+                        // Определим индекс из плана, где план выполняется раньше всех
+                        Plan po = PlanOuttime.First(po => po.ComingSoon == minTimePlan);
+                        int index = Plan.FindIndex(p => p.Id == po.Id);
+
+                        // Определим, какой будет размер у плана и максимальный объём
+                        int PlanAndSize = Plan[index].Size + fullSize; // Общий объём
+                        int volumeSizeInRoute = Plan[index].Route.GetMaxVolumeCountProduct(orderPart.Product.ProductGroup.MaterialId) * productSize; // Максимальный объём
+
+                        // Дополняем наконец-то
+                        if (PlanAndSize > volumeSizeInRoute)
+                        {
+                            fullSize -= volumeSizeInRoute - Plan[index].Size;
+                            Plan[index].Size = volumeSizeInRoute;
+                        }
+                        else
+                        {
+                            Plan[index].Size = PlanAndSize;
+                            fullSize = 0;
+                            break;
+                        }
+
+                        // Убираем из списка
+                        PlanOuttime.Remove(po);
+                    }
                 }
             }
 

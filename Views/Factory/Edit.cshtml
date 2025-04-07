@@ -109,7 +109,7 @@
         </table>
     }
 
-    @if (Model.Requests.Count > 0)
+    @if (Model.Orders.Count > 0)
     {
         <footer class="border-top footer"/>
         <p>Список заказов</p>
@@ -121,14 +121,14 @@
                 <td>Желаемая дата выполнения</td>
                 <td>Статус</td>
             </tr>
-            @foreach (var Request in Model.Requests)
+            @foreach (var order in Model.Orders)
             {
                 <tr>
-                    <td>@Request.Id</td>
-                    <td>@Request.GetProductSpecific!.GetProductGroup!.Name</td>
-                    <td>@Request.Count</td>
-                    <td>@Request.DateOfDesiredComplete.ToString("dd.MM.yyyy")</td>
-                    <td>@Html.DisplayFor(f => f.Requests.First(r => r.Id == Request.Id).Status)</td>
+                    <td>@order.Id</td>
+                    <td>-</td>
+                    <td>@order.OrderParts[0].Count</td>
+                    <td>@order.DateOfDesiredComplete.ToString("dd.MM.yyyy")</td>
+                    <td>@Html.DisplayFor(f => f.Orders.First(r => r.Id == order.Id).Status)</td>
                 </tr>
             }
         </table>

@@ -6,14 +6,41 @@
 }
 
 <form method="post">
-    <input type="submit" value="Добавить"/>
+    <div>
+        <input type="submit" asp-controller="Product" asp-action="ListGroup" value="Назад" formnovalidate />
+        <input type="submit" value="Добавить"/>
+    </div>
     <p>Название<input asp-for="@Model.Name" type="text" required/></p>
     <p>На каком сырье производится<select asp-for="@Model.MaterialId" asp-items="@(new SelectList((List<Material>)ViewBag.materials, "Id", "Name"))" required></select></p>
 
-    <p>Процесс обработки (последовательные числа через пробел)<input type="text" name="techProcess" value="" required /></p>
-    <div>
-        @foreach(var i in Html.GetEnumSelectList<Technology>()){
-            <p>@($"{i.Value}. {@i.Text}")</p>
-        }
+    <div id="technologyProcess">
+        <p>Процесс обработки <button type="button" onclick="addTP()">Добавить</button></p>
     </div>
 </form>
+
+@section Scripts {
+    <script>
+        let tpIndex = 0;
+
+        function addTP(){
+            const element = document.getElementById("technologyProcess");
+            const newElement = document.createElement("div")
+            newElement.setAttribute('id', `tp${tpIndex}`)
+            newElement.innerHTML = `
+                <select name="TechnologyProcessing" required>
+                    @foreach (var item in Html.GetEnumSelectList<Technology>())
+                    {
+                        <option value="@item.Value">@item.Text</option>
+                    }
+                </select>
+                <button type="button" onclick="deleteTP(${tpIndex})">Удалить</button>`;
+            tpIndex++;
+            element.appendChild(newElement);
+        }
+
+        function deleteTP(id){
+            const element = document.getElementById(`tp${id}`);
+            element.remove();
+        }
+    </script>
+}

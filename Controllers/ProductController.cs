@@ -43,21 +43,14 @@ namespace Diamond.Controllers
 
         #region Управление
         [HttpPost]
-        public IActionResult CreateGroup(ProductGroup product, string techProcess)
+        public IActionResult CreateGroup(ProductGroup product)
         {
-            {
-                techProcess = techProcess.Replace("  ", " ").Trim();
-                string[] tech = techProcess.Split(' ');
-                foreach (var techItem in tech)
-                    product.TechnologyProcessing.Add((Technology)int.Parse(techItem));
-            }
-
             context.ProductsGroup.Add(product);
             context.SaveChanges();
             return RedirectToAction(nameof(ListGroup));
         }
         [HttpPost]
-        public IActionResult EditGroup(ProductGroup product, string techProcess)
+        public IActionResult EditGroup(ProductGroup product)
         {
             ProductGroup? productGroup = context.ProductsGroup
                 .Where(pg => pg.Id == product.Id)
@@ -67,16 +60,10 @@ namespace Diamond.Controllers
                 NotFound();
                 return RedirectToAction(nameof(ListGroup));
             }
-            
-            {
-                techProcess = techProcess.Replace("  ", " ").Trim();
-                string[] tech = techProcess.Split(' ');
-                productGroup.TechnologyProcessing.Clear();
-                foreach (var techItem in tech)
-                    productGroup.TechnologyProcessing.Add((Technology)int.Parse(techItem));
-            }
+
             productGroup.Name = product.Name;
             productGroup.MaterialId = product.MaterialId;
+            productGroup.TechnologyProcessing = product.TechnologyProcessing;
 
             context.SaveChanges();
             return RedirectToAction(nameof(ListGroup));

@@ -1,5 +1,6 @@
 ﻿using Diamond.Database;
 using Diamond.Models.Factory;
+using Diamond.Models.Orders;
 using Microsoft.EntityFrameworkCore;
 using System.Timers;
 using Route = Diamond.Models.Factory.Route;
@@ -35,7 +36,7 @@ namespace Diamond.Models
                     .Include(f=>f.Plan).ThenInclude(p=>p.Region)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Product)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Material)
-                    .Include(f=>f.Requests.Where(r=>r.Status == RequestStatus.FABRICATING))];
+                    .Include(f=>f.Orders.Where(r=>r.Status == RequestStatus.FABRICATING))];
             }
             catch (TimeoutException te)
             {
@@ -83,13 +84,13 @@ namespace Diamond.Models
                     region.StopProcess();
                 }
             context.Plans.ExecuteDelete();
-            context.Requests.ExecuteDelete();
+            context.Orders.ExecuteDelete();
             context.SaveChanges();
         }
         #endregion
 
         #region Заявки
-        public static void AddRequest(Request request)
+        public static void AddRequest(Order request)
         {
             Factories[request.FactoryId!.Value].AddRequest(request.Id);
         }

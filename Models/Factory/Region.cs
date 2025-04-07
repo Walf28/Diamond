@@ -38,6 +38,7 @@ namespace Diamond.Models.Factory
 
         #region Id ссылок
         public int FactoryId { get; set; }
+        public int? MaterialOptionNowId { get; set; } // Под какое сырьё участок сейчас настроен
         [NotMapped]
         public List<int>? RoutesId { get; set; } // Маршруты, проходящие по данному участку
         [NotMapped]
@@ -46,7 +47,6 @@ namespace Diamond.Models.Factory
         public List<int>? RegionsChildrensId { get; set; } // Список подчиннных участков, куда направляется изготовленная продукция
         [NotMapped]
         public List<int>? MaterialsId { get; set; } // Производительность под каждое сырье
-        public int? MaterialOptionNowId { get; set; } // Под какое сырьё участок сейчас настроен
         #endregion
 
         #region ВременнЫе

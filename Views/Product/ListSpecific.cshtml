@@ -4,7 +4,10 @@
     ViewData["Title"] = $"Разновидности \"{Model.Name}\"";
 }
 
-<input type="button" onclick="location.href='@Url.Action("CreateSpecific", "Product", new{groupId = Model.Id})'" value="Добавить" />
+<div>
+    <input type="submit" onclick="location.href='@Url.Action("ListGroup", "Product")'" value="Назад" />
+    <input type="button" onclick="location.href='@Url.Action("CreateSpecific", "Product", new{groupId = Model.Id})'" value="Добавить" />
+</div>
 <table class="table table-bordered">
     <thead>
         <tr>

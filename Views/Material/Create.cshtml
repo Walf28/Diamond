@@ -5,6 +5,9 @@
 }
 
 <form>
-    <input type="submit" value="Добавить" asp-controller="Material" asp-action="Add" asp-route-material="@Model" />
-    <p>Название<input asp-for="Name" type="text"/></p>
+    <div>
+        <input type="submit" asp-controller="Material" asp-action="List" value="Назад" formnovalidate />
+        <input type="submit" value="Добавить" asp-controller="Material" asp-action="Add" asp-route-material="@Model" />
+    </div>
+    <p>Название<input asp-for="Name" type="text" required/></p>
 </form>

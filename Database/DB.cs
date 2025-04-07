@@ -1,7 +1,7 @@
 ﻿using Diamond.Database.Configurations;
-using Diamond.Models;
 using Diamond.Models.Factory;
 using Diamond.Models.Materials;
+using Diamond.Models.Orders;
 using Diamond.Models.Products;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,7 +21,8 @@ namespace Diamond.Database
         public DbSet<Material> Materials { get; set; } = null!;
         public DbSet<MaterialForRegion> RegionsMaterials { get; set; } = null!;
         public DbSet<MaterialWarehouse> MaterialsWarehouse { get; set; } = null!;
-        public DbSet<Request> Requests { get; set; } = null!;
+        public DbSet<Order> Orders { get; set; } = null!;
+        public DbSet<OrderPart> OrderParts { get; set; } = null!;
         public DbSet<Warehouse> Warehouses { get; set; } = null!;
 
         /*string cmdDeleteMigrations = "Remove-Migration";
@@ -47,7 +48,8 @@ namespace Diamond.Database
             modelBuilder.ApplyConfiguration(new ProductSpecificConfiguration());
             modelBuilder.ApplyConfiguration(new ProductSpecificWarehouseConfiguration());
             modelBuilder.ApplyConfiguration(new RegionConfiguration());
-            modelBuilder.ApplyConfiguration(new RequestConfiguration());
+            modelBuilder.ApplyConfiguration(new OrderConfiguration());
+            modelBuilder.ApplyConfiguration(new OrderPartConfiguration());
             modelBuilder.ApplyConfiguration(new RouteConfiguration());
             modelBuilder.ApplyConfiguration(new WarehouseConfiguration());
             modelBuilder.ApplyConfiguration(new WarehouseConfiguration());

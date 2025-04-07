@@ -1,22 +1,23 @@
 ﻿using Diamond.Database;
 using Diamond.Models;
+using Diamond.Models.Orders;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Diamond.Controllers
 {
-    public class RequestController(DB context) : Controller
+    public class OrderController(DB context) : Controller
     {
         private readonly DB context = context;
 
         #region Отображение
         public IActionResult List()
         {
-            List<Request> requests = [.. context.Requests
+            List<Order> orders = [.. context.Orders
                 .AsNoTracking()
-                .Include(r => r.Product).ThenInclude(p => p.ProductGroup)
+                .Include(r => r.OrderParts).ThenInclude(op=>op.Product).ThenInclude(p => p.ProductGroup)
                 .OrderBy(r => r.Id)];
-            return View(requests);
+            return View(orders);
         }
         [HttpGet]
         public IActionResult Create()
@@ -36,11 +37,11 @@ namespace Diamond.Controllers
                 return RedirectToAction(nameof(List));
             }
 
-            Request? request = context.Requests
+            Order? request = context.Orders
                 .AsNoTracking()
                 .Where(r => r.Id == requestId)
                 .Include(r => r.Factory)
-                .Include(r => r.Product)
+                .Include(r => r.OrderParts)
                 .FirstOrDefault();
             if (request == null)
             {
@@ -56,18 +57,21 @@ namespace Diamond.Controllers
 
         #region Управление
         [HttpPost]
-        public IActionResult Create(Request request)
+        public IActionResult Create(Order request)
         {
             request.DateOfReceipt = DateTime.UtcNow;
-            request.Product = context.ProductsSpecific.Where(ps => ps.Id == request.ProductId).First();
+            request.OrderParts.ForEach(op =>
+            {
+                op.Product = context.ProductsSpecific.Where(ps => ps.Id == op.ProductId).First();
+            });
             request.DateOfDesiredComplete = DateTime.SpecifyKind(request.DateOfDesiredComplete, DateTimeKind.Utc);
 
-            context.Requests.Add(request);
+            context.Orders.Add(request);
             context.SaveChanges();
             return RedirectToAction(nameof(List));
         }
         [HttpPost]
-        public IActionResult Detail(Request request)
+        public IActionResult Detail(Order request)
         {
             Server.AddRequest(request);
             return RedirectToAction(nameof(List));

@@ -26,22 +26,23 @@ namespace Diamond.Controllers
             var f = context.Factories
                 .Include(f => f.Regions.OrderBy(r => r.Id)).ThenInclude(r => r.Materials)
                 .Include(f => f.Routes).ThenInclude(ps => ps.Regions).ThenInclude(ps => ps.Downtime)
-                .Include(f => f.Requests.Where(r => r.Status == RequestStatus.FABRICATING))
+                .Include(f => f.Orders.Where(r => r.Status == RequestStatus.FABRICATING))
                 .Include(f => f.Plan).ThenInclude(p => p.Product).ThenInclude(ps => ps.ProductGroup)
                 .Include(f => f.Plan).ThenInclude(p => p.Route).ThenInclude(ps => ps.Regions)
                 .Include(f => f.Plan).ThenInclude(p => p.Region)
                 .First(f => f.Id == Id);
 
             // Наименование продукции
-            ViewBag.PSNames = context.Factories
+            /*ViewBag.PSNames = context.Factories
                 .AsNoTracking()
                 .Include(f => f.Requests.Where(r => r.Status == RequestStatus.FABRICATING))
-                .ThenInclude(r => r.Product)
+                .ThenInclude(o => o.OrderParts)
+                .ThenInclude(op => op.Product)
                 .ThenInclude(ps => ps.ProductGroup)
                 .First()
-                .Requests.Select(r => r.Product)
+                .Requests.Select(o => o.OrderParts.Product)
                 .Select(p => p.ProductGroup)
-                .Select(pg => pg.Name).ToList();
+                .Select(pg => pg.Name).ToList();*/
             return View(f);
         }
         #endregion

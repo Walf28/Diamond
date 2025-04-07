@@ -24,7 +24,7 @@ namespace Diamond.Models.Factory
         private readonly DB context = new();
 
         // Завод
-        [ForeignKey("FactoryId")]
+        [ForeignKey("OrderId")]
         public Factory Factory { get; set; } = new();
         // Участки данного маршрута
         public List<Region> Regions { get; set; } = [];
@@ -145,6 +145,8 @@ namespace Diamond.Models.Factory
                 List<Technology> tech = [.. products[i].TechnologyProcessing];
                 for (int j = 0; j < tech.Count; ++j)
                 {
+                    if (j < RegionsRoute.Count)
+                        break;
                     Region r = Regions.Where(r => r.Id == RegionsRoute[j]).First();
                     if (r == null || r.Type != tech[j] || (j == tech.Count - 1 && r.IsRegionsChildrens))
                     {
