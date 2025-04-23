@@ -2,10 +2,27 @@
 using Diamond.Models.Materials;
 using Diamond.Models.Products;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Diamond.Models.Factory
 {
+    public enum PlanStatus
+    {
+        [Display(Name = "Ожидает подтверждения")]
+        AWAIT_CONFIRMATION,
+        [Display(Name = "В очереди")]
+        QUEUE,
+        [Display(Name = "В производстве")]
+        PRODUCTION,
+        [Display(Name = "Не может продолжить производство")]
+        STOP,
+        [Display(Name = "Ожидает возобновления производства")]
+        PAUSE,
+        [Display(Name = "Выполнен")]
+        DONE
+    }
+
     public class Plan
     {
         #region Поля

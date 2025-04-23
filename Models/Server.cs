@@ -9,13 +9,13 @@ namespace Diamond.Models
 {
     public static class Server
     {
-        private static readonly DB context = new();
-        private static readonly System.Timers.Timer timer = new(TimeSpan.FromSeconds(1));
+        public static readonly DB context = new();
+        private static readonly System.Timers.Timer timer = new(TimeSpan.FromSeconds(2));
         private static List<Factory.Factory> factories = [];
-        private static readonly Dictionary<int, Factory.Factory> Factories = [];
+        public static readonly Dictionary<int, Factory.Factory> Factories = [];
 
         #region Обращение к БД
-        public static void FactoryLoad()
+        public static void FactorysLoad()
         {
             try
             {
@@ -31,12 +31,13 @@ namespace Diamond.Models
                     .Include(f=>f.Regions).ThenInclude(r=>r.MaterialOptionNow)
                     .Include(f=>f.Regions).ThenInclude(r=>r.Downtime)
                     .Include(f=>f.Regions).ThenInclude(r=>r.Materials)
+                    .Include(f=>f.Regions).ThenInclude(r=>r.Type)
                     .Include(f=>f.Plan)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Route)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Region)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Product)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Material)
-                    .Include(f=>f.Orders.Where(r=>r.Status == RequestStatus.FABRICATING))];
+                    .Include(f=>f.Orders.Where(r=>r.Status == OrderStatus.FABRICATING))];
             }
             catch (TimeoutException te)
             {
@@ -58,13 +59,29 @@ namespace Diamond.Models
             timer.Start();
         }
         
-        public static void Save(object? o, ElapsedEventArgs eea)
+        private static void Save(object? o, ElapsedEventArgs eea)
         {
             try
             {
                 context.SaveChanges();
             }
             catch { }
+        }
+        public static void Save()
+        {
+            try
+            {
+                context.SaveChanges();
+            }
+            catch { }
+        }
+        #endregion
+
+        #region Маршруты
+        public static void UpdateRoutes(int factoryId)
+        {
+            Factories[factoryId].UpdateAllRoutes();
+            Save();
         }
         #endregion
 

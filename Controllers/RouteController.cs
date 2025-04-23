@@ -1,13 +1,14 @@
 ﻿using Diamond.Database;
+using Diamond.Models;
 using Diamond.Models.Factory;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Diamond.Controllers
 {
-    public class RouteController(DB context) : Controller
+    public class RouteController : Controller
     {
-        private readonly DB context = context;
+        private readonly DB context = Server.context;
 
         #region Отображение
         public IActionResult List(int Id)

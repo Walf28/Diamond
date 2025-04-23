@@ -8,17 +8,18 @@
 
 <form>
     <div>
-        <input type="submit" value="Назад" asp-controller="Factory" asp-action="List"/>
+        <input type="submit" value="Назад" asp-controller="Factory" asp-action="List" formnovalidate/>
         <input type="submit" value="Сохранить" asp-controller="Factory" asp-action="Update" asp-route-factory="@Model"/>
-        <input type="submit" value="Удалить" asp-controller="Factory" asp-action="Delete" asp-route-Id="@Model.Id">
-        <input type="submit" value="Добавить участок" asp-controller="Region" asp-action="Create" asp-route-Factory="@Model"/>
-        <input type="submit" value="Маршруты" asp-controller="Route" asp-action="List" asp-route-Id="@Model.Id" />
+        <input type="submit" value="Удалить" asp-controller="Factory" asp-action="Delete" asp-route-Id="@Model.Id" formnovalidate>
+        <input type="submit" value="Добавить участок" asp-controller="Region" asp-action="Create" asp-route-Factory="@Model" formnovalidate/>
+        <input type="submit" value="Обновить маршруты" asp-action="UpdateAllRoutes" asp-route-id="@Model.Id" formnovalidate />
+        @* <input type="submit" value="Маршруты" asp-controller="Route" asp-action="List" asp-route-Id="@Model.Id" /> *@
         @if (Model.Plan.FirstOrDefault(p=>p.Status == PlanStatus.AWAIT_CONFIRMATION || p.Status == PlanStatus.STOP) != null){
-            <input class="btn btn-danger" type="submit" value="Планирование" asp-controller="Plan" asp-action="List" asp-route-Id="@Model.Id" />
+            <input class="btn btn-danger" type="submit" value="Планирование" asp-controller="Plan" asp-action="List" asp-route-Id="@Model.Id" formnovalidate/>
         }
         else
         {
-            <input type="submit" value="Планирование" asp-controller="Plan" asp-action="List" asp-route-Id="@Model.Id" />
+            <input type="submit" value="Планирование" asp-controller="Plan" asp-action="List" asp-route-Id="@Model.Id" formnovalidate/>
         }
     </div>
 
@@ -39,11 +40,11 @@
             @foreach(var Region in Model.Regions.OrderBy(r=>r.Id)) {
                 <tr>
                     <td>@Region.Name</td>
-                    <td>@Html.DisplayFor(f => f.Regions!.First(r => r.Id == Region.Id).Type)</td>
+                    <td>@Region.Type</td>
                     <td>@Html.DisplayFor(f => f.Regions!.First(r => r.Id == Region.Id).Status)</td>
                     <td>
                         <a asp-controller="Region" asp-action="Edit" 
-                        asp-route-Id="@Region.Id" 
+                        asp-route-id="@Region.Id" 
                         class="btn btn-primary">Подробнее</a>
                         @if (Region.Downtime != null)
                         {
@@ -81,7 +82,7 @@
                 <td>Название</td>
                 <td>Маршрут</td>
                 <td>Какую продукцию может произвести</td>
-                <td>Мощность участка под каждое сырьё (гр/час)</td>
+                <td>Мощность маршрута под каждое сырьё (гр/час)</td>
                 <td>Максимальная вместимость сырья в партии(гр.)</td>
                 <td>Количество простаивающих участков</td>
             </tr>

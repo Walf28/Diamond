@@ -1,11 +1,21 @@
 ﻿using Diamond.Database;
-using Diamond.Models.Products;
-using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Diamond.Models.Orders
 {
+    public enum OrderStatus
+    {
+        [Display(Name = "Рассматривается")]
+        ANALYZE,
+        [Display(Name = "Изготавливается")]
+        FABRICATING,
+        [Display(Name = "В доставке")]
+        DELIVERY,
+        [Display(Name = "Выполнена")]
+        COMPLETE
+    }
+
     public class Order
     {
         #region Поля
@@ -16,7 +26,7 @@ namespace Diamond.Models.Orders
         public DateTime DateOfDesiredComplete { get; set; } // Дата желаемого выполнения заявки
         public DateTime? DateOfAcceptance { get; set; } // Дата принятия заявки
         public DateTime? DateOfComplete { get; set; } // Дата завершения выполнения заявки
-        public RequestStatus Status { get; set; } = 0; // Статус заявки
+        public OrderStatus Status { get; set; } = 0; // Статус заявки
         #endregion
 
         #region Ссылочные
@@ -44,11 +54,11 @@ namespace Diamond.Models.Orders
         {
             switch (Status)
             {
-                case RequestStatus.FABRICATING:
+                case OrderStatus.FABRICATING:
                     foreach (var op in OrderParts)
                         if (op.CountComplete != op.Count)
                             return;
-                    Status = RequestStatus.DELIVERY;
+                    Status = OrderStatus.DELIVERY;
                     DateOfComplete = DateTime.UtcNow;
                     return;
                 default: return;

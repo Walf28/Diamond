@@ -9,7 +9,7 @@ namespace Diamond.Models.Products
         #region Обычные
         public int Id { get; set; }
         public string Name { get; set; } = ""; // Наименование продукции
-        public List<Technology> TechnologyProcessing { get; set; } = []; // Процесс обработки
+        public List<int> TechnologyProcessing { get; set; } = []; // Процесс обработки (последовательность id класса Technology)
         #endregion
 
         #region Ссылочные

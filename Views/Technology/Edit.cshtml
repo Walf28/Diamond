@@ -1,0 +1,14 @@
+﻿@using Diamond.Models.Materials
+@model Technology
+@{
+    ViewData["Title"] = $"Тип технологии \"{Model.Name}\"";
+}
+
+<form method="post">
+    <div>
+        <input type="submit" asp-controller="Technology" asp-action="List" value="Назад" formmethod="get" formnovalidate />
+        <input type="submit" value="Сохранить" />
+    </div>
+    <p>Номер<input type="number" asp-for="@Model.Id" value="@Model.Id" readonly/></p>
+    <p>Название<input type="text" asp-for="@Model.Name" value="@Model.Name" required/></p>
+</form>

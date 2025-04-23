@@ -7,7 +7,7 @@
 
 <form>
     <div>
-        <input type="submit" value="Назад" asp-controller="Factory" asp-action="Edit" asp-route-Id="@Model.FactoryId"/>
+        <input type="submit" value="Назад" asp-controller="Factory" asp-action="Edit" asp-route-Id="@Model.FactoryId" formnovalidate/>
         <input type="submit" value="Сохранить" asp-controller="Region" asp-action="Update" asp-route-region="@Model"/>
         @if (Model.Downtime == null)
         {
@@ -21,7 +21,7 @@
     <p>Номер завода<input name="FactoryId" asp-for="@Model.FactoryId" value="@Model.FactoryId" readonly /></p>
     <input asp-for="@Model.Id" value="@Model.Id" readonly hidden/>
     <p>Название участка<input type="text" asp-for="@Model.Name" value="@Model.Name" required /></p>
-    <p>Тип участка<select name="Type" asp-for="@Model.Type" asp-items="Html.GetEnumSelectList<Technology>()"></select></p>
+    <p>Тип участка<select name="TypeId" asp-for="@Model.TypeId" asp-items="@(new SelectList(ViewBag.technologys, "Id", "Name"))" required></select></p>
     <p>Время прохода продукции по участку<input name="TransitTime" asp-for="@Model.TransitTime" type="number" min="0" required /></p>
 
     @if (Model.Factory != null && Model.Factory.Regions != null && Model.Factory.Regions.Count > 0 && !(Model.Factory.Regions.Count == 1 && Model.Factory.Regions[0].Id == Model.Id))
@@ -45,23 +45,23 @@
                         <tr id="tParentsTR@(index)">
                             <td>
                                 <select name="parentRegions" onchange="tParentSelected(value, @index)">
-                                    @foreach (var allRegions in Model.Factory.Regions)
+                                @foreach (var allRegions in Model.Factory.Regions)
+                                {
+                                    if (allRegions.Id == Model.Id)
+                                        continue;
+                                    if (region.Id == allRegions.Id)
                                     {
-                                        if (allRegions.Id == Model.Id)
-                                            continue;
-                                        if (region.Id == allRegions.Id)
-                                        {
-                                            <option value="@allRegions.Id" selected>@allRegions.Name</option>
-                                        }
-                                        else
-                                        {
-                                            <option value="@allRegions.Id">@allRegions.Name</option>
-                                        }
+                                        <option value="@allRegions.Id" selected>@allRegions.Name</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@allRegions.Id">@allRegions.Name</option>
+                                    }
                                 }
                                 </select>
                             </td>
                             <td>
-                                <input id="tParentsTRType@(index)" type="text" value="" readonly />
+                                <input id="tParentsTRType@(index)" type="text" value="@region.Type.Name" readonly />
                             </td>
                             <td>
                                 <button type="button" onclick="tParentDelete(@(index++))" class="btn btn-danger">Удалить</button>
@@ -107,7 +107,7 @@
                                 </select>
                             </td>
                             <td>
-                                <input id="tChildrenTRType@(index)" type="text" value="" readonly />
+                                <input id="tChildrenTRType@(index)" type="text" value="@region.Type.ToString()" readonly />
                             </td>
                             <td>
                                 <button type="button" onclick="tChildrenDelete(@(index++))" class="btn btn-danger">Удалить</button>

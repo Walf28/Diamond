@@ -41,6 +41,10 @@ namespace Diamond.Database.Configurations
                 .HasPrincipalKey<Region>(r => r.Id)
                 .HasForeignKey<Plan>(p => p.RegionId)
                 .OnDelete(DeleteBehavior.Cascade);
+            // С технологией
+            builder.HasOne(r => r.Type).WithMany(t => t.Regions)
+                .HasForeignKey(r => r.TypeId)
+                .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }
     }

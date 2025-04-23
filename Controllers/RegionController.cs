@@ -1,4 +1,5 @@
 ﻿using Diamond.Database;
+using Diamond.Models;
 using Diamond.Models.Factory;
 using Diamond.Models.Materials;
 using Microsoft.AspNetCore.Mvc;
@@ -6,9 +7,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Diamond.Controllers
 {
-    public class RegionController(DB context) : Controller
+    public class RegionController : Controller
     {
-        private readonly DB context = context;
+        private readonly DB context = new();
 
         #region Отображение
         public IActionResult List()
@@ -29,24 +30,26 @@ namespace Diamond.Controllers
             };
             foreach (var item in context.Materials)
                 region.Materials.Add(new MaterialForRegion() { Material = item, MaterialId = item.Id, Region = region, RegionId = region.Id });
+            ViewBag.technologys = context.Technologies.AsNoTracking().ToList();
 
             return View(region);
         }
-        public IActionResult Edit(int? Id)
+        public IActionResult Edit(int? id)
         {
-            if (Id == null)
+            if (id == null)
                 throw new Exception("Участок не найден");
             var region = context.Regions
-                .Where(r => r.Id == Id)
-                .Include(r => r.RegionsParents)
-                .Include(r => r.RegionsChildrens)
+                .Where(r => r.Id == id)
+                .Include(r => r.RegionsParents).ThenInclude(r => r.Type)
+                .Include(r => r.RegionsChildrens).ThenInclude(r => r.Type)
                 .Include(r => r.Factory)
                 .Include(r => r.Factory.Regions)
-                .Include(r => r.Materials)
+                .Include(r => r.Materials).ThenInclude(m=>m.Material)
                 .Include(r => r.Downtime)
-                .First(r => r.Id == Id);
+                .Include(r => r.Type)
+                .First(r => r.Id == id);
 
-            List<Material> AllMaterials = [.. context.Materials];
+            List<Material> AllMaterials = [.. context.Materials.AsNoTracking()];
             List<Material> NewMaterials = [];
             foreach (var am in AllMaterials)
             {
@@ -64,13 +67,14 @@ namespace Diamond.Controllers
                     NewMaterials.Add(am);
             }
             ViewBag.NewMaterials = NewMaterials;
+            ViewBag.technologys = context.Technologies.AsNoTracking().ToList();
 
             return View(region);
         }
         #endregion
 
         #region Управление
-        public async Task<IActionResult> Add(Region region, List<int> parentRegions, List<int> childrenRegions)
+        public IActionResult Add(Region region, List<int> parentRegions, List<int> childrenRegions, int TypeId)
         {
             region.RegionsParents = [];
             region.RegionsChildrens = [];
@@ -98,12 +102,18 @@ namespace Diamond.Controllers
                         region.Materials[i].Material = context.Materials.Where(m => m.Id == region.Materials[i].MaterialId).First();
                 }
 
+            // Ссылка на тип технологической обработки
+            region.Type = context.Technologies.First(t => t.Id == TypeId);
+
             // Добавление в БД
-            await context.Regions.AddAsync(region);
-            await context.SaveChangesAsync();
+            context.Regions.Add(region);
+            context.SaveChanges();
+            Server.FactorysLoad();
+            Server.Factories[region.FactoryId].UpdateAllRoutes();
+            Server.Save();
             return RedirectToAction("Edit", "Factory", new { Id = region.FactoryId });
         }
-        public async Task<IActionResult> Update(Region region, List<int> parentRegions, List<int> childrenRegions)
+        public IActionResult Update(Region region, List<int> parentRegions, List<int> childrenRegions, int TypeId)
         {
             var DBRegion = context.Regions
                 .Where(r => r.Id == region.Id)
@@ -142,14 +152,28 @@ namespace Diamond.Controllers
             }
             DBRegion.Materials = region.Materials;
 
+            // Ссылка на тип технологической обработки
+            DBRegion.Type = context.Technologies.First(t => t.Id == TypeId);
+
             // Сохранение всех изменений
-            await context.SaveChangesAsync();
+            context.SaveChanges();
+            Server.FactorysLoad();
+            Server.Factories[DBRegion.FactoryId].UpdateAllRoutes();
+            Server.Save();
             return RedirectToAction("Edit", "Factory", new { Id = region.FactoryId });
         }
-        public async Task<IActionResult> Delete(int Id)
+        public IActionResult Delete(int Id)
         {
-            await context.Regions.Where(r => r.Id == Id).ExecuteDeleteAsync();
-            await context.SaveChangesAsync();
+            int FactoryId = context.Regions
+                .AsNoTracking()
+                .Where(r => r.Id == Id)
+                .Select(r => r.FactoryId)
+                .First();
+            context.Regions.Where(r => r.Id == Id).ExecuteDelete();
+            context.SaveChanges();
+            Server.FactorysLoad();
+            Server.Factories[FactoryId].UpdateAllRoutes();
+            Server.Save();
             return View();
         }
         #endregion
@@ -160,8 +184,9 @@ namespace Diamond.Controllers
         {
             return Json(new
             {
-                value = context.Regions
+                value = Server.context.Regions
                 .AsNoTracking()
+                .Include(r => r.Type)
                 .First(r => r.Id == regionId)
                 .Type.ToString()
             });

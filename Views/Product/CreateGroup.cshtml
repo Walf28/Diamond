@@ -28,11 +28,12 @@
             newElement.setAttribute('id', `tp${tpIndex}`)
             newElement.innerHTML = `
                 <select name="TechnologyProcessing" required>
-                    @foreach (var item in Html.GetEnumSelectList<Technology>())
-                    {
-                        <option value="@item.Value">@item.Text</option>
-                    }
-                </select>
+                    <option value="0">Отсутствует</option>
+                    @foreach (var item in ((List<Technology>)ViewBag.technologys))
+                        {
+                            <option value="@item.Id">@item.Name</option>
+                        }
+                    </select>
                 <button type="button" onclick="deleteTP(${tpIndex})">Удалить</button>`;
             tpIndex++;
             element.appendChild(newElement);

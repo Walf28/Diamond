@@ -1,10 +1,10 @@
 ﻿@using Diamond.Models.Materials
-@model IEnumerable<Material>
+@model IEnumerable<Technology>
 @{
-    ViewData["Title"] = "Список сырья";
+    ViewData["Title"] = "Список технологий";
 }
 
-<input type="button" onclick="location.href='@Url.Action("Create", "Material")'" value="Добавить сырьё" />
+<input type="button" onclick="location.href='@Url.Action("Create", "Technology")'" value="Добавить тип технологии" />
 <table class="table table-bordered">
     <thead>
         <tr>
@@ -14,7 +14,7 @@
         </tr>
     </thead>
     <tbody>
-    @foreach (var item in Model.OrderBy(mbox=>mbox.Id)) {
+    @foreach (var item in Model.OrderBy(t=>t.Id)) {
             <tr>
                 <td>
                     @Html.DisplayFor(modelItem => item.Id)
@@ -23,8 +23,8 @@
                     @Html.DisplayFor(modelItem => item.Name)
                 </td>
                 <td>
-                    <a asp-action="Detail" asp-route-id="@item.Id" class="btn btn-primary">Редактировать</a>
-                    <a asp-action="Delete" asp-route-id="@item.Id" class="btn btn-danger">Удалить</a>
+                    <a asp-action="Edit" asp-route-Id="@item.Id" class="btn btn-primary">Редактировать</a>
+                    <a asp-action="Delete" asp-route-Id="@item.Id" class="btn btn-danger">Удалить</a>
                 </td>
             </tr>
     }

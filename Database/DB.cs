@@ -1,4 +1,5 @@
 ﻿using Diamond.Database.Configurations;
+using Diamond.Models;
 using Diamond.Models.Factory;
 using Diamond.Models.Materials;
 using Diamond.Models.Orders;
@@ -24,6 +25,7 @@ namespace Diamond.Database
         public DbSet<Order> Orders { get; set; } = null!;
         public DbSet<OrderPart> OrderParts { get; set; } = null!;
         public DbSet<Warehouse> Warehouses { get; set; } = null!;
+        public DbSet<Technology> Technologies { get; set; } = null!;
 
         /*string cmdDeleteMigrations = "Remove-Migration";
         string cmdCreateMigrations = "Add-Migration InitialCreate";
@@ -53,6 +55,7 @@ namespace Diamond.Database
             modelBuilder.ApplyConfiguration(new RouteConfiguration());
             modelBuilder.ApplyConfiguration(new WarehouseConfiguration());
             modelBuilder.ApplyConfiguration(new WarehouseConfiguration());
+            modelBuilder.ApplyConfiguration(new TechnologyConfiguration());
 
             base.OnModelCreating(modelBuilder);
         }

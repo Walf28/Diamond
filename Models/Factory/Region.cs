@@ -8,6 +8,30 @@ using System.Timers;
 
 namespace Diamond.Models.Factory
 {
+    public enum RegionStatus
+    {
+        [Display(Name = "Выключен")]
+        OFF,
+        [Display(Name = "Свободен")]
+        FREE,
+        [Display(Name = "Идёт переналадка свободного участка")]
+        FREE_READJUSTMENT,
+        [Display(Name = "Идёт переналадка под план")]
+        READJUSTMENT,
+        [Display(Name = "Ожидает загрузки")]
+        AWAIT_DOWNLOAD,
+        [Display(Name = "Ожидает запуска")]
+        AWAITING_LAUNCH,
+        [Display(Name = "Работает")]
+        IN_WORKING,
+        [Display(Name = "Ожидает разгрузки")]
+        AWAIT_UNLOADING,
+        [Display(Name = "Не работает")]
+        DOWNTIME,
+        [Display(Name = "Синхронизация с маршрутами")]
+        DOWNTIME_FINISH
+    }
+
     public class Region
     {
         #region Поля
@@ -16,7 +40,6 @@ namespace Diamond.Models.Factory
         [Required(ErrorMessage = "Название обязательно")]
         [StringLength(50, ErrorMessage = "Название должно быть не длиннее 50 символов")]
         public string Name { get; set; } = ""; // Название объекта
-        public Technology Type { get; set; } = Technology.NONE; // Тип участка
         public int Workload { get; set; } = 0; // Текущая загруженность
         public int TransitTime { get; set; } = 0; // Время прохода продукции по участку
         public int ReadjustmentTime { get; set; } = 0; // Время, затрачиваемое на переналадку (в минутах)
@@ -26,6 +49,8 @@ namespace Diamond.Models.Factory
         #region Ссылочные
         [NotMapped]
         public DB context = new();
+        [ForeignKey(nameof(TypeId))]
+        public Technology Type { get; set; } = new Technology() { Name = "-" }; // Тип участка
         public Factory Factory { get; set; } = null!; // Фабрика
         public List<Route> Routes { get; set; } = []; // Маршруты, проходящие по данному участку
         public List<Region> RegionsParents { get; set; } = []; // Список родительских участков
@@ -38,6 +63,7 @@ namespace Diamond.Models.Factory
 
         #region Id ссылок
         public int FactoryId { get; set; }
+        public int TypeId = 0;
         public int? MaterialOptionNowId { get; set; } // Под какое сырьё участок сейчас настроен
         [NotMapped]
         public List<int>? RoutesId { get; set; } // Маршруты, проходящие по данному участку
@@ -145,7 +171,14 @@ namespace Diamond.Models.Factory
             List<Material> result = [];
             foreach (var material in Materials)
             {
-                result.Add(context.Materials.AsNoTracking().Where(m => m.Id == material.MaterialId).First());
+                try
+                {
+                    result.Add(context.Materials.AsNoTracking().Where(m => m.Id == material.MaterialId).First());
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
+                }
             }
 
             return result;
@@ -313,7 +346,8 @@ namespace Diamond.Models.Factory
             // Проверка
             int routeId = Plan.RouteId;
             int routeIndex = Routes.FindIndex(r => r.Id == routeId);
-            if (Status != RegionStatus.FREE || routeIndex == -1)
+            if (Status != RegionStatus.FREE || routeIndex == -1 || Workload > 0 ||
+                (Downtime != null && Downtime.IsDowntime(DateTime.UtcNow.AddMinutes(GetTime(Plan)))))
                 return false;
 
             // Установка плана
@@ -321,8 +355,6 @@ namespace Diamond.Models.Factory
             Plan!.Region = this;
             if (MaterialOptionNowId == null || MaterialOptionNowId != Plan.MaterialId)
                 Plan.Route.RegionUpdateStatus(Id, RegionStatus.READJUSTMENT);
-            else if (Workload > 0)
-                throw new Exception("");
             else
                 Plan.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_DOWNLOAD);
 
@@ -558,17 +590,21 @@ namespace Diamond.Models.Factory
                 {
                     // Если простой ещё не установлен
                     Downtime = downtime;
-                    Status = RegionStatus.DOWNTIME;
-                    foreach (var route in Routes)
-                        route.RegionUpdateStatus(Id);
+                    if (Downtime.IsDowntimeNow)
+                    {
+                        Status = RegionStatus.DOWNTIME;
+                        foreach (var route in Routes)
+                            route.RegionUpdateStatus(Id);
+                    }
                 }
                 else
                 {
                     // Установка некоторых новых значений
-                    Status = RegionStatus.DOWNTIME;
                     Downtime.SetDowntimeDuration = downtime.DowntimeDuration;
                     Downtime.SetDowntimeFinish = downtime.DowntimeFinish;
                     Downtime.DowntimeReason = downtime.DowntimeReason;
+                    if (Downtime.IsDowntimeNow)
+                        Status = RegionStatus.DOWNTIME;
                 }
 
                 // Начало отсчёта
@@ -586,7 +622,7 @@ namespace Diamond.Models.Factory
         public void StartDowntime()
         {
             // Небольшая проверочка
-            if (Status != RegionStatus.DOWNTIME || Downtime == null || Downtime.DowntimeFinish == null)
+            if (Status != RegionStatus.DOWNTIME || Downtime == null || Downtime.DowntimeFinish == null || !Downtime.IsDowntimeNow)
                 return;
 
             // Запуск отсчёта

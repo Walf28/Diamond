@@ -165,7 +165,7 @@ namespace Diamond.Migrations
                     b.Property<int>("TransitTime")
                         .HasColumnType("integer");
 
-                    b.Property<int>("Type")
+                    b.Property<int>("TypeId")
                         .HasColumnType("integer");
 
                     b.Property<int>("Workload")
@@ -176,6 +176,8 @@ namespace Diamond.Migrations
                     b.HasIndex("FactoryId");
 
                     b.HasIndex("MaterialOptionNowId");
+
+                    b.HasIndex("TypeId");
 
                     b.ToTable("Regions");
                 });
@@ -375,7 +377,7 @@ namespace Diamond.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.PrimitiveCollection<int[]>("TechnologyProcessing")
+                    b.PrimitiveCollection<List<int>>("TechnologyProcessing")
                         .IsRequired()
                         .HasColumnType("integer[]");
 
@@ -434,6 +436,23 @@ namespace Diamond.Migrations
                     b.HasIndex("WarehouseId");
 
                     b.ToTable("ProductsSpecificWarehouse");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Technology", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Technologies");
                 });
 
             modelBuilder.Entity("RegionRegion", b =>
@@ -532,9 +551,17 @@ namespace Diamond.Migrations
                         .HasForeignKey("MaterialOptionNowId")
                         .OnDelete(DeleteBehavior.Cascade);
 
+                    b.HasOne("Diamond.Models.Technology", "Type")
+                        .WithMany("Regions")
+                        .HasForeignKey("TypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Factory");
 
                     b.Navigation("MaterialOptionNow");
+
+                    b.Navigation("Type");
                 });
 
             modelBuilder.Entity("Diamond.Models.Factory.Route", b =>
@@ -761,6 +788,11 @@ namespace Diamond.Migrations
                     b.Navigation("Plans");
 
                     b.Navigation("ProductWarehouses");
+                });
+
+            modelBuilder.Entity("Diamond.Models.Technology", b =>
+                {
+                    b.Navigation("Regions");
                 });
 #pragma warning restore 612, 618
         }

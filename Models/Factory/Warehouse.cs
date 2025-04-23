@@ -115,7 +115,7 @@ namespace Diamond.Models.Factory
         public void AddToRequests()
         {
             List<Order> orders = [.. Factory.Orders
-                .Where(r => r.Status == RequestStatus.FABRICATING)
+                .Where(r => r.Status == OrderStatus.FABRICATING)
                 .OrderBy(r => r.DateOfDesiredComplete)];
             foreach (var order in orders)
             {

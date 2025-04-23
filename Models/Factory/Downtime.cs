@@ -59,6 +59,16 @@ namespace Diamond.Models.Factory
         }
         public DateTime GetDowntimeStartLocal => DowntimeStart.ToLocalTime();
         public DateTime? GetDowntimeFinishLocal => DowntimeFinish?.ToLocalTime();
+        public bool IsDowntimeNow => DowntimeStart.ToUniversalTime() < DateTime.UtcNow
+            && (DowntimeFinish == null || DowntimeFinish.Value.ToUniversalTime() > DateTime.UtcNow);
+        #endregion
+
+        #region Методы
+        public bool IsDowntime(DateTime dateTime)
+        {
+             return DowntimeStart.ToUniversalTime() < dateTime.ToUniversalTime() && 
+                (DowntimeFinish == null || DowntimeFinish.Value.ToUniversalTime() > dateTime.ToUniversalTime());
+        }
         #endregion
     }
 }

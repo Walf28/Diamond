@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Diamond.Controllers
 {
-    public class FactoryController(DB context) : Controller
+    public class FactoryController : Controller
     {
-        private readonly DB context = context;
+        private readonly DB context = new();
 
         #region Отображение
         public IActionResult List()
@@ -23,49 +23,31 @@ namespace Diamond.Controllers
         {
             if (Id == null)
                 return RedirectToAction(nameof(List));
-            var f = context.Factories
-                .Include(f => f.Regions.OrderBy(r => r.Id)).ThenInclude(r => r.Materials)
-                .Include(f => f.Routes).ThenInclude(ps => ps.Regions).ThenInclude(ps => ps.Downtime)
-                .Include(f => f.Orders.Where(r => r.Status == RequestStatus.FABRICATING))
-                .Include(f => f.Plan).ThenInclude(p => p.Product).ThenInclude(ps => ps.ProductGroup)
-                .Include(f => f.Plan).ThenInclude(p => p.Route).ThenInclude(ps => ps.Regions)
-                .Include(f => f.Plan).ThenInclude(p => p.Region)
-                .First(f => f.Id == Id);
-
-            // Наименование продукции
-            /*ViewBag.PSNames = context.Factories
-                .AsNoTracking()
-                .Include(f => f.Requests.Where(r => r.Status == RequestStatus.FABRICATING))
-                .ThenInclude(o => o.OrderParts)
-                .ThenInclude(op => op.Product)
-                .ThenInclude(ps => ps.ProductGroup)
-                .First()
-                .Requests.Select(o => o.OrderParts.Product)
-                .Select(p => p.ProductGroup)
-                .Select(pg => pg.Name).ToList();*/
+            var f = Server.Factories[Id!.Value];
             return View(f);
         }
         #endregion
 
         #region Управление
-        public async Task<IActionResult> Add(Factory factory)
+        public IActionResult Add(Factory factory)
         {
-            await context.Factories.AddAsync(factory);
-            await context.SaveChangesAsync();
+            context.Factories.Add(factory);
+            context.SaveChanges();
+            _ = Server.Factories.TryAdd(factory.Id, factory);
             return RedirectToAction(nameof(List));
         }
-        public async Task<IActionResult> Update(Factory factory)
+        public IActionResult Update(Factory factory)
         {
-            await context.Factories
+            context.Factories
                 .Where(f => f.Id == factory.Id)
-                .ExecuteUpdateAsync(f => f.SetProperty(sp => sp.Name, factory.Name));
-            await context.SaveChangesAsync();
+                .ExecuteUpdate(f => f.SetProperty(sp => sp.Name, factory.Name));
+            context.SaveChanges();
             return RedirectToAction(nameof(List));
         }
-        public async Task<IActionResult> Delete(int Id)
+        public IActionResult Delete(int Id)
         {
-            await context.Factories.Where(f => f.Id == Id).ExecuteDeleteAsync();
-            await context.SaveChangesAsync();
+            context.Factories.Where(f => f.Id == Id).ExecuteDelete();
+            context.SaveChanges();
             return RedirectToAction(nameof(List));
         }
 
@@ -73,15 +55,22 @@ namespace Diamond.Controllers
         {
             context.Regions.Where(r => r.Id == RegionId).ExecuteDelete();
             context.SaveChanges();
-            return RedirectToAction(nameof(Edit), new { Id = ModelId });
+            return UpdateAllRoutes(ModelId);
         }
         public IActionResult SetDowntime(int RegionId)
         {
             Server.DowntimeCreate(RegionId);
             return RedirectToAction(nameof(Edit), new
             {
-                Id = context.Regions.First(r => r.Id == RegionId).FactoryId
+                Id = Server.context.Regions.First(r => r.Id == RegionId).FactoryId
             });
+        }
+        public IActionResult UpdateAllRoutes(int id)
+        {
+            Server.FactorysLoad();
+            Server.Factories[id].UpdateAllRoutes();
+            Server.Save();
+            return RedirectToAction(nameof(Edit), new { Id = id });
         }
         #endregion
     }

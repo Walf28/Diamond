@@ -79,6 +79,34 @@ namespace Diamond.Models.Factory
                     return true;
             }
         }
+        // Проверяет в наличии участки, указанные в последовательности
+        public bool IsWorking
+        {
+            get
+            {
+                for (int i = 0; i < RegionsRoute.Count; ++i)
+                {
+                    Region? region = Regions.FirstOrDefault(r => r.Id == RegionsRoute[i]);
+                    // Проверка участка на существование
+                    if (region == null)
+                        return false;
+
+                    // Проверка последнего участка
+                    if (i == RegionsRoute.Count - 1)
+                    {
+                        if (region.RegionsChildrens.Count > 0)
+                            return false;
+                        else
+                            return true;
+                    }
+
+                    // Проверка участка на существование связей с последующим участком
+                    if (region.RegionsChildrens.FirstOrDefault(r => r.Id == RegionsRoute[i + 1]) == null)
+                        return false;
+                }
+                return true;
+            }
+        }
         #endregion
 
         #region Методы
@@ -131,33 +159,37 @@ namespace Diamond.Models.Factory
                 return [];
 
             // Продукция, которую можно производить, если не считать тех. обработку
-            List<ProductGroup> products = [];
+            List<ProductGroup> allProducts = [];
             foreach (var material in materials)
             {
-                products.AddRange([..context.ProductsGroup
+                allProducts.AddRange([..context.ProductsGroup
                     .AsNoTracking()
                     .Where(p=>p.MaterialId == material.Id)]);
             }
 
-            // Теперь учитываем процесс
-            for (int i = 0; i < products.Count; ++i)
+            // Рассмотрим каждую продукцию
+            List<int> thisTechnologyProcess = Regions.Select(r=>r.TypeId).ToList();
+            List<ProductGroup> potecialProducts = allProducts.Where(p=>p.TechnologyProcessing.SequenceEqual(thisTechnologyProcess)).ToList();
+
+            /*// Теперь учитываем процесс
+            for (int i = 0; i < allProducts.Count; ++i)
             {
-                List<Technology> tech = [.. products[i].TechnologyProcessing];
+                List<int> tech = [.. allProducts[i].TechnologyProcessing];
                 for (int j = 0; j < tech.Count; ++j)
                 {
                     if (j < RegionsRoute.Count)
                         break;
                     Region r = Regions.Where(r => r.Id == RegionsRoute[j]).First();
-                    if (r == null || r.Type != tech[j] || (j == tech.Count - 1 && r.IsRegionsChildrens))
+                    if (r == null || r.Type.Id != tech[j] || (j == tech.Count - 1 && r.IsRegionsChildrens))
                     {
-                        products.RemoveAt(i);
+                        allProducts.RemoveAt(i);
                         --i;
                         break;
                     }
                 }
-            }
+            }*/
 
-            return products;
+            return potecialProducts;
         }
 
         /// <summary>

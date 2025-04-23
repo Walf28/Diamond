@@ -35,15 +35,15 @@
             {
                 <div id="tp@(i)">
                     <select name="TechnologyProcessing" required>
-                        @foreach (var item in Html.GetEnumSelectList<Technology>())
+                        @foreach (var item in ((List<Technology>)ViewBag.technologys))
                         {
-                            if (item.Value == ((int)tp).ToString())
+                            if (item.Id == tp)
                             {
-                                <option value="@item.Value" selected>@item.Text</option>
+                                <option value="@item.Id" selected>@item.Name</option>
                             }
                             else
                             {
-                                <option value="@item.Value">@item.Text</option>
+                                <option value="@item.Id">@item.Name</option>
                             }
                         }
                     </select>
@@ -64,11 +64,12 @@
             newElement.setAttribute('id', `tp${tpIndex}`)
             newElement.innerHTML = `
                 <select name="TechnologyProcessing" required>
-                    @foreach (var item in Html.GetEnumSelectList<Technology>())
-                    {
-                        <option value="@item.Value">@item.Text</option>
-                    }
-                </select>
+                    <option value="0">Отсутствует</option>
+                    @foreach (var item in (List<Technology>)ViewBag.technologys)
+                        {
+                            <option value="@item.Id">@item.Name</option>
+                        }
+                    </select>
                 <button type="button" onclick="deleteTP(${tpIndex})">Удалить</button>`;
             tpIndex++;
             element.appendChild(newElement);

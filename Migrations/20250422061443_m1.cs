@@ -42,6 +42,19 @@ namespace Diamond.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Technologies",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Name = table.Column<string>(type: "text", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Technologies", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Orders",
                 columns: table => new
                 {
@@ -113,7 +126,7 @@ namespace Diamond.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    TechnologyProcessing = table.Column<int[]>(type: "integer[]", nullable: false),
+                    TechnologyProcessing = table.Column<List<int>>(type: "integer[]", nullable: false),
                     MaterialId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
@@ -134,11 +147,11 @@ namespace Diamond.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Name = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    Type = table.Column<int>(type: "integer", nullable: false),
                     Workload = table.Column<int>(type: "integer", nullable: false),
                     TransitTime = table.Column<int>(type: "integer", nullable: false),
                     ReadjustmentTime = table.Column<int>(type: "integer", nullable: false),
                     Status = table.Column<int>(type: "integer", nullable: false),
+                    TypeId = table.Column<int>(type: "integer", nullable: false),
                     FactoryId = table.Column<int>(type: "integer", nullable: false),
                     MaterialOptionNowId = table.Column<int>(type: "integer", nullable: true)
                 },
@@ -155,6 +168,12 @@ namespace Diamond.Migrations
                         name: "FK_Regions_Materials_MaterialOptionNowId",
                         column: x => x.MaterialOptionNowId,
                         principalTable: "Materials",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Regions_Technologies_TypeId",
+                        column: x => x.TypeId,
+                        principalTable: "Technologies",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -516,6 +535,11 @@ namespace Diamond.Migrations
                 column: "MaterialOptionNowId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Regions_TypeId",
+                table: "Regions",
+                column: "TypeId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_RegionsMaterials_MaterialId",
                 table: "RegionsMaterials",
                 column: "MaterialId");
@@ -584,6 +608,9 @@ namespace Diamond.Migrations
 
             migrationBuilder.DropTable(
                 name: "Factories");
+
+            migrationBuilder.DropTable(
+                name: "Technologies");
 
             migrationBuilder.DropTable(
                 name: "Materials");

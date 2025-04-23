@@ -27,7 +27,7 @@
             <td>@order.GetDateOfAcceptanceLocal</td>
             <td>@order.DateOfDesiredComplete.ToString("dd.MM.yyyy")</td>
             <td>@Html.DisplayFor(l=>l.Where(r=>r.Id == order.Id).First().Status)</td>
-            <td><a asp-controller="Request" asp-action="Detail" asp-route-requestId="@order.Id" class="btn btn-primary">Рассмотреть</a></td>
+            <td><a asp-controller="Order" asp-action="Detail" asp-route-requestId="@order.Id" class="btn btn-primary">Рассмотреть</a></td>
         </tr>
     }
 </table>

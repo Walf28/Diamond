@@ -41,7 +41,7 @@ namespace Diamond.Models.Factory
                 .Where(f => f.Id == Id)
                 .Include(f => f.Routes).ThenInclude(r => r.Regions)
                 .Include(f => f.Regions)
-                .Include(f => f.Orders.Where(r => r.Status == RequestStatus.FABRICATING))
+                .Include(f => f.Orders.Where(r => r.Status == OrderStatus.FABRICATING))
                 .FirstOrDefault();
             if (factory == null)
                 return;
@@ -77,9 +77,17 @@ namespace Diamond.Models.Factory
         public List<Route> FindUnusingRoutes()
         {
             if (Regions.Count == 0)
-                Regions = [.. context.Regions.AsNoTracking().Where(r => r.FactoryId == Id).Include(r => r.RegionsParents).Include(r => r.RegionsChildrens)];
+                Regions = [.. context.Regions
+                    .AsNoTracking()
+                    .Where(r => r.FactoryId == Id)
+                    .Include(r => r.RegionsParents)
+                    .Include(r => r.RegionsChildrens)];
             if (Routes.Count == 0)
-                Routes = [.. context.Routes.AsNoTracking().Where(r => r.FactoryId == Id)];
+                Routes = [.. context.Routes
+                    .AsNoTracking()
+                    .Where(r => r.FactoryId == Id)
+                    .Include(r=>r.Regions).ThenInclude(r => r.RegionsParents)
+                    .Include(r=>r.Regions).ThenInclude(r => r.RegionsChildrens)];
 
             List<Route> routes = [];
             foreach (var r in Regions)
@@ -91,7 +99,8 @@ namespace Diamond.Models.Factory
                 // Нахождение используемых маршрутов
                 for (int i = 0; i < ThisRoutes.Count; ++i)
                     foreach (var UsedRoute in Routes)
-                        if (ThisRoutes[i].GetContent == UsedRoute.GetContent)
+                        //if (ThisRoutes[i].GetContent == UsedRoute.GetContent)
+                        if (ThisRoutes[i].RegionsRoute.SequenceEqual(UsedRoute.RegionsRoute))
                         {
                             ThisRoutes.RemoveAt(i);
                             --i;
@@ -217,7 +226,7 @@ namespace Diamond.Models.Factory
                 .FirstOrDefault() ?? throw new Exception("Заказ не найден");
             request.DateOfAcceptance = DateTime.UtcNow;
             request.FactoryId = Id;
-            request.Status = RequestStatus.FABRICATING;
+            request.Status = OrderStatus.FABRICATING;
 
             // Добавление заявки в список заявок
             Orders.Add(request);
@@ -360,7 +369,23 @@ namespace Diamond.Models.Factory
             }
 
             // Сохраняем изменения, чтобы получить Id
-            Server.Save(null, new(DateTime.Now));
+            Server.Save();
+        }
+
+        /// <summary>
+        /// Добавить в производственный план
+        /// </summary>
+        private void ChangePlan(int planId, List<Plan> plans)
+        {
+            int pIndex = Plan.FindIndex(p => p.Id == planId);
+            if (pIndex < 0)
+                return;
+
+            Plan.RemoveAt(pIndex);
+            Plan.AddRange(plans);
+            UpdatePlan();
+
+            Server.Save();
         }
 
         /// <summary>
@@ -468,10 +493,32 @@ namespace Diamond.Models.Factory
         #endregion
 
         #region Управление
+        /// <summary>
+        /// Запустить все участки
+        /// </summary>
         public void LaunchAllRegions()
         {
             for (int i = 0; i < Regions.Count; ++i)
                 Regions[i].Launch();
+        }
+
+        /// <summary>
+        /// Обновить все маршруты
+        /// </summary>
+        public void UpdateAllRoutes()
+        {
+            // Удаление "сломанных" маршрутов
+            Routes.RemoveAll(r => !r.IsWorking);
+            /*for (int i = 0; i < Routes.Count; ++i)
+                if (!Routes[i].IsWorking)
+                {
+                    Routes.RemoveAt(i);
+                    --i;
+                }*/
+
+            // Добавление новых маршрутов
+            List<Route> UnusingRoutes = FindUnusingRoutes();
+            Routes.AddRange(UnusingRoutes);
         }
         #endregion
 

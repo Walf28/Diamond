@@ -1,6 +1,4 @@
 ﻿using Diamond.Database;
-using Diamond.Models;
-using Diamond.Models.Materials;
 using Diamond.Models.Products;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -20,8 +18,9 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult CreateGroup()
         {
-            List<Material> materials = [.. context.Materials];
-            ViewBag.materials = materials;
+            //List<Material> materials = [.. context.Materials.AsNoTracking()];
+            ViewBag.materials = context.Materials.AsNoTracking().ToList();
+            ViewBag.technologys = context.Technologies.AsNoTracking().ToList();
             return View();
         }
         [HttpGet]
@@ -34,8 +33,10 @@ namespace Diamond.Controllers
                 .AsNoTracking()
                 .First(p => p.Id == Id);
 
-            List<Material> materials = [.. context.Materials];
-            ViewBag.materials = materials;
+            //List<Material> materials = [.. context.Materials];
+            //ViewBag.materials = materials;
+            ViewBag.materials = context.Materials.AsNoTracking().ToList();
+            ViewBag.technologys = context.Technologies.AsNoTracking().ToList();
 
             return View(product);
         }
@@ -45,6 +46,7 @@ namespace Diamond.Controllers
         [HttpPost]
         public IActionResult CreateGroup(ProductGroup product)
         {
+            product.TechnologyProcessing.RemoveAll(tp => tp == 0);
             context.ProductsGroup.Add(product);
             context.SaveChanges();
             return RedirectToAction(nameof(ListGroup));
@@ -63,7 +65,7 @@ namespace Diamond.Controllers
 
             productGroup.Name = product.Name;
             productGroup.MaterialId = product.MaterialId;
-            productGroup.TechnologyProcessing = product.TechnologyProcessing;
+            productGroup.TechnologyProcessing = product.TechnologyProcessing.Where(tp => tp != 0).ToList();
 
             context.SaveChanges();
             return RedirectToAction(nameof(ListGroup));

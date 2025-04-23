@@ -8,7 +8,7 @@
 <form method="post">
     <div>
         <button onclick="location.href='@Url.Action("List", "Order")'" formmethod="get">Назад</button>
-        @if(Model.Status == RequestStatus.ANALYZE){
+        @if(Model.Status == OrderStatus.ANALYZE){
             <input type="submit" value="Сохранить"/>
         }
     </div>
@@ -19,7 +19,7 @@
     <p>Количество<input type="number" value="@Model.OrderParts[0].Count" readonly/></p>
 
     <p>Завод
-        @if (Model.Status != RequestStatus.ANALYZE) {
+        @if (Model.Status != OrderStatus.ANALYZE) {
             <input type="text" value="@Model.Factory!.Name" readonly/>
         } else {
             <select asp-for="FactoryId" required>
