@@ -28,9 +28,10 @@ namespace Diamond.Controllers
                     .First(),
                 Materials = []
             };
-            foreach (var item in context.Materials)
-                region.Materials.Add(new MaterialForRegion() { Material = item, MaterialId = item.Id, Region = region, RegionId = region.Id });
+            /*foreach (var item in context.Materials)
+                region.Materials.Add(new MaterialForRegion() { Material = item, MaterialId = item.Id, Region = region, RegionId = region.Id });*/
             ViewBag.technologys = context.Technologies.AsNoTracking().ToList();
+            ViewBag.materials = context.Materials.AsNoTracking().ToList();
 
             return View(region);
         }
@@ -49,7 +50,7 @@ namespace Diamond.Controllers
                 .Include(r => r.Type)
                 .First(r => r.Id == id);
 
-            List<Material> AllMaterials = [.. context.Materials.AsNoTracking()];
+            /*List<Material> AllMaterials = [.. context.Materials.AsNoTracking()];
             List<Material> NewMaterials = [];
             foreach (var am in AllMaterials)
             {
@@ -66,7 +67,8 @@ namespace Diamond.Controllers
                 if (!find)
                     NewMaterials.Add(am);
             }
-            ViewBag.NewMaterials = NewMaterials;
+            ViewBag.NewMaterials = NewMaterials;*/
+            ViewBag.materials = context.Materials.AsNoTracking().ToList();
             ViewBag.technologys = context.Technologies.AsNoTracking().ToList();
 
             return View(region);
@@ -74,7 +76,7 @@ namespace Diamond.Controllers
         #endregion
 
         #region Управление
-        public IActionResult Add(Region region, List<int> parentRegions, List<int> childrenRegions, int TypeId)
+        public IActionResult Add(Region region, List<int> parentRegions, List<int> childrenRegions, int TypeId, List<int> selectedMaterials, List<int> selectedMaterialsPower)
         {
             region.RegionsParents = [];
             region.RegionsChildrens = [];
@@ -90,17 +92,12 @@ namespace Diamond.Controllers
                     region.RegionsChildrens.Add(context.Regions.Where(r => r.Id == cId).First());
 
             // Добавление производительности
-            if (region.Materials != null)
-                for (int i = 0; i < region.Materials.Count; ++i)
-                {
-                    if (region.Materials[i].Power <= 0)
-                    {
-                        region.Materials.RemoveAt(i);
-                        --i;
-                    }
-                    else
-                        region.Materials[i].Material = context.Materials.Where(m => m.Id == region.Materials[i].MaterialId).First();
-                }
+            for (int i = 0; i < selectedMaterials.Count; ++i)
+            {
+                if (selectedMaterials[i] == 0)
+                    continue;
+                region.Materials.Add(new() { Material = context.Materials.First(m=>m.Id == selectedMaterials[i]), Power = selectedMaterialsPower[i] });
+            }
 
             // Ссылка на тип технологической обработки
             region.Type = context.Technologies.First(t => t.Id == TypeId);
@@ -113,7 +110,7 @@ namespace Diamond.Controllers
             Server.Save();
             return RedirectToAction("Edit", "Factory", new { Id = region.FactoryId });
         }
-        public IActionResult Update(Region region, List<int> parentRegions, List<int> childrenRegions, int TypeId)
+        public IActionResult Update(Region region, List<int> parentRegions, List<int> childrenRegions, int TypeId, List<int> selectedMaterials, List<int> selectedMaterialsPower)
         {
             var DBRegion = context.Regions
                 .Where(r => r.Id == region.Id)
@@ -140,17 +137,16 @@ namespace Diamond.Controllers
                     DBRegion.RegionsChildrens.Add(context.Regions.Where(r => r.Id == cId).First());
 
             // Обновление производительности
-            for (int i = 0; i < region.Materials.Count; ++i)
+            for (int i = 0; i < selectedMaterials.Count; ++i)
             {
-                if (region.Materials[i].Power <= 0)
-                {
-                    region.Materials.RemoveAt(i);
-                    --i;
-                }
+                if (selectedMaterials[i] == 0)
+                    continue;
+
+                if (DBRegion.Materials.FirstOrDefault(m => m.MaterialId == selectedMaterials[i]) == null)
+                    DBRegion.Materials.Add(new() { Material = context.Materials.First(m => m.Id == selectedMaterials[i]), Power = selectedMaterialsPower[i] });
                 else
-                    region.Materials[i].Material = context.Materials.Where(m => m.Id == region.Materials[i].MaterialId).First();
+                    DBRegion.Materials.Where(m => m.MaterialId == selectedMaterials[i]).Any(m => { m.Power = selectedMaterialsPower[i]; return true; });
             }
-            DBRegion.Materials = region.Materials;
 
             // Ссылка на тип технологической обработки
             DBRegion.Type = context.Technologies.First(t => t.Id == TypeId);

@@ -119,41 +119,40 @@
         </table>
     }
 
-    @if ((Model.Materials != null && Model.Materials.Count > 0) || ((List<Material>)ViewBag.NewMaterials).Count > 0)
-    {
-        <p>Настройка производительности (г/час)</p>
-        List<Material> lm = ViewBag.NewMaterials;
-        Model.Materials ??= [];
-        int k = 0;
-        if (Model.Materials.Count > 0){
-            for (int i = 0; i < Model.Materials.Count; ++i, ++k)
-            {
-                <div>
-                    <input type="number" asp-for="@Model.Materials[i].MaterialId" value="@Model.Materials[i].MaterialId" hidden />
-                    <input type="number" asp-for="@Model.Materials[i].Id" value="@Model.Materials[i].Id" hidden />
-                    <p>@Model.Materials[i].Material.Name<input type="number" asp-for="@Model.Materials[i].Power" min="0" value="@Model.Materials[i].Power" /></p>
-                </div>
-            }
-        }
-
-        List<Material> RemainingMaterial = ViewBag.NewMaterials;
-        for (int i = 0; i <RemainingMaterial.Count; ++i, ++k)
-        {
-            Model.Materials.Add(new());
-            <div>
-                <input type="number" asp-for="@Model.Materials[k].MaterialId" value="@RemainingMaterial[i].Id" hidden />
-                <p>@RemainingMaterial[i].Name<input type="number" asp-for="@Model.Materials[k].Power" min="0" value="0" /></p>
-            </div>
-        }
-    }
+    <div>
+        <footer class="border-top footer" />
+        <p>Настройка производительности<button type="button" onclick="tPowerAdd()">Добавить</button></p>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <td>Сырьё</td>
+                    <td>Производительность</td>
+                    <td>Величина</td>
+                    <td></td>
+                </tr>
+            </thead>
+            <tbody id="tPower"></tbody>
+                @for (int i =0; i < Model.Materials.Count; ++i)
+                {
+                    <tr>
+                        <td><select name="selectedMaterials" asp-for="@Model.Materials[i].MaterialId" asp-items="@(new SelectList(ViewBag.materials, "Id", "Name"))"></select></td>
+                        <td><input id="tPowerTR" name="selectedMaterialsPower" type="number" min="0" value="@Model.Materials[i].Power" /></td>
+                        <td>г/час</td>
+                        <td><button type="button" onclick="tPowerDelete(@i)" class="btn btn-danger">Удалить</button></td>
+                    </tr>
+                }
+        </table>
+    </div>
 </form>
 
 @section Scripts {
     <script>
-        const elementParent = document.getElementById("tParents");
-        const elementChildren = document.getElementById("tChildren");
+        let tPowerIndex = Number(`@Model.Materials.Count`);
         let tParentIndex = Number(`@Model.RegionsParents.Count`);
         let tChildrenIndex = Number(`@Model.RegionsChildrens.Count`);
+        const elementParent = document.getElementById("tParents");
+        const elementChildren = document.getElementById("tChildren");
+        const elementPower = document.getElementById("tPower");
 
         function tParentAdd(){
             const newElement = document.createElement("tr");
@@ -243,6 +242,35 @@
                     newElement.setAttribute('value', data.value);
                 }
             });
+        }
+
+        function tPowerAdd(){
+            const newElement = document.createElement("tr");
+            newElement.setAttribute('id', `tPowerTR${tPowerIndex}`)
+            newElement.innerHTML = `
+            <td>
+                <select name="selectedMaterials"">
+                    <option value="0">Не выбрано</option>
+        @foreach (var item in ViewBag.materials)
+        {
+                                <option value="@item.Id">@item.Name</option>
+        }
+                </select>
+            </td>
+            <td>
+                <input id="tPowerTR" name="selectedMaterialsPower" type="number" min="0" value="0"/>
+            </td>
+            <td>г/час</td>
+            <td>
+                <button type="button" onclick="tPowerDelete(${tPowerIndex})" class="btn btn-danger">Удалить</button>
+            </td>`;
+            elementPower.appendChild(newElement);
+            tPowerIndex++;
+        }
+
+        function tPowerDelete(id){
+            const newElement = document.getElementById(`tPowerTR${id}`);
+            newElement.remove();
         }
     </script>
 }

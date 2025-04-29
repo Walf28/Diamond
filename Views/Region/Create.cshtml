@@ -1,4 +1,5 @@
 ﻿@using Diamond.Models.Factory
+@using Diamond.Models.Materials
 @model Region
 @{
     ViewData["Title"] = "Добавление участка";
@@ -46,26 +47,31 @@
     }
 
     @* Производительность на каждом сырье *@
-    @if (Model.Materials != null && Model.Materials.Count > 0)
-    {
+    <div>
         <footer class="border-top footer" />
-        <p>Настройка производительности (г/час)</p>
-        for (int i = 0;i< Model.Materials.Count;++i)
-        {
-            <div>
-                <input type="number" asp-for="@Model.Materials[i].MaterialId" value="@Model.Materials[i].MaterialId" hidden />
-                <p>@Model.Materials[i].Material.Name<input type="number" asp-for="@Model.Materials[i].Power" min="0" value="0" /></p>
-            </div>
-        }
-    }
+        <p>Настройка производительности<button type="button" onclick="tPowerAdd()">Добавить</button></p>
+        <table class="table table-bordered">
+            <thead>
+                 <tr>
+                     <td>Сырьё</td>
+                     <td>Производительность</td>
+                     <td>Величина</td>
+                     <td></td>
+                 </tr>
+            </thead>
+            <tbody id="tPower"></tbody>
+        </table>
+    </div>
 </form>
 
 @section Scripts {
     <script>
         let tParentIndex = 0;
         let tChildrenIndex = 0;
+        let tPowerIndex = 0;
         const elementParent = document.getElementById("tParents");
         const elementChildren = document.getElementById("tChildren");
+        const elementPower = document.getElementById("tPower");
 
         function tParentAdd(){
             const newElement = document.createElement("tr");
@@ -155,6 +161,35 @@
                     newElement.setAttribute('value', data.value);
                 }
             });
+        }
+
+        function tPowerAdd(){
+            const newElement = document.createElement("tr");
+            newElement.setAttribute('id', `tPowerTR${tPowerIndex}`)
+            newElement.innerHTML = `
+            <td>
+                <select name="selectedMaterials"">
+                    <option value="0">Не выбрано</option>
+        @foreach (var item in ViewBag.materials)
+        {
+                            <option value="@item.Id">@item.Name</option>
+        }
+                </select>
+            </td>
+            <td>
+                <input id="tPowerTR" name="selectedMaterialsPower" type="number" min="0" value="0"/>
+            </td>
+            <td>г/час</td>
+            <td>
+                <button type="button" onclick="tPowerDelete(${tPowerIndex})" class="btn btn-danger">Удалить</button>
+            </td>`;
+            elementPower.appendChild(newElement);
+            tPowerIndex++;
+        }
+
+        function tPowerDelete(id){
+            const newElement = document.getElementById(`tPowerTR${id}`);
+            newElement.remove();
         }
     </script>
 }
