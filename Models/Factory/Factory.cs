@@ -24,7 +24,7 @@ namespace Diamond.Models.Factory
         #region Ссылочные
         [NotMapped]
         private readonly DB context = new();
-        public List<Plan> Plan { get; set; } = []; // Это план - что и где производим
+        public List<Part> Plan { get; set; } = []; // Это план - что и где производим
         public Warehouse Warehouse { get; set; } = new();
         public List<Route> Routes { get; set; } = [];
         public List<Region> Regions { get; set; } = [];
@@ -136,7 +136,7 @@ namespace Diamond.Models.Factory
             return routes;
         }
 
-        /// <summary>
+        /*/// <summary>
         /// Сколько времени необходимо маршруту, чтобы завершить план (с учётом уже имеющихся планов и пересекающихся маршрутов).
         /// Если маршрута не существует, вернётся 0.
         /// </summary>
@@ -159,57 +159,66 @@ namespace Diamond.Models.Factory
             }
 
             return AllTime;
-        }
+        }*/
 
         /// <summary>
         /// Маршруты, которые могут завершить выполнение данного плана
         /// </summary>
-        public List<Route> GetRoutesCanCompletePlan(Plan plan)
+        public List<Route> GetRoutesCanCompletePlan(Part part)
         {
-            if (plan.ProductId == 0)
+            if (part.ProductId == 0)
                 return [];
-
-            List<Route> routes = [];
-            foreach (var r in Routes)
-                if (r.CanProduceProduct(plan.ProductId))
-                    routes.Add(r);
-
+            List<Route> routes = Routes.Where(r => r.CanProduceProduct(part.ProductId)).ToList();
             return routes;
         }
 
         /// <summary>
         /// На какие маршруты можно заменить маршрут из данного плана.
         /// </summary>
-        public List<Route> GetRoutesToChangePlan(int planId)
+        public List<Route> GetRoutesToChangePlan(int partId)
         {
-            // Проверка на существовани такого плана
-            Plan? plan = Plan.FirstOrDefault(p => p.Id == planId);
-            if (plan == null)
+            // Проверка на существование такой партии
+            Part? part = Plan.FirstOrDefault(p => p.Id == partId);
+            if (part == null)
                 return [];
 
             // Уберём из вариантов уже применяемый маршрут
-            var allRoutes = GetRoutesCanCompletePlan(plan);
-            foreach (var route in allRoutes)
-                if (route.Id == plan.RouteId)
-                {
-                    allRoutes.Remove(route);
-                    break;
-                }
+            var allRoutes = GetRoutesCanCompletePlan(part);
+            _ = allRoutes.RemoveAll(al => al.Id == part.RouteId);
 
-            // Найдём маршруты, которые могут стать заменой данному, если надо
-            if (plan.Region != null)
-            {
-                List<Route> halfRoutes = FindRouteFor(plan.Region);
-                List<Route> resultRoutes = [];
-                foreach (var variantRoute in halfRoutes)
-                    foreach (var route in allRoutes)
-                        if (!resultRoutes.Contains(route) &&
-                            variantRoute.RegionsRoute.All(vr => route.RegionsRoute.Contains(vr)))
-                            resultRoutes.Add(route);
-                return resultRoutes;
-            }
-            else
+            // Возвращаем всё, если партия ещё не начала движение по маршруту
+            if (part.Region == null)
                 return allRoutes; // Конец
+            
+            // Найдём маршруты, которые могут стать заменой данному, если надо
+            List<Route> halfRoutes = FindRouteFor(part.Region);
+            List<Route> resultRoutes = [];
+            foreach (var variantRoute in halfRoutes)
+                foreach (var route in allRoutes)
+                    if (!resultRoutes.Contains(route) &&
+                        variantRoute.RegionsRoute.All(vr => route.RegionsRoute.Contains(vr)))
+                        resultRoutes.Add(route);
+            return resultRoutes;
+        }
+
+        /// <summary>
+        /// Может ли завод выполнить данный заказ.
+        /// </summary>
+        public bool CanFullCompleteOrder(Order order)
+        {
+            foreach(OrderPart op in order.OrderParts)
+            {
+                bool can = false;
+                foreach (var r in Routes)
+                    if (r.CanProduceProduct(op.ProductId))
+                    {
+                        can = true;
+                        break;
+                    }
+                if (!can)
+                    return false;
+            }
+            return true;
         }
         #endregion
 
@@ -248,7 +257,7 @@ namespace Diamond.Models.Factory
                 AddInCommonPlan(orderPart.ProductId, fullSize);
 
                 // Пытаемся запихнуть в свободное место в плане, если такое найдётся.
-                List<Plan> PlanOuttime = [];
+                List<Part> PlanOuttime = [];
                 for (int i = 0; i < Plan.Count && fullSize > 0; ++i)
                 {
                     // Первичная проверка, можно ли произвести по данному плану данную продукцию
@@ -304,7 +313,7 @@ namespace Diamond.Models.Factory
                     DateTime dateTimeOfFastestRoute = DateTime.UtcNow.AddMinutes(fastestRouteId);
                     for (int i = 1; i < PotencialRoutes.Count; ++i)
                     {
-                        DateTime dt = DateTime.UtcNow.AddMinutes(NeedTimeForRoute(PotencialRoutes[i].Id));
+                        DateTime dt = DateTime.UtcNow.AddMinutes(PotencialRoutes[i].GetTimeToCompleteFullPlan());
                         if (dateTimeOfFastestRoute > dt)
                         {
                             dateTimeOfFastestRoute = dt;
@@ -335,14 +344,14 @@ namespace Diamond.Models.Factory
                             MaterialId = materialId,
                             Status = PlanStatus.AWAIT_CONFIRMATION
                         });
-                        Routes[idIndex].Plan.Add(Plan[^1]);
+                        Routes[idIndex].Part.Add(Plan[^1]);
                         //fullSize = fullSize <= volumeMaterialSize ? 0 : fullSize - volumeMaterialSize;
                         fullSize = needCount <= volumeProductCount ? 0 : fullSize - Plan[^1].Size;
                     }
                     else
                     {
                         // Определим индекс из плана, где план выполняется раньше всех
-                        Plan po = PlanOuttime.First(po => po.ComingSoon == minTimePlan);
+                        Part po = PlanOuttime.First(po => po.ComingSoon == minTimePlan);
                         int index = Plan.FindIndex(p => p.Id == po.Id);
 
                         // Определим, какой будет размер у плана и максимальный объём
@@ -375,7 +384,7 @@ namespace Diamond.Models.Factory
         /// <summary>
         /// Добавить в производственный план
         /// </summary>
-        private void ChangePlan(int planId, List<Plan> plans)
+        private void ChangePlan(int planId, List<Part> plans)
         {
             int pIndex = Plan.FindIndex(p => p.Id == planId);
             if (pIndex < 0)

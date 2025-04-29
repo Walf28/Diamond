@@ -5,21 +5,22 @@
 }
 
 <div>
-    <button type="button" onclick="location.href='@Url.Action("Create", "Factory")'">Добавить завод</button>
     <h1>Список заводов</h1>
+    <button type="button" onclick="location.href='@Url.Action("Create", "Factory")'">Добавить завод</button>
     <table class="table table-bordered">
         <tr>
             <td>№</td>
             <td>Название</td>
             <td></td>
         </tr>
-        @foreach(var factory in Model) {
+        @foreach(var factory in Model.OrderBy(f=>f.Id)) {
             <tr>
                 <td>@factory.Id</td>
                 <td>@factory.Name</td>
                 <td>
                     <a asp-controller="Factory" asp-action="Edit" asp-route-id="@factory.Id" class="btn btn-primary">Детальнее</a>
-                    <a asp-controller="Factory" asp-action="Delete" asp-route-id="@factory.Id" class="btn btn-danger">Удалить</a>
+                    <a asp-controller="Factory" asp-action="Delete" asp-route-id="@factory.Id" class="btn btn-danger"
+                       onclick="javascript:return confirm('Вы уверены, что хотите удалить данный элемент (@factory.Name)?');">Удалить</a>
                 </td>
             </tr>
         }

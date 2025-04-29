@@ -23,8 +23,8 @@ namespace Diamond.Models
                     .Include(f=>f.Warehouse).ThenInclude(w=>w.Products)
                     .Include(f=>f.Warehouse).ThenInclude(w=>w.Materials)
                     .Include(f=>f.Routes).ThenInclude(r=>r.Regions)
-                    .Include(f=>f.Routes).ThenInclude(r=>r.Plan)
-                    .Include(f=>f.Regions).ThenInclude(r=>r.Plan)
+                    .Include(f=>f.Routes).ThenInclude(r=>r.Part)
+                    .Include(f=>f.Regions).ThenInclude(r=>r.Part)
                     .Include(f=>f.Regions).ThenInclude(r=>r.Routes)
                     .Include(f=>f.Regions).ThenInclude(r=>r.RegionsParents)
                     .Include(f=>f.Regions).ThenInclude(r=>r.RegionsChildrens)
@@ -37,7 +37,7 @@ namespace Diamond.Models
                     .Include(f=>f.Plan).ThenInclude(p=>p.Region)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Product)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Material)
-                    .Include(f=>f.Orders.Where(r=>r.Status == OrderStatus.FABRICATING))];
+                    .Include(f=>f.Orders.Where(r=>r.Status == OrderStatus.FABRICATING)).ThenInclude(o => o.OrderParts).ThenInclude(op => op.Product).ThenInclude(p => p.ProductGroup)];
             }
             catch (TimeoutException te)
             {
@@ -129,13 +129,13 @@ namespace Diamond.Models
             context.SaveChanges();
             Factories[factoryId].StartPlan();
         }
-        public static void PlanCreate(Plan plan)
+        public static void PlanCreate(Part plan)
         {
             Factory.Factory f = factories.First(f => f.Id == plan.FactoryId);
             plan.Route = f.Routes.First(r => r.Id == plan.RouteId);
             plan.Factory = f;
             f.Plan.Add(plan);
-            f.Routes.First(r => r.Id == plan.RouteId).Plan.Add(plan);
+            f.Routes.First(r => r.Id == plan.RouteId).Part.Add(plan);
             
             context.Plans.Add(plan);
             context.SaveChanges();
@@ -154,10 +154,10 @@ namespace Diamond.Models
                 .Any(p => { p.Status = PlanStatus.PAUSE; return true; });
             context.SaveChanges();
         }
-        public static void PlanEditRoute(Plan plan)
+        public static void PlanEditRoute(Part plan)
         {
             // Нахождение необходимых переменных
-            Plan p = Factories[plan.FactoryId].Plan.First(p => p.Id == plan.Id);
+            Part p = Factories[plan.FactoryId].Plan.First(p => p.Id == plan.Id);
             Route route = Factories[plan.FactoryId].Routes.First(r => r.Id == plan.RouteId);
 
             // Смена значений

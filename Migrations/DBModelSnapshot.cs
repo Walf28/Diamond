@@ -83,7 +83,7 @@ namespace Diamond.Migrations
                     b.ToTable("Factories");
                 });
 
-            modelBuilder.Entity("Diamond.Models.Factory.Plan", b =>
+            modelBuilder.Entity("Diamond.Models.Factory.Part", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -496,10 +496,10 @@ namespace Diamond.Migrations
                     b.Navigation("Region");
                 });
 
-            modelBuilder.Entity("Diamond.Models.Factory.Plan", b =>
+            modelBuilder.Entity("Diamond.Models.Factory.Part", b =>
                 {
                     b.HasOne("Diamond.Models.Factory.Factory", "Factory")
-                        .WithMany("Plan")
+                        .WithMany("Part")
                         .HasForeignKey("FactoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -517,12 +517,12 @@ namespace Diamond.Migrations
                         .IsRequired();
 
                     b.HasOne("Diamond.Models.Factory.Region", "Region")
-                        .WithOne("Plan")
-                        .HasForeignKey("Diamond.Models.Factory.Plan", "RegionId")
+                        .WithOne("Part")
+                        .HasForeignKey("Diamond.Models.Factory.Part", "RegionId")
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.HasOne("Diamond.Models.Factory.Route", "Route")
-                        .WithMany("Plan")
+                        .WithMany("Part")
                         .HasForeignKey("RouteId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -727,7 +727,7 @@ namespace Diamond.Migrations
                 {
                     b.Navigation("Orders");
 
-                    b.Navigation("Plan");
+                    b.Navigation("Part");
 
                     b.Navigation("Regions");
 
@@ -743,12 +743,12 @@ namespace Diamond.Migrations
 
                     b.Navigation("Materials");
 
-                    b.Navigation("Plan");
+                    b.Navigation("Part");
                 });
 
             modelBuilder.Entity("Diamond.Models.Factory.Route", b =>
                 {
-                    b.Navigation("Plan");
+                    b.Navigation("Part");
                 });
 
             modelBuilder.Entity("Diamond.Models.Factory.Warehouse", b =>

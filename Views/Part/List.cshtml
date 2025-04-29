@@ -1,5 +1,5 @@
 ﻿@using Diamond.Models.Factory
-@model List<Plan>
+@model List<Part>
 @{
     ViewData["Title"] = $"Планирование производства на заводе \"{ViewBag.FactoryName}\"";
 }
@@ -10,7 +10,7 @@
     <h1>Планирование</h1>
     <div>
         <button onclick="location.href='@Url.Action("Edit", "Factory", new { Id = ViewBag.FactoryId })'">Назад</button>
-        <button onclick="location.href='@Url.Action("Create", "Plan", new { factoryId = ViewBag.FactoryId })'">Добавить</button>
+        <button onclick="location.href='@Url.Action("Create", "Part", new { factoryId = ViewBag.FactoryId })'">Добавить</button>
     </div>
 
     <!-- Ожидают утверждения -->
@@ -27,8 +27,8 @@
                 <tr>
                     <td>Маршрут</td>
                     <td>Продукция</td>
-                    <td>Количество</td>
-                    <td>Сырьё</td>
+                    <td>Количество упаковок</td>
+                    <td>Требуемое сырьё</td>
                     <td></td>
                 </tr>
                 @foreach (var plan in Model.Where(p => p.Status == PlanStatus.AWAIT_CONFIRMATION).OrderBy(p => p.Id))
@@ -36,8 +36,8 @@
                     <tr>
                         <td>@plan.Route!.GetContent</td>
                         <td>@plan.Product</td>
-                        <td>@plan.Size</td>
-                        <td>@plan.GetMaterial?.Name</td>
+                        <td>@(plan.Size / plan.Product.Size)</td>
+                        <td>@($"{@plan.GetMaterial?.Name} - {plan.Size} гр.")</td>
                         <td>
                             <a class="btn btn-primary"
                                 asp-action="Approve"
@@ -46,7 +46,8 @@
                             <a class="btn btn-danger"
                                 asp-action="Delete"
                                 asp-controller="Plan"
-                                asp-route-Id="@plan.Id">Удалить</a>
+                                asp-route-Id="@plan.Id"
+                               onclick="javascript:return confirm('Вы уверены, что хотите удалить данный элемент (@plan.Id)?');">Удалить</a>
                         </td>
                     </tr>
                 }
@@ -65,8 +66,8 @@
                     <td>Маршрут</td>
                     <td>Участок</td>
                     <td>Продукция</td>
-                    <td>Количество</td>
-                    <td>Сырьё</td>
+                    <td>Количество упаковок</td>
+                    <td>Требуемое сырьё</td>
                     <td></td>
                 </tr>
                 @foreach (var plan in Model.Where(p => p.Status == PlanStatus.STOP).OrderBy(p=>p.Id))
@@ -75,8 +76,8 @@
                         <td>@plan.Route?.GetContent</td>
                         <td>@plan.Region?.Name</td>
                         <td>@plan.Product</td>
-                        <td>@plan.Size</td>
-                        <td>@plan.GetMaterial?.Name</td>
+                        <td>@(plan.Size / plan.Product.Size)</td>
+                        <td>@($"{@plan.GetMaterial?.Name} - {plan.Size} гр.")</td>
                         <td>
                             <a class="btn btn-primary" asp-action="Await" asp-route-Id="@plan.Id">Ждать</a>
                             <a class="btn btn-primary" asp-action="Edit" asp-route-Id="@plan.Id">Изменить</a>
@@ -97,8 +98,8 @@
                 <tr>
                     <td>Маршрут</td>
                     <td>Продукция</td>
-                    <td>Количество</td>
-                    <td>Сырьё</td>
+                    <td>Количество упаковок</td>
+                    <td>Требуемое сырьё</td>
                     <td></td>
                 </tr>
                 @foreach (var plan in Model.Where(p => p.Status == PlanStatus.QUEUE).OrderBy(p => p.Id))
@@ -106,9 +107,11 @@
                     <tr>
                         <td>@plan.Route?.GetContent</td>
                         <td>@plan.Product</td>
-                        <td>@plan.Size</td>
-                        <td>@plan.GetMaterial?.Name</td>
-                        <td><a class="btn btn-danger" asp-action="Delete" asp-route-Id="@plan.Id">Удалить</a></td>
+                        <td>@(plan.Size / plan.Product.Size)</td>
+                        <td>@($"{@plan.GetMaterial?.Name} - {plan.Size} гр.")</td>
+                        <td><a class="btn btn-danger" asp-action="Delete" asp-route-Id="@plan.Id"
+                               onclick="javascript:return confirm('Вы уверены, что хотите удалить данный элемент (@plan.Id)?');">Удалить</a>
+                        </td>
                     </tr>
                 }
             </table>
@@ -127,7 +130,7 @@
                     <td>Участок</td>
                     <td>Продукция</td>
                     <td>Количество</td>
-                    <td>Сырьё</td>
+                    <td>Требуемое сырьё</td>
                 </tr>
                 @foreach (var plan in Model.Where(p => p.Status == PlanStatus.PAUSE).OrderBy(p => p.Id))
                 {
@@ -135,8 +138,8 @@
                         <td>@plan.Route?.GetContent</td>
                         <td>@plan.Region?.Name</td>
                         <td>@plan.Product</td>
-                        <td>@plan.Size</td>
-                        <td>@plan.GetMaterial?.Name</td>
+                        <td>@(plan.Size / plan.Product.Size)</td>
+                        <td>@($"{@plan.GetMaterial?.Name} - {plan.Size} гр.")</td>
                     </tr>
                 }
             </table>
@@ -154,8 +157,8 @@
                     <td>Маршрут</td>
                     <td>Участок</td>
                     <td>Продукция</td>
-                    <td>Количество</td>
-                    <td>Сырьё</td>
+                    <td>Количество упаковок</td>
+                    <td>Требуемое сырьё</td>
                     <td>Осталось минут</td>
                 </tr>
                 @foreach (var plan in Model.Where(p => p.Status == PlanStatus.PRODUCTION).OrderBy(p => p.Id))
@@ -164,8 +167,8 @@
                         <td>@plan.Route?.GetContent</td>
                         <td>@plan.Region?.Name</td>
                         <td>@plan.Product</td>
-                        <td>@plan.Size</td>
-                        <td>@plan.GetMaterial?.Name</td>
+                        <td>@(plan.Size / plan.Product.Size)</td>
+                        <td>@($"{@plan.GetMaterial?.Name} - {plan.Size} гр.")</td>
                         <td>@plan.Region?.GetTime(plan)</td>
                     </tr>
                 }

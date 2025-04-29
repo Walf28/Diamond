@@ -58,7 +58,7 @@ namespace Diamond.Models.Factory
         public Downtime? Downtime { get; set; } // Простой
         public List<MaterialForRegion> Materials { get; set; } = []; // Производительность под каждое сырье
         public Material? MaterialOptionNow { get; set; } // Под какое сырьё участок сейчас настроен
-        public Plan? Plan { get; set; }
+        public Part? Part { get; set; }
         #endregion
 
         #region Id ссылок
@@ -136,12 +136,12 @@ namespace Diamond.Models.Factory
         {
             Region? region = context.Regions
                 .Where(r => r.Id == Id)
-                .Include(r => r.Plan)
+                .Include(r => r.Part)
                 .FirstOrDefault();
             if (region == null)
                 return false;
 
-            region.Plan = Plan;
+            region.Part = Part;
             context.SaveChanges();
             return true;
         }
@@ -221,47 +221,39 @@ namespace Diamond.Models.Factory
         /// Уже выполненные планы не берутся в расчёт.
         /// Простаивание берётся в расчёт.
         /// </summary>
-        public double GetTime()
+        public double GetTime(bool ConsiderDowntime = true)
         {
             double Time = 0;
-            if (Downtime != null)
-            {
-                if (Downtime.DowntimeFinish == null)
-                    return double.PositiveInfinity;
-                Time += Downtime.DowntimeFinish!.Value.Subtract(DateTime.UtcNow).TotalMinutes;
-            }
+            // Считаем суммарное время, которое понадобится для выполнения без учёта простоев
             foreach (var route in Routes)
-                foreach (var plan in route.Plan)
+                foreach (var part in route.Part)
                 {
-                    int res = route.PlanWasCompletedInRegion(plan.Id, Id)!.Value;
+                    int res = route.PlanWasCompletedInRegion(part.Id, Id)!.Value;
                     if (res > 0 || (res == 0 && Status == RegionStatus.AWAIT_UNLOADING))
                         continue;
                     else if (res == 0 && Status == RegionStatus.IN_WORKING && timer != null)
                         Time += startTimer!.Value.ToLocalTime().AddMilliseconds(timer.Interval).Subtract(DateTime.Now).TotalMinutes;
                     else
-                        Time += GetTime(plan);
+                        Time += GetTime(part);
                 }
-            return Time;
-        }
 
-        /// <summary>
-        /// Время (в минутах), за сколько участок переработает данное сырьё вы указанном размере
-        /// </summary>
-        public double GetTime(int materialId, int Size)
-        {
-            double time = double.PositiveInfinity;
-            foreach (var m in Materials)
-                if (m.MaterialId == materialId)
+            // Теперь учитываем простои
+            if (ConsiderDowntime && Downtime != null)
+            {
+                // Находим пересечение простоя с выполнением плана
+                DateTime dtFinish = DateTime.Now.AddMinutes(Time);
+                if (dtFinish > Downtime.GetDowntimeStartLocal)
                 {
-                    int volume = (int)(m.Power / 60.0 * TransitTime);
-                    int complete = 0;
-                    while (complete < Size)
-                        complete += volume;
-                    double PowerInMinute = m.Power / 60.0;
-                    time = complete / PowerInMinute;
-                    return time;
+                    // Если мы здесь, то пересечение имеется
+                    if (Downtime.DowntimeFinish == null)
+                        return double.PositiveInfinity;
+                    else if (Downtime.IsDowntimeNow)
+                        Time += Downtime.DowntimeFinish!.Value.Subtract(DateTime.UtcNow).TotalMinutes;
+                    else
+                        Time += Downtime.DowntimeFinish!.Value.Subtract(Downtime.DowntimeStart).TotalMinutes;
                 }
-            return time;
+            }
+            return Time;
         }
 
         /// <summary>
@@ -269,10 +261,10 @@ namespace Diamond.Models.Factory
         /// Если данный план уже установлен участку и производится на данный момент,
         /// то вернётся время, оставшееся до конца производства; если ожидает разгрузки - 0.
         /// </summary>
-        public double GetTime(Plan plan)
+        public double GetTime(Part part)
         {
             // Проверка
-            if (Plan != null && Plan.Id == plan.Id)
+            if (Part != null && Part.Id == part.Id)
             {
                 if (Status == RegionStatus.IN_WORKING && timer != null && timer.Enabled)
                     return DateTime.UtcNow.Subtract(startTimer!.Value).TotalMinutes;
@@ -283,11 +275,11 @@ namespace Diamond.Models.Factory
             // Подсчёт
             double time = double.PositiveInfinity;
             foreach (var m in Materials)
-                if (m.MaterialId == plan.MaterialId || (plan.Material != null && plan.Material.Id == m.MaterialId))
+                if (m.MaterialId == part.MaterialId || (part.Material != null && part.Material.Id == m.MaterialId))
                 {
                     int volume = (int)(m.Power / 60.0 * TransitTime);
                     int complete = 0;
-                    while (complete < plan.Size)
+                    while (complete < part.Size)
                         complete += volume;
                     double PowerInMinute = m.Power / 60.0;
                     time = complete / PowerInMinute;
@@ -297,10 +289,53 @@ namespace Diamond.Models.Factory
         }
 
         /// <summary>
+        /// Время (в минутах), которое понадобится участку для выполнения всего подготовленного плана.
+        /// Уже выполненные и менее приоритетные партии, которые ещё не начали своё движение) не берутся в расчёт.
+        /// Простаивание берётся в расчёт.
+        /// </summary>
+        public double GetTime(DateTime priority, bool ConsiderDowntime = true)
+        {
+            double Time = 0;
+            // Считаем суммарное время, которое понадобится для выполнения без учёта простоев
+            foreach (var route in Routes)
+            {
+                var lp = route.Part.Where(p => p.ComingSoon.ToUniversalTime() <= priority.ToUniversalTime() && p.Region == null);
+                foreach (var part in lp)
+                {
+                    int res = route.PlanWasCompletedInRegion(part.Id, Id)!.Value;
+                    if (res > 0 || (res == 0 && Status == RegionStatus.AWAIT_UNLOADING))
+                        continue;
+                    else if (res == 0 && Status == RegionStatus.IN_WORKING && timer != null)
+                        Time += startTimer!.Value.ToLocalTime().AddMilliseconds(timer.Interval).Subtract(DateTime.Now).TotalMinutes;
+                    else
+                        Time += GetTime(part);
+                }
+            }
+
+            // Теперь учитываем простои
+            if (ConsiderDowntime && Downtime != null)
+            {
+                // Находим пересечение простоя с выполнением плана
+                DateTime dtFinish = DateTime.Now.AddMinutes(Time);
+                if (dtFinish > Downtime.GetDowntimeStartLocal)
+                {
+                    // Если мы здесь, то пересечение имеется
+                    if (Downtime.DowntimeFinish == null)
+                        return double.PositiveInfinity;
+                    else if (Downtime.IsDowntimeNow)
+                        Time += Downtime.DowntimeFinish!.Value.Subtract(DateTime.UtcNow).TotalMinutes;
+                    else
+                        Time += Downtime.DowntimeFinish!.Value.Subtract(Downtime.DowntimeStart).TotalMinutes;
+                }
+            }
+            return Time;
+        }
+
+        /// <summary>
         /// Найти самый ранний план, который участок должен будет выполнить.
         /// Ищутся только уже задействованные планы.
         /// </summary>
-        public Plan? FindEarlyPlan()
+        public Part? FindEarlyPlan()
         {
             return FindEarlyPlan(this);
         }
@@ -309,22 +344,22 @@ namespace Diamond.Models.Factory
         /// Найти самый ранний план, который участок должен будет выполнить.
         /// Ищутся только уже задействованные планы.
         /// </summary>
-        public static Plan? FindEarlyPlan(Region region)
+        public static Part? FindEarlyPlan(Region region)
         {
             // Если нет родительского участка (или у этого есть план), возвращаем значение
-            if (region.RegionsParents.Count == 0 || region.Plan != null)
+            if (region.RegionsParents.Count == 0 || region.Part != null)
             {
-                if (region.Plan == null)
+                if (region.Part == null)
                     return null;
                 else
-                    return region.Plan;
+                    return region.Part;
             }
 
             // Поиск в родительских участках
-            List<Plan> plans = [];
+            List<Part> plans = [];
             foreach (var r in region.RegionsParents)
             {
-                Plan? p = FindEarlyPlan(r);
+                Part? p = FindEarlyPlan(r);
                 if (p != null)
                     plans.Add(p);
             }
@@ -341,7 +376,7 @@ namespace Diamond.Models.Factory
         /// Установить план
         /// </summary>
         /// <returns>Если план успешно установлен, то возвращается true, иначе - false</returns>
-        public bool SetPlan(ref Plan Plan)
+        public bool SetPlan(ref Part Plan)
         {
             // Проверка
             int routeId = Plan.RouteId;
@@ -351,7 +386,7 @@ namespace Diamond.Models.Factory
                 return false;
 
             // Установка плана
-            this.Plan = Plan;
+            this.Part = Plan;
             Plan!.Region = this;
             if (MaterialOptionNowId == null || MaterialOptionNowId != Plan.MaterialId)
                 Plan.Route.RegionUpdateStatus(Id, RegionStatus.READJUSTMENT);
@@ -378,23 +413,23 @@ namespace Diamond.Models.Factory
                         Workload = 0;
                         Status = RegionStatus.FREE;
                     }
-                    Plan!.Route.RegionUpdateStatus(Id);
+                    Part!.Route.RegionUpdateStatus(Id);
                     return;
                 case RegionStatus.IN_WORKING:
                     {
-                        if (Plan == null)
+                        if (Part == null)
                         {
-                            Plan? earlyPlan = FindEarlyPlan();
+                            Part? earlyPlan = FindEarlyPlan();
                             Workload = 0;
                             Status = RegionStatus.FREE;
                             if (earlyPlan != null)
                                 Routes[Routes.FindIndex(r => r.Id == earlyPlan.RouteId)].RegionUpdateStatus(Id);
                             return;
                         }
-                        timer = new(TimeSpan.FromSeconds(GetTime(Plan)));
+                        timer = new(TimeSpan.FromSeconds(GetTime(Part)));
                         timer.Elapsed += Finish;
                         timer.Start();
-                        Plan.Route.RegionUpdateStatus(Id, RegionStatus.IN_WORKING);
+                        Part.Route.RegionUpdateStatus(Id, RegionStatus.IN_WORKING);
                         return;
                     }
                 case RegionStatus.READJUSTMENT:
@@ -413,13 +448,13 @@ namespace Diamond.Models.Factory
         /// </summary>
         public bool Start()
         {
-            if (Plan == null || Status != RegionStatus.AWAITING_LAUNCH)
+            if (Part == null || Status != RegionStatus.AWAITING_LAUNCH)
                 return false;
             startTimer = DateTime.UtcNow;
-            timer = new(TimeSpan.FromSeconds(GetTime(Plan)));
+            timer = new(TimeSpan.FromSeconds(GetTime(Part)));
             timer.Elapsed += Finish;
             timer.Start();
-            Plan.Route.RegionUpdateStatus(Id, RegionStatus.IN_WORKING);
+            Part.Route.RegionUpdateStatus(Id, RegionStatus.IN_WORKING);
             return true;
         }
 
@@ -429,9 +464,9 @@ namespace Diamond.Models.Factory
         public void Finish(object? o, ElapsedEventArgs eea)
         {
             timer.Stop();
-            if (Plan == null)
+            if (Part == null)
                 throw new Exception("План не найден");
-            Plan.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_UNLOADING);
+            Part.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_UNLOADING);
         }
 
         /// <summary>
@@ -448,14 +483,14 @@ namespace Diamond.Models.Factory
                 MaterialOptionNowId = materialId;
                 Status = RegionStatus.FREE_READJUSTMENT;
             }
-            else if (Plan != null)
+            else if (Part != null)
             {
-                MaterialOptionNowId = Plan.MaterialId;
+                MaterialOptionNowId = Part.MaterialId;
                 Status = RegionStatus.READJUSTMENT;
             }
             else
             {
-                Plan ePlan = FindEarlyPlan(this) ?? throw new Exception("Неизвестно на что переналаживать");
+                Part ePlan = FindEarlyPlan(this) ?? throw new Exception("Неизвестно на что переналаживать");
                 MaterialOptionNowId = ePlan.MaterialId;
                 Status = RegionStatus.FREE_READJUSTMENT;
             }
@@ -474,16 +509,16 @@ namespace Diamond.Models.Factory
             if (Workload > 0)
                 throw new Exception();
             timer.Stop();
-            if (Plan == null)
+            if (Part == null)
             {
-                Plan? plan = FindEarlyPlan();
+                Part? plan = FindEarlyPlan();
                 if (plan == null)
                     throw new Exception("");
                 else
                     plan.Route.RegionUpdateStatus(Id, RegionStatus.FREE);
             }
             else
-                Plan!.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_DOWNLOAD);
+                Part!.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_DOWNLOAD);
         }
 
         /// <summary>
@@ -515,8 +550,8 @@ namespace Diamond.Models.Factory
             }
 
             // Если по плану загружены, то, значит, участок готов к запуску
-            if (Workload >= Plan!.Size)
-                Plan.Route.RegionUpdateStatus(Id, RegionStatus.AWAITING_LAUNCH);
+            if (Workload >= Part!.Size)
+                Part.Route.RegionUpdateStatus(Id, RegionStatus.AWAITING_LAUNCH);
             else
                 throw new Exception();
         }
@@ -534,13 +569,13 @@ namespace Diamond.Models.Factory
             if (Workload <= 0)
             {
                 Status = RegionStatus.FREE;
-                Plan = null;
+                Part = null;
                 Workload = 0;
                 if (RegionsParents.Count == 0)
                     Factory.StartPlan();
                 else
                 {
-                    Plan? earlyPlan = FindEarlyPlan();
+                    Part? earlyPlan = FindEarlyPlan();
                     if (earlyPlan == null)
                         return;
                     int earlyRouteIndex = Routes.FindIndex(r => r.Id == earlyPlan.RouteId);

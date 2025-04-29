@@ -25,7 +25,7 @@ namespace Diamond.Models.Products
         public List<OrderPart> OrderParts { get; set; } = []; // Заявки
         [ForeignKey(nameof(ProductGroupId))]
         public ProductGroup ProductGroup { get; set; } = new();
-        public List<Plan> Plans { get; set; } = [];
+        public List<Part> Plans { get; set; } = [];
         public List<ProductSpecificWarehouse> ProductWarehouses { get; set; } = [];
         #endregion
 

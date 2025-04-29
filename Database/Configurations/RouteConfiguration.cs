@@ -18,7 +18,7 @@ namespace Diamond.Database.Configurations
             // С участками
             builder.HasMany(r => r.Regions).WithMany(r => r.Routes);
             // С планом
-            builder.HasMany(f => f.Plan).WithOne(p => p.Route)
+            builder.HasMany(f => f.Part).WithOne(p => p.Route)
                 .HasPrincipalKey(r => r.Id)
                 .HasForeignKey(p => p.RouteId)
                 .OnDelete(DeleteBehavior.Cascade);

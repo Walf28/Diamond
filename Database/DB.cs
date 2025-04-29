@@ -14,7 +14,7 @@ namespace Diamond.Database
         public DbSet<Factory> Factories { get; set; } = null!;
         public DbSet<Models.Factory.Route> Routes { get; set; } = null!;
         public DbSet<Region> Regions { get; set; } = null!;
-        public DbSet<Plan> Plans { get; set; } = null!;
+        public DbSet<Part> Plans { get; set; } = null!;
         public DbSet<Downtime> Downtimes { get; set; } = null!;
         public DbSet<ProductGroup> ProductsGroup { get; set; } = null!;
         public DbSet<ProductSpecific> ProductsSpecific { get; set; } = null!;

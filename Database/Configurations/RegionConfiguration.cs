@@ -37,9 +37,9 @@ namespace Diamond.Database.Configurations
                 .HasForeignKey(r => r.MaterialOptionNowId)
                 .OnDelete(DeleteBehavior.Cascade);
             // С планом
-            builder.HasOne(r => r.Plan).WithOne(p => p.Region)
+            builder.HasOne(r => r.Part).WithOne(p => p.Region)
                 .HasPrincipalKey<Region>(r => r.Id)
-                .HasForeignKey<Plan>(p => p.RegionId)
+                .HasForeignKey<Part>(p => p.RegionId)
                 .OnDelete(DeleteBehavior.Cascade);
             // С технологией
             builder.HasOne(r => r.Type).WithMany(t => t.Regions)

@@ -4,6 +4,7 @@
     ViewData["Title"] = $"Разновидности \"{Model.Name}\"";
 }
 
+<h1>@($"Разновидности \"{Model.Name}\"")</h1>
 <div>
     <input type="submit" onclick="location.href='@Url.Action("ListGroup", "Product")'" value="Назад" />
     <input type="button" onclick="location.href='@Url.Action("CreateSpecific", "Product", new{groupId = Model.Id})'" value="Добавить" />
@@ -11,18 +12,14 @@
 <table class="table table-bordered">
     <thead>
         <tr>
-            <th>№</th>
             <th>Размер (гр.)</th>
             <th>Цена (руб.)</th>
             <th></th>
         </tr>
     </thead>
     <tbody>
-        @foreach (var item in Model.ProductsSpecific) {
+        @foreach (var item in Model.ProductsSpecific.OrderBy(ps=>ps.Size)) {
             <tr>
-                <td>
-                    @Html.DisplayFor(modelItem => item.Id)
-                </td>
                 <td>
                     @Html.DisplayFor(modelItem => item.Size)
                 </td>
@@ -31,7 +28,9 @@
                 </td>
                 <td>
                     <a asp-action="EditSpecific" asp-route-productId="@item.Id" class="btn btn-primary">Редактировать</a>
-                    <a asp-action="DeleteSpecific" asp-route-productId="@Model.Id" asp-route-id="@item.Id" class="btn btn-danger">Удалить</a>
+                    <a asp-action="DeleteSpecific" asp-route-productId="@Model.Id" asp-route-id="@item.Id" class="btn btn-danger"
+                       onclick="javascript:return confirm('Вы уверены, что хотите удалить данный элемент (@($"{item.ProductGroup.Name} - {item.Size} гр., {item.Price} руб.)")?');">
+                       Удалить</a>
                 </td>
             </tr>
         }

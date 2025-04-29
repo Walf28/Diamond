@@ -9,13 +9,13 @@
     <div>
         <button onclick="location.href='@Url.Action("List", "Order")'" formmethod="get">Назад</button>
         @if(Model.Status == OrderStatus.ANALYZE){
-            <input type="submit" value="Сохранить"/>
+            <input type="submit" value="Принять"/>
         }
     </div>
 
     <p>Номер заявки<input type="number" asp-for="@Model.Id" value="@Model.Id" readonly/></p>
     <p>Дата желаемого выполнения заявки<input type="text" value="@Model.DateOfDesiredComplete.ToString("dd.MM.yyyy")" readonly/></p>
-    <p>Товар<input type="text" value="@(Model.OrderParts[0].Product.GetNameAndCount)" readonly /></p>
+    <p>Товар<input type="text" value="@(Model.OrderParts[0].Product.GetNameAndCount)" readonly style="width: 400px"/></p>
     <p>Количество<input type="number" value="@Model.OrderParts[0].Count" readonly/></p>
 
     <p>Завод
@@ -24,7 +24,7 @@
         } else {
             <select asp-for="FactoryId" required>
                 @if ((List<Factory>)ViewBag.Factories != null)
-                    @foreach (var factory in (List<Factory>)ViewBag.Factories)
+                    @foreach (var factory in ((List<Factory>)ViewBag.Factories).Where(f=>f.CanFullCompleteOrder(Model)))
                     {
                         <option value="@factory.Id">@factory.Name</option>
                     }

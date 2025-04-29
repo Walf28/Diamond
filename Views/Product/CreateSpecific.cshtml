@@ -5,6 +5,7 @@
 }
 
 <form method="post">
+    <h1>@Model.ProductGroup.Name</h1>
     <div>
         <input type="submit" asp-controller="Product" asp-action="ListSpecific" asp-route-groupId="@Model.ProductGroup.Id" value="Назад" formnovalidate/>
         <input type="submit" value="Добавить"/>

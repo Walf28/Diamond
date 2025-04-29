@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Diamond.Controllers
 {
-    public class PlanController(DB context) : Controller
+    public class PartController(DB context) : Controller
     {
         private readonly DB context = context;
 
@@ -40,7 +40,7 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult Edit(int Id)
         {
-            Plan plan = context.Plans
+            Part plan = context.Plans
                 .AsNoTracking()
                 .Include(p => p.Factory).ThenInclude(f => f.Routes).ThenInclude(r => r.Regions).ThenInclude(r => r.Materials)
                 .Include(p => p.Route).ThenInclude(r => r.Regions)
@@ -62,7 +62,7 @@ namespace Diamond.Controllers
 
         #region Управление
         [HttpPost]
-        public IActionResult Create(Plan plan)
+        public IActionResult Create(Part plan)
         {
             if (plan.RouteId != 0 && plan.ProductId != 0 && plan.Size > 0)
             {
@@ -73,7 +73,7 @@ namespace Diamond.Controllers
             return RedirectToAction(nameof(List), new { Id = plan.FactoryId });
         }
         [HttpPost]
-        public IActionResult Edit(Plan plan)
+        public IActionResult Edit(Part plan)
         {
             Server.PlanEditRoute(plan);
             return RedirectToAction(nameof(List), new { Id = plan.FactoryId });
@@ -145,18 +145,18 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult GetResultTimeOnRoute(int routeId, int planId)
         {
-            Plan? plan = context.Plans.FirstOrDefault(p => p.Id == planId);
+            Part? plan = context.Plans.FirstOrDefault(p => p.Id == planId);
             Models.Factory.Route? route = context.Routes
                 .Where(r => r.Id == routeId)
                 .Include(r => r.Factory).ThenInclude(f => f.Plan)
-                .Include(r => r.Factory).ThenInclude(f => f.Routes).ThenInclude(r => r.Plan)
+                .Include(r => r.Factory).ThenInclude(f => f.Routes).ThenInclude(r => r.Part)
                 .Include(r => r.Factory).ThenInclude(f => f.Routes).ThenInclude(r => r.Regions).ThenInclude(r => r.Materials)
                 .Include(r => r.Factory).ThenInclude(f => f.Routes).ThenInclude(r => r.Regions).ThenInclude(r => r.Downtime)
                 .FirstOrDefault();
             if (plan == null || route == null)
                 return Json(new { });
 
-            double totalMinutes = route.Factory.NeedTimeForRoute(routeId) + route.MinutesToCompletePlan(plan);
+            double totalMinutes = route.GetTimeToCompleteFullPlan() + route.GetTimeToCompletePart(plan);
             if (double.IsInfinity(totalMinutes))
                 return Json(new { });
             double totalMilliseconds = TimeSpan.FromMinutes(totalMinutes).TotalMilliseconds;

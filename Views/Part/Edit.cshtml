@@ -1,5 +1,5 @@
 ﻿@using Diamond.Models.Factory
-@model Plan
+@model Part
 @{
     ViewData["Title"] = "Изменение плана";
 }
@@ -28,24 +28,26 @@
     <p>Маршрут
         <select id="selectedRoute" asp-for="@Model.RouteId" onchange="GetResultTime(value, planId.value)" required>
             <option value="@Model.RouteId">
-                @($"{Model.Route.GetContent} | {TimeSpan.FromMinutes(Model.Factory.NeedTimeForRoute(Model.RouteId)).TotalHours:f2} ч.")</option>
+                @($"{Model.Route.GetContent} | {TimeSpan.FromMinutes(Model.Route.GetTimeToCompleteFullPlan()).TotalHours:f2} ч.")</option>
             @foreach(var r in (ViewBag.Routes as List<Route>)!)
             {
                 double time = r.GetTimeToEndDowntime();
                 if (time == 0)
                 {
                     <option value="@r.Id" style="background-color:lime">
-                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.Factory.NeedTimeForRoute(r.Id)).TotalHours:f2} ч.")</option>
+                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan()).TotalHours:f2} ч.")</option>
                 }
                 else if (double.IsInfinity(time))
                 {
                     <option value="@r.Id" style="background-color:red">
-                        @($"{r.GetContent} | {r.Factory.NeedTimeForRoute(r.Id)}")</option>
+                        @($"{r.GetContent} | {r.GetTimeToCompleteFullPlan()}")
+                    </option>
                 }
                 else
                 {
                     <option value="@r.Id" style="background-color:orange">
-                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.Factory.NeedTimeForRoute(r.Id)).TotalHours:f2} ч.")</option>
+                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan()).TotalHours:f2} ч.")
+                    </option>
                 }
             }
         </select></p>
@@ -59,7 +61,7 @@
         function GetResultTime(routeId, planId)
         {
             $.ajax({
-                url: '@Url.Action("GetResultTimeOnRoute", "Plan")',
+                url: '@Url.Action("GetResultTimeOnRoute", "Part")',
                 type: 'GET',
                 data: { routeId, planId },
                 success: function (data) {

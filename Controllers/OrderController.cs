@@ -41,7 +41,7 @@ namespace Diamond.Controllers
                 .AsNoTracking()
                 .Where(r => r.Id == requestId)
                 .Include(r => r.Factory)
-                .Include(r => r.OrderParts)
+                .Include(r => r.OrderParts).ThenInclude(p => p.Product).ThenInclude(ps => ps.ProductGroup)
                 .FirstOrDefault();
             if (request == null)
             {
@@ -49,7 +49,7 @@ namespace Diamond.Controllers
                 return RedirectToAction(nameof(List));
             }
             if (request.Factory == null)
-                ViewBag.Factories = context.Factories.AsNoTracking().ToList();
+                ViewBag.Factories = Server.Factories.Values.ToList();
 
             return View(request);
         }
@@ -74,6 +74,7 @@ namespace Diamond.Controllers
         public IActionResult Detail(Order request)
         {
             Server.AddRequest(request);
+            Server.Save();
             return RedirectToAction(nameof(List));
         }
         #endregion

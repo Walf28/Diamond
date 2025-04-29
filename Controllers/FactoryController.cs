@@ -42,6 +42,7 @@ namespace Diamond.Controllers
                 .Where(f => f.Id == factory.Id)
                 .ExecuteUpdate(f => f.SetProperty(sp => sp.Name, factory.Name));
             context.SaveChanges();
+            Server.FactorysLoad();
             return RedirectToAction(nameof(List));
         }
         public IActionResult Delete(int Id)

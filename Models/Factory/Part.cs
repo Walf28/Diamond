@@ -23,7 +23,7 @@ namespace Diamond.Models.Factory
         DONE
     }
 
-    public class Plan
+    public class Part
     {
         #region Поля
         #region Обычные

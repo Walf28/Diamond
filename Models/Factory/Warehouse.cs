@@ -40,7 +40,7 @@ namespace Diamond.Models.Factory
             if (AddToRequest)
                 AddToRequests();
         }
-        public void AddProduct(Plan plan, bool AddToRequest = false)
+        public void AddProduct(Part plan, bool AddToRequest = false)
         {
             bool find = false;
             foreach (var product in Products)

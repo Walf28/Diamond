@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Diamond.Database.Configurations
 {
-    public class PlanConfiguration : IEntityTypeConfiguration<Plan>
+    public class PlanConfiguration : IEntityTypeConfiguration<Part>
     {
-        public void Configure(EntityTypeBuilder<Plan> builder)
+        public void Configure(EntityTypeBuilder<Part> builder)
         {
             builder.HasKey(p => p.Id);
 
@@ -17,14 +17,14 @@ namespace Diamond.Database.Configurations
                 .HasForeignKey(p => p.FactoryId)
                 .OnDelete(DeleteBehavior.Cascade);
             // С маршрутом
-            builder.HasOne(p => p.Route).WithMany(r => r.Plan)
+            builder.HasOne(p => p.Route).WithMany(r => r.Part)
                 .HasPrincipalKey(r => r.Id)
                 .HasForeignKey(p => p.RouteId)
                 .OnDelete(DeleteBehavior.Cascade);
             // С участком
-            builder.HasOne(p => p.Region).WithOne(r => r.Plan)
+            builder.HasOne(p => p.Region).WithOne(r => r.Part)
                 .HasPrincipalKey<Region>(r => r.Id)
-                .HasForeignKey<Plan>(p => p.RegionId)
+                .HasForeignKey<Part>(p => p.RegionId)
                 .OnDelete(DeleteBehavior.Cascade);
             // С продукцией
             builder.HasOne(p => p.Product).WithMany(ps => ps.Plans)
