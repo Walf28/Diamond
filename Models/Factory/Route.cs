@@ -305,8 +305,8 @@ namespace Diamond.Models.Factory
         /// </summary>
         public double GetTimeToCompleteFullPlan(bool ConsiderDowntime = true)
         {
-            /*if (!IsWorking)
-                throw new Exception("Маршрут не нашёл все необходимые участки");*/
+            if (!IsWorking)
+                throw new Exception("Маршрут не нашёл все необходимые участки");
             if (!ConsiderDowntime)
                 return Regions.Select(r => r.GetTime(false)).Sum();
 

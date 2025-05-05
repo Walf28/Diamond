@@ -69,11 +69,7 @@ namespace Diamond.Controllers
         public IActionResult UpdateAllRoutes(int id)
         {
             Server.Load();
-            Factory f = Server.Factories[id];
-            f.UpdateAllRoutes();
-            context.Factories.Update(f);
-            context.SaveChanges();
-            Server.Load();
+            Server.Factories[id].UpdateAllRoutes();
             return RedirectToAction(nameof(Edit), new { Id = id });
         }
         #endregion

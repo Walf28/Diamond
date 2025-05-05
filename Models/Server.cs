@@ -62,17 +62,23 @@ namespace Diamond.Models
         {
             try
             {
-                context.SaveChanges();
+                context.SaveChanges(true);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ОШИБКА! {ex.Message}");
+            }
         }
         public static void Save()
         {
             try
             {
-                context.SaveChanges();
+                context.SaveChanges(true);
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"ОШИБКА! {ex.Message}");
+            }
         }
         #endregion
 
