@@ -1,10 +1,10 @@
 ﻿@using Diamond.Models.Products
 @model ProductGroup
 @{
-    ViewData["Title"] = $"Разновидности \"{Model.Name}\"";
+    ViewData["Title"] = $"Типы упаковок \"{Model.Name}\"";
 }
 
-<h1>@($"Разновидности \"{Model.Name}\"")</h1>
+<h1>@($"Типы упаковок \"{Model.Name}\"")</h1>
 <div>
     <input type="submit" onclick="location.href='@Url.Action("ListGroup", "Product")'" value="Назад" />
     <input type="button" onclick="location.href='@Url.Action("CreateSpecific", "Product", new{groupId = Model.Id})'" value="Добавить" />

@@ -1,7 +1,6 @@
 ﻿using Diamond.Database;
 using Diamond.Models;
 using Diamond.Models.Factory;
-using Diamond.Models.Materials;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -50,24 +49,6 @@ namespace Diamond.Controllers
                 .Include(r => r.Type)
                 .First(r => r.Id == id);
 
-            /*List<Material> AllMaterials = [.. context.Materials.AsNoTracking()];
-            List<Material> NewMaterials = [];
-            foreach (var am in AllMaterials)
-            {
-                bool find = false;
-                foreach (var om in region.Materials!)
-                {
-                    if (om.MaterialId == am.Id)
-                    {
-                        find = true;
-                        break;
-                    }
-                }
-
-                if (!find)
-                    NewMaterials.Add(am);
-            }
-            ViewBag.NewMaterials = NewMaterials;*/
             ViewBag.materials = context.Materials.AsNoTracking().ToList();
             ViewBag.technologys = context.Technologies.AsNoTracking().ToList();
 
@@ -105,7 +86,7 @@ namespace Diamond.Controllers
             // Добавление в БД
             context.Regions.Add(region);
             context.SaveChanges();
-            Server.FactorysLoad();
+            Server.Load();
             Server.Factories[region.FactoryId].UpdateAllRoutes();
             Server.Save();
             return RedirectToAction("Edit", "Factory", new { Id = region.FactoryId });
@@ -153,7 +134,7 @@ namespace Diamond.Controllers
 
             // Сохранение всех изменений
             context.SaveChanges();
-            Server.FactorysLoad();
+            Server.Load();
             Server.Factories[DBRegion.FactoryId].UpdateAllRoutes();
             Server.Save();
             return RedirectToAction("Edit", "Factory", new { Id = region.FactoryId });
@@ -167,9 +148,11 @@ namespace Diamond.Controllers
                 .First();
             context.Regions.Where(r => r.Id == Id).ExecuteDelete();
             context.SaveChanges();
-            Server.FactorysLoad();
+            
+            Server.Load();
             Server.Factories[FactoryId].UpdateAllRoutes();
             Server.Save();
+            
             return View();
         }
         #endregion

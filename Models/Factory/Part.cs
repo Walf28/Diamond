@@ -7,19 +7,19 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Diamond.Models.Factory
 {
-    public enum PlanStatus
+    public enum PartStatus
     {
-        [Display(Name = "Ожидает подтверждения")]
+        [Display(Name = "Ожидает подтверждения")] // 0
         AWAIT_CONFIRMATION,
-        [Display(Name = "В очереди")]
+        [Display(Name = "В очереди")] // 1
         QUEUE,
-        [Display(Name = "В производстве")]
+        [Display(Name = "В производстве")] // 2
         PRODUCTION,
-        [Display(Name = "Не может продолжить производство")]
+        [Display(Name = "Не может продолжить производство")] // 3
         STOP,
-        [Display(Name = "Ожидает возобновления производства")]
+        [Display(Name = "Ожидает возобновления производства")] // 4
         PAUSE,
-        [Display(Name = "Выполнен")]
+        [Display(Name = "Выполнен")] // 5
         DONE
     }
 
@@ -30,21 +30,21 @@ namespace Diamond.Models.Factory
         public int Id { get; set; }
         public int Size { get; set; } // Сколько производим
         public DateTime ComingSoon { get; set; } // Ближайшее время, за которое желательно произвести продукцию
-        public PlanStatus Status { get; set; } = PlanStatus.AWAIT_CONFIRMATION; // Статус плана
+        public PartStatus Status { get; set; } = PartStatus.AWAIT_CONFIRMATION; // Статус плана
         #endregion
 
         #region Ссылки
         [NotMapped]
         private readonly DB context = new();
-        [ForeignKey("OrderId")]
+        [ForeignKey(nameof(FactoryId))]
         public Factory Factory { get; set; } = null!; // Какому заводу принадлежит
-        [ForeignKey("RouteId")]
+        [ForeignKey(nameof(RouteId))]
         public Route Route { get; set; } = null!; // На каком маршруте выполняется процесс
-        [ForeignKey("RegionId")]
+        [ForeignKey(nameof(RegionId))]
         public Region? Region { get; set; } // На каком участке на данный момент находится
-        [ForeignKey("ProductsId")]
+        [ForeignKey(nameof(ProductId))]
         public ProductSpecific Product { get; set; } = null!; // Что необходимо произвести
-        [ForeignKey("MaterialId")]
+        [ForeignKey(nameof(MaterialId))]
         public Material Material { get; set; } = null!; // На чём необходимо произвести
         #endregion
 
@@ -72,7 +72,20 @@ namespace Diamond.Models.Factory
                 return ps.ProductGroup.Material;
             }
         }
-        public int GetCountProduct => Size / context.ProductsSpecific.AsNoTracking().First(ps=>ps.Id == ProductId).Size;
+        public int GetCountProduct 
+        {
+            get
+            {
+                try
+                {
+                    return Size / context.ProductsSpecific.AsNoTracking().First(ps => ps.Id == ProductId).Size;
+                }
+                catch 
+                {
+                    return 0;
+                }
+            }
+        }
         #endregion
     }
 }

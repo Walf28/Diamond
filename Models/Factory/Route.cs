@@ -24,7 +24,7 @@ namespace Diamond.Models.Factory
         private readonly DB context = new();
 
         // Завод
-        [ForeignKey("OrderId")]
+        [ForeignKey(nameof(FactoryId))]
         public Factory Factory { get; set; } = new();
         // Участки данного маршрута
         public List<Region> Regions { get; set; } = [];
@@ -305,9 +305,9 @@ namespace Diamond.Models.Factory
         /// </summary>
         public double GetTimeToCompleteFullPlan(bool ConsiderDowntime = true)
         {
-            if (!IsWorking)
-                throw new Exception("Маршрут не нашёл все необходимые участки");
-            else if (!ConsiderDowntime)
+            /*if (!IsWorking)
+                throw new Exception("Маршрут не нашёл все необходимые участки");*/
+            if (!ConsiderDowntime)
                 return Regions.Select(r => r.GetTime(false)).Sum();
 
             double Time = 0;
@@ -320,19 +320,20 @@ namespace Diamond.Models.Factory
                 // Подсчёт простоев
                 if (region.Downtime != null)
                 {
+                    if (region.Downtime!.DowntimeFinish == null)
+                        return double.PositiveInfinity;
+
                     // Ищем время окончания производства при текущих обстоятельствах
                     // и проверяем, не попадаем ли мы за это время под начало простоя текущего участка.
                     // Если не попадаем, то не учитываем время простоя этого участка.
                     DateTime dtFactFinish = DateTime.UtcNow.AddMinutes(Time);
-                    if (dtFactFinish < Regions[regionId].Downtime!.DowntimeStart)
+                    if (dtFactFinish < region.Downtime!.DowntimeStart)
                         continue;
 
                     // Если этот простой неизвестно когда закончится, то возвращаем бесконечность;
                     // Если этот простой уже идёт, считаем через сколько он закончится;
                     // В остальных случаях берём продолжительность простоя.
-                    if (region.Downtime!.DowntimeFinish == null)
-                        return double.PositiveInfinity;
-                    else if (region.Downtime!.IsDowntimeNow)
+                    if (region.Downtime!.IsDowntimeNow)
                         Time += region.Downtime!.DowntimeFinish!.Value.Subtract(dtFactFinish).TotalMinutes;
                     else
                         Time += region.Downtime!.DowntimeDuration;
@@ -424,7 +425,7 @@ namespace Diamond.Models.Factory
             Part? plan = Part.FirstOrDefault(p => p.Id == planId);
             if (plan == null || Regions.FirstOrDefault(r => r.Id == regionId) == null)
                 return null;
-            else if (plan.Status == PlanStatus.DONE)
+            else if (plan.Status == PartStatus.DONE)
                 return 1;
 
             // Находим индексы
@@ -522,8 +523,8 @@ namespace Diamond.Models.Factory
             }
 
             // Запуск
-            Regions[0].SetPlan(ref plan); // КИРИЛЛ, УБЕДИСЬ ЧТО В СПИСКЕ ЗНАЧЕНИЕ IsFabrication ТОЖЕ ИЗМЕНИЛОСЬ
-            return plan.Status == PlanStatus.PRODUCTION;
+            Regions[0].SetPart(ref plan); // КИРИЛЛ, УБЕДИСЬ ЧТО В СПИСКЕ ЗНАЧЕНИЕ IsFabrication ТОЖЕ ИЗМЕНИЛОСЬ
+            return plan.Status == PartStatus.PRODUCTION;
         }
 
         /// <summary>
@@ -534,7 +535,7 @@ namespace Diamond.Models.Factory
         {
             // Проверка
             int regionIndex = Regions.FindIndex(r => r.Id == regionId);
-            if (regionIndex == -1)
+            if (regionIndex == -1 || Regions[regionIndex].Part?.Status == PartStatus.STOP)
                 return;
             if (regionStatus.HasValue)
                 Regions[regionIndex].Status = regionStatus!.Value;
@@ -567,7 +568,7 @@ namespace Diamond.Models.Factory
                     if (earlyRegionIndex == previousRegionIndex && Regions[earlyRegionIndex].Status == RegionStatus.AWAIT_UNLOADING)
                     {
                         Part plan = Part.First(p => p.Id == earlyPlan.Id);
-                        Regions[regionIndex].SetPlan(ref plan);
+                        Regions[regionIndex].SetPart(ref plan);
                     }
                     else if (Regions[regionIndex].MaterialOptionNowId != earlyPlan.MaterialId)
                         Regions[regionIndex].StartReadjustment(earlyPlan.MaterialId);
@@ -590,11 +591,17 @@ namespace Diamond.Models.Factory
                     if (Regions[previousRegionIndex].Status == RegionStatus.AWAIT_UNLOADING
                         && Regions[regionIndex].Workload == 0)
                     {
-                        Regions[regionIndex].AddWorkload(Regions[previousRegionIndex].Workload, out remain);
-                        if (remain == 0)
-                            Regions[previousRegionIndex].SubWorkload(Regions[regionIndex].Workload);
-                        else
-                            throw new Exception("Необходимо расщепление плана");
+                        Part part = Regions[previousRegionIndex].Part!;
+                        if (Regions[regionIndex].SetPart(ref part))
+                        {
+                            if (Regions[regionIndex].Status != RegionStatus.AWAIT_DOWNLOAD)
+                                return;
+                            Regions[regionIndex].AddWorkload(Regions[previousRegionIndex].Workload, out remain);
+                            if (remain == 0)
+                                Regions[previousRegionIndex].SubWorkload(Regions[previousRegionIndex].Workload);
+                            else
+                                throw new Exception("Необходимо расщепление плана");
+                        }
                     }
 
                     // Завершение работы метода
@@ -619,23 +626,37 @@ namespace Diamond.Models.Factory
                     {
                         if (Regions[nextRegionIndex].Workload > 0)
                             throw new Exception();
-                        Regions[nextRegionIndex].AddWorkload(Regions[regionIndex].Workload, out remain);
-                        if (remain == 0)
+
+                        Part p = Regions[regionIndex].Part!;
+                        if (!Regions[nextRegionIndex].SetPart(ref p))
                         {
-                            Regions[regionIndex].SubWorkload(Regions[nextRegionIndex].Workload);
-                            RegionUpdateStatus(Regions[regionIndex].Id, RegionStatus.FREE);
+                            if (Regions[nextRegionIndex].Status != RegionStatus.AWAIT_DOWNLOAD)
+                                return;
+                            Regions[nextRegionIndex].AddWorkload(Regions[regionIndex].Workload, out remain);
+                            if (remain == 0)
+                                Regions[regionIndex].SubWorkload(Regions[regionIndex].Workload);
+                            else
+                                throw new Exception("Необходимо дробление плана");
                         }
-                        else
-                            throw new Exception("Необходимо расщепление плана");
                     }
-                    else if (Regions[regionIndex].Workload > Regions[nextRegionIndex].GetVolumeSizeMaterial(Regions[regionIndex].MaterialOptionNowId!.Value))
+                    else if (Regions[nextRegionIndex].Status == RegionStatus.AWAIT_DOWNLOAD
+                        && Regions[regionIndex].Workload > Regions[nextRegionIndex].GetVolumeSizeMaterial(Regions[regionIndex].MaterialOptionNowId!.Value))
                         throw new Exception($"Следующий участок не может принять слишком огромную партию ({Regions[regionIndex].Id} - {Regions[nextRegionIndex].Id})");
                     else if (Regions[nextRegionIndex].Status == RegionStatus.FREE)
                     {
-                        Part plan = Part.First(p => p.Id == Regions[regionIndex].Part!.Id);
-                        bool success = Regions[nextRegionIndex].SetPlan(ref plan);
+                        /*Part part = Part.First(p => p.Id == Regions[regionIndex].Part!.Id);
+                        bool success = Regions[nextRegionIndex].SetPart(ref part);
                         if (success && Regions[regionIndex].Workload == 0)
-                            RegionUpdateStatus(Regions[regionIndex].Id);
+                            RegionUpdateStatus(Regions[regionIndex].Id);*/
+                        Part part = Regions[regionIndex].Part!;
+                        if (Regions[nextRegionIndex].SetPart(ref part))
+                        {
+                            if (Regions[nextRegionIndex].Status != RegionStatus.AWAIT_DOWNLOAD)
+                                return;
+                            Regions[nextRegionIndex].AddWorkload(Regions[regionIndex].Workload, out remain);
+                            if (remain == 0)
+                                Regions[regionIndex].SubWorkload(Regions[regionIndex].Workload);
+                        }
                     }
 
                     // Завершение работы метода
@@ -646,7 +667,7 @@ namespace Diamond.Models.Factory
                     {
                         int planIndex = Part.FindIndex(p => p.Id == Regions[regionIndex].Part!.Id);
                         this.Part[planIndex].Region = null;
-                        this.Part[planIndex].Status = PlanStatus.QUEUE;
+                        this.Part[planIndex].Status = PartStatus.QUEUE;
                         Regions[regionIndex].Part = null;
                     }
 
@@ -658,20 +679,21 @@ namespace Diamond.Models.Factory
                         if (regionIndexWithPlan > regionIndex)
                             continue;
 
-                        // Остальным надо обновить статус и решить, что с ними делать
-                        p.Status = PlanStatus.STOP;
+                        // Всем остальным (почти) надо обновить статус и решить, что с ними делать
+                        if (p.Status != PartStatus.AWAIT_CONFIRMATION)
+                            p.Status = PartStatus.STOP;
                     }
 
                     return;
                 case RegionStatus.DOWNTIME_FINISH:
                     // Обновляем статус всех планов
                     foreach (var p in Part)
-                        if (p.Status == PlanStatus.STOP || p.Status == PlanStatus.PAUSE)
+                        if (p.Status == PartStatus.STOP || p.Status == PartStatus.PAUSE)
                         {
                             if (p.RegionId == null)
-                                p.Status = PlanStatus.QUEUE;
+                                p.Status = PartStatus.QUEUE;
                             else
-                                p.Status = PlanStatus.PRODUCTION;
+                                p.Status = PartStatus.PRODUCTION;
                         }
                     return;
                 default: return;

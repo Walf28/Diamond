@@ -7,11 +7,11 @@
 <form method="post">
     <div>
         <input type="submit" value="Назад"
-               asp-controller="Plan"
-               asp-action="List"
-               asp-route-Id="@Model.FactoryId"
-               formmethod="get"
-               formnovalidate />
+        asp-controller="Part"
+        asp-action="List"
+        asp-route-Id="@Model.FactoryId"
+        formmethod="get"
+        formnovalidate />
         <input type="submit" value="Сохранить"/>
     </div>
     <input id="factoryId" type="number" value="@Model.FactoryId" asp-for="@Model.FactoryId" hidden readonly/>
@@ -20,15 +20,24 @@
     <p>Продукция<input type="text" value="@ViewBag.ProductName" readonly/></p>
     <p>К какому сроку надо выполнить
         <input
-            value="@Model.ComingSoon.ToLocalTime()"
-            min="@DateTime.Now.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")"
-            readonly/></p>
+        value="@Model.ComingSoon.ToLocalTime()"
+        min="@DateTime.Now.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")"
+        readonly/></p>
     <p>На каком участке находится<input value="@(Model.Region == null ? "-" :Model.Region.Name)" readonly/></p>
     <p>Выбранный размер<input value="@Model.Size" readonly/></p>
     <p>Маршрут
         <select id="selectedRoute" asp-for="@Model.RouteId" onchange="GetResultTime(value, planId.value)" required>
+            @if (Model.Route.GetTimeToCompleteFullPlan() == double.PositiveInfinity)
+            {
+                <option value="@Model.RouteId">
+                    @($"{Model.Route.GetContent} | ?")
+                </option>
+            }
+            else
+            {
             <option value="@Model.RouteId">
                 @($"{Model.Route.GetContent} | {TimeSpan.FromMinutes(Model.Route.GetTimeToCompleteFullPlan()).TotalHours:f2} ч.")</option>
+            }
             @foreach(var r in (ViewBag.Routes as List<Route>)!)
             {
                 double time = r.GetTimeToEndDowntime();

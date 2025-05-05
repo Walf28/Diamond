@@ -15,7 +15,7 @@ namespace Diamond.Models
         public static readonly Dictionary<int, Factory.Factory> Factories = [];
 
         #region Обращение к БД
-        public static void FactorysLoad()
+        public static void Load()
         {
             try
             {
@@ -32,7 +32,6 @@ namespace Diamond.Models
                     .Include(f=>f.Regions).ThenInclude(r=>r.Downtime)
                     .Include(f=>f.Regions).ThenInclude(r=>r.Materials)
                     .Include(f=>f.Regions).ThenInclude(r=>r.Type)
-                    .Include(f=>f.Plan)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Route)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Region)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Product)
@@ -117,15 +116,15 @@ namespace Diamond.Models
         public static void PlanApprove(int planId)
         {
             Factory.Factory f = factories.First(f => f.Plan.FirstOrDefault(p => p.Id == planId) != null);
-            f.Plan.First(p => p.Id == planId).Status = PlanStatus.QUEUE;
+            f.Plan.First(p => p.Id == planId).Status = PartStatus.QUEUE;
             context.SaveChanges();
             f.StartPlan();
         }
         public static void PlanApproveAll(int factoryId)
         {
             _ = Factories[factoryId].Plan
-                .Where(p => p.Status == PlanStatus.AWAIT_CONFIRMATION)
-                .All(p => { p.Status = PlanStatus.QUEUE; return true; });
+                .Where(p => p.Status == PartStatus.AWAIT_CONFIRMATION)
+                .All(p => { p.Status = PartStatus.QUEUE; return true; });
             context.SaveChanges();
             Factories[factoryId].StartPlan();
         }
@@ -151,7 +150,7 @@ namespace Diamond.Models
         {
             _ = Factories.Values
                 .Select(f => f.Plan.First(p => p.Id == planId))
-                .Any(p => { p.Status = PlanStatus.PAUSE; return true; });
+                .Any(p => { p.Status = PartStatus.PAUSE; return true; });
             context.SaveChanges();
         }
         public static void PlanEditRoute(Part plan)
@@ -162,12 +161,12 @@ namespace Diamond.Models
 
             // Смена значений
             if (p.RouteId == plan.RouteId)
-                p.Status = PlanStatus.PAUSE;
+                p.Status = PartStatus.PAUSE;
             else
             {
                 p.RouteId = plan.RouteId;
                 p.Route = route;
-                p.Status = PlanStatus.PRODUCTION;
+                p.Status = PartStatus.PRODUCTION;
             }
 
             // Сохранение

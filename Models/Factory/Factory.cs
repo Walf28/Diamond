@@ -136,31 +136,6 @@ namespace Diamond.Models.Factory
             return routes;
         }
 
-        /*/// <summary>
-        /// Сколько времени необходимо маршруту, чтобы завершить план (с учётом уже имеющихся планов и пересекающихся маршрутов).
-        /// Если маршрута не существует, вернётся 0.
-        /// </summary>
-        public double NeedTimeForRoute(int routeId)
-        {
-            // Поиск маршрута
-            Route? route = Routes.Where(r => r.Id == routeId).FirstOrDefault();
-            if (route == null)
-                return double.PositiveInfinity;
-
-            // Подобор интересущих участков
-            double AllTime = 0;
-            List<Region> regions = route.Regions;
-            foreach (var region in regions)
-            {
-                double timeRegion = region.GetTime();
-                if (timeRegion == double.PositiveInfinity)
-                    return double.PositiveInfinity;
-                AllTime += timeRegion;
-            }
-
-            return AllTime;
-        }*/
-
         /// <summary>
         /// Маршруты, которые могут завершить выполнение данного плана
         /// </summary>
@@ -168,7 +143,7 @@ namespace Diamond.Models.Factory
         {
             if (part.ProductId == 0)
                 return [];
-            List<Route> routes = Routes.Where(r => r.CanProduceProduct(part.ProductId)).ToList();
+            List<Route> routes = Routes.Where(r => r.CanProduceProduct(part.Product.ProductGroupId)).ToList();
             return routes;
         }
 
@@ -210,7 +185,7 @@ namespace Diamond.Models.Factory
             {
                 bool can = false;
                 foreach (var r in Routes)
-                    if (r.CanProduceProduct(op.ProductId))
+                    if (r.CanProduceProduct(op.Product.ProductGroupId))
                     {
                         can = true;
                         break;
@@ -261,7 +236,7 @@ namespace Diamond.Models.Factory
                 for (int i = 0; i < Plan.Count && fullSize > 0; ++i)
                 {
                     // Первичная проверка, можно ли произвести по данному плану данную продукцию
-                    if (Plan[i].Status != PlanStatus.AWAIT_CONFIRMATION && Plan[i].ProductId != orderPart.ProductId)
+                    if (Plan[i].Status != PartStatus.AWAIT_CONFIRMATION || Plan[i].ProductId != orderPart.ProductId)
                         continue;
 
                     // Проверка с подсчётами, есть ли место для дополнения плана
@@ -342,7 +317,7 @@ namespace Diamond.Models.Factory
                             RouteId = fastestRouteId,
                             ProductId = orderPart.ProductId,
                             MaterialId = materialId,
-                            Status = PlanStatus.AWAIT_CONFIRMATION
+                            Status = PartStatus.AWAIT_CONFIRMATION
                         });
                         Routes[idIndex].Part.Add(Plan[^1]);
                         //fullSize = fullSize <= volumeMaterialSize ? 0 : fullSize - volumeMaterialSize;
@@ -404,7 +379,7 @@ namespace Diamond.Models.Factory
         {
             UpdatePlan();
             for (int PlanIndex = 0; PlanIndex < Plan.Count; ++PlanIndex)
-                if (Plan[PlanIndex].Status == PlanStatus.QUEUE && !Plan[PlanIndex].Route.IsHaveDowntimeRegion())
+                if (Plan[PlanIndex].Status == PartStatus.QUEUE && !Plan[PlanIndex].Route.IsHaveDowntimeRegion())
                     Plan[PlanIndex].Route.Start(Plan[PlanIndex]);
         }
 
@@ -433,7 +408,7 @@ namespace Diamond.Models.Factory
                 Factory = this
             };
 
-            Plan[planIndex].Status = PlanStatus.DONE;
+            Plan[planIndex].Status = PartStatus.DONE;
             Warehouse.AddProduct(Plan[planIndex], true);
             RemoveInCommonPlan(Plan[planIndex].ProductId, Plan[planIndex].Size);
             Plan.RemoveAt(planIndex);
@@ -518,12 +493,6 @@ namespace Diamond.Models.Factory
         {
             // Удаление "сломанных" маршрутов
             Routes.RemoveAll(r => !r.IsWorking);
-            /*for (int i = 0; i < Routes.Count; ++i)
-                if (!Routes[i].IsWorking)
-                {
-                    Routes.RemoveAt(i);
-                    --i;
-                }*/
 
             // Добавление новых маршрутов
             List<Route> UnusingRoutes = FindUnusingRoutes();

@@ -10,25 +10,25 @@ namespace Diamond.Models.Factory
 {
     public enum RegionStatus
     {
-        [Display(Name = "Выключен")]
+        [Display(Name = "Выключен")] // 0
         OFF,
-        [Display(Name = "Свободен")]
+        [Display(Name = "Свободен")] // 1
         FREE,
-        [Display(Name = "Идёт переналадка свободного участка")]
+        [Display(Name = "Идёт переналадка свободного участка")] // 2
         FREE_READJUSTMENT,
-        [Display(Name = "Идёт переналадка под план")]
+        [Display(Name = "Идёт переналадка под план")] // 3
         READJUSTMENT,
-        [Display(Name = "Ожидает загрузки")]
+        [Display(Name = "Ожидает загрузки")] // 4
         AWAIT_DOWNLOAD,
-        [Display(Name = "Ожидает запуска")]
+        [Display(Name = "Ожидает запуска")] // 5
         AWAITING_LAUNCH,
-        [Display(Name = "Работает")]
+        [Display(Name = "Работает")] // 6
         IN_WORKING,
-        [Display(Name = "Ожидает разгрузки")]
+        [Display(Name = "Ожидает разгрузки")] // 7
         AWAIT_UNLOADING,
-        [Display(Name = "Не работает")]
+        [Display(Name = "Не работает")] // 8
         DOWNTIME,
-        [Display(Name = "Синхронизация с маршрутами")]
+        [Display(Name = "Синхронизация с маршрутами")] // 9
         DOWNTIME_FINISH
     }
 
@@ -267,7 +267,15 @@ namespace Diamond.Models.Factory
             if (Part != null && Part.Id == part.Id)
             {
                 if (Status == RegionStatus.IN_WORKING && timer != null && timer.Enabled)
-                    return DateTime.UtcNow.Subtract(startTimer!.Value).TotalMinutes;
+                {
+                    DateTime stTimer = startTimer!.Value;
+                    double tInterval = timer.Interval;
+                    DateTime stTimer1 = stTimer.AddMilliseconds(tInterval);
+                    DateTime stTimer2 = stTimer1.ToUniversalTime();
+                    TimeSpan stTimer3 = stTimer2.Subtract(DateTime.UtcNow);
+                    double totalMinutes = stTimer3.TotalMinutes;
+                    return startTimer!.Value.AddMilliseconds(timer.Interval).ToUniversalTime().Subtract(DateTime.UtcNow).TotalMinutes;
+                }
                 else if (Status == RegionStatus.AWAIT_UNLOADING)
                     return 0;
             }
@@ -376,25 +384,27 @@ namespace Diamond.Models.Factory
         /// Установить план
         /// </summary>
         /// <returns>Если план успешно установлен, то возвращается true, иначе - false</returns>
-        public bool SetPlan(ref Part Plan)
+        public bool SetPart(ref Part Part)
         {
+            if (Part == null)
+                return false;
             // Проверка
-            int routeId = Plan.RouteId;
+            int routeId = Part.RouteId;
             int routeIndex = Routes.FindIndex(r => r.Id == routeId);
             if (Status != RegionStatus.FREE || routeIndex == -1 || Workload > 0 ||
-                (Downtime != null && Downtime.IsDowntime(DateTime.UtcNow.AddMinutes(GetTime(Plan)))))
+                (Downtime != null && Downtime.IsDowntime(DateTime.UtcNow.AddMinutes(GetTime(Part)))))
                 return false;
 
             // Установка плана
-            this.Part = Plan;
-            Plan!.Region = this;
-            if (MaterialOptionNowId == null || MaterialOptionNowId != Plan.MaterialId)
-                Plan.Route.RegionUpdateStatus(Id, RegionStatus.READJUSTMENT);
+            this.Part = Part;
+            Part!.Region = this;
+            if (MaterialOptionNowId == null || MaterialOptionNowId != Part.MaterialId)
+                Part.Route.RegionUpdateStatus(Id, RegionStatus.READJUSTMENT);
             else
-                Plan.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_DOWNLOAD);
+                Part.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_DOWNLOAD);
 
             // Завршение выполнения метода
-            Plan.Status = PlanStatus.PRODUCTION;
+            Part.Status = PartStatus.PRODUCTION;
             return true;
         }
 
@@ -413,7 +423,7 @@ namespace Diamond.Models.Factory
                         Workload = 0;
                         Status = RegionStatus.FREE;
                     }
-                    Part!.Route.RegionUpdateStatus(Id);
+                    Part?.Route.RegionUpdateStatus(Id);
                     return;
                 case RegionStatus.IN_WORKING:
                     {
@@ -429,6 +439,7 @@ namespace Diamond.Models.Factory
                         timer = new(TimeSpan.FromSeconds(GetTime(Part)));
                         timer.Elapsed += Finish;
                         timer.Start();
+                        startTimer = DateTime.UtcNow;
                         Part.Route.RegionUpdateStatus(Id, RegionStatus.IN_WORKING);
                         return;
                     }
@@ -450,10 +461,10 @@ namespace Diamond.Models.Factory
         {
             if (Part == null || Status != RegionStatus.AWAITING_LAUNCH)
                 return false;
-            startTimer = DateTime.UtcNow;
             timer = new(TimeSpan.FromSeconds(GetTime(Part)));
             timer.Elapsed += Finish;
             timer.Start();
+            startTimer = DateTime.UtcNow;
             Part.Route.RegionUpdateStatus(Id, RegionStatus.IN_WORKING);
             return true;
         }
@@ -464,9 +475,16 @@ namespace Diamond.Models.Factory
         public void Finish(object? o, ElapsedEventArgs eea)
         {
             timer.Stop();
-            if (Part == null)
-                throw new Exception("План не найден");
-            Part.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_UNLOADING);
+            try
+            {
+                if (Part == null)
+                    throw new Exception("План не найден");
+                Part.Route.RegionUpdateStatus(Id, RegionStatus.AWAIT_UNLOADING);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("ОШИБКА: " + ex.Message);
+            }
         }
 
         /// <summary>
@@ -499,6 +517,7 @@ namespace Diamond.Models.Factory
             timer = new(TimeSpan.FromSeconds(ReadjustmentTime + 1));
             timer.Elapsed += FinishReadjustment;
             timer.Start();
+            startTimer = DateTime.UtcNow;
         }
 
         /// <summary>
@@ -575,10 +594,10 @@ namespace Diamond.Models.Factory
                     Factory.StartPlan();
                 else
                 {
-                    Part? earlyPlan = FindEarlyPlan();
-                    if (earlyPlan == null)
+                    Part? earlyPart = FindEarlyPlan();
+                    if (earlyPart == null)
                         return;
-                    int earlyRouteIndex = Routes.FindIndex(r => r.Id == earlyPlan.RouteId);
+                    int earlyRouteIndex = Routes.FindIndex(r => r.Id == earlyPart.RouteId);
                     if (earlyRouteIndex != -1)
                         Routes[earlyRouteIndex].RegionUpdateStatus(Id);
                 }
@@ -664,6 +683,7 @@ namespace Diamond.Models.Factory
             timer = new(TimeSpan.FromMinutes(Downtime.DowntimeFinish!.Value.Subtract(Downtime.DowntimeStart).TotalMinutes));
             timer.Elapsed += StopDowntime;
             timer.Start();
+            startTimer = DateTime.UtcNow;
         }
 
         /// <summary>

@@ -14,14 +14,13 @@
     </div>
 
     <!-- Ожидают утверждения -->
-    @if (Model.FirstOrDefault(p => p.Status == PlanStatus.AWAIT_CONFIRMATION) != null)
+    @if (Model.FirstOrDefault(p => p.Status == PartStatus.AWAIT_CONFIRMATION) != null)
     {
         <div>
             <footer class="border-top footer" />
             <h1>Ожидают утверждения</h1>
             <a class="btn btn-primary"
                 asp-action="ApproveAll"
-                asp-controller="Plan"
                 asp-route-Id="@ViewBag.FactoryId">Утвердить всё</a>
             <table class="table table-bordered">
                 <tr>
@@ -31,7 +30,7 @@
                     <td>Требуемое сырьё</td>
                     <td></td>
                 </tr>
-                @foreach (var plan in Model.Where(p => p.Status == PlanStatus.AWAIT_CONFIRMATION).OrderBy(p => p.Id))
+                @foreach (var plan in Model.Where(p => p.Status == PartStatus.AWAIT_CONFIRMATION).OrderBy(p => p.Id))
                 {
                     <tr>
                         <td>@plan.Route!.GetContent</td>
@@ -41,11 +40,9 @@
                         <td>
                             <a class="btn btn-primary"
                                 asp-action="Approve"
-                                asp-controller="Plan"
                                 asp-route-Id="@plan.Id">Утвердить</a>
                             <a class="btn btn-danger"
                                 asp-action="Delete"
-                                asp-controller="Plan"
                                 asp-route-Id="@plan.Id"
                                onclick="javascript:return confirm('Вы уверены, что хотите удалить данный элемент (@plan.Id)?');">Удалить</a>
                         </td>
@@ -56,7 +53,7 @@
     }
 
     <!-- Не могут продолжить движение по маршруту -->
-    @if (Model.FirstOrDefault(p => p.Status == PlanStatus.STOP) != null)
+    @if (Model.FirstOrDefault(p => p.Status == PartStatus.STOP) != null)
     {
         <form method="post">
             <footer class="border-top footer" />
@@ -70,7 +67,7 @@
                     <td>Требуемое сырьё</td>
                     <td></td>
                 </tr>
-                @foreach (var plan in Model.Where(p => p.Status == PlanStatus.STOP).OrderBy(p=>p.Id))
+                @foreach (var plan in Model.Where(p => p.Status == PartStatus.STOP).OrderBy(p=>p.Id))
                 {
                     <tr>
                         <td>@plan.Route?.GetContent</td>
@@ -89,7 +86,7 @@
     }
 
     <!-- В ожидании -->
-    @if (Model.FirstOrDefault(p => p.Status == PlanStatus.QUEUE) != null)
+    @if (Model.FirstOrDefault(p => p.Status == PartStatus.QUEUE) != null)
     {
         <div>
             <footer class="border-top footer" />
@@ -102,7 +99,7 @@
                     <td>Требуемое сырьё</td>
                     <td></td>
                 </tr>
-                @foreach (var plan in Model.Where(p => p.Status == PlanStatus.QUEUE).OrderBy(p => p.Id))
+                @foreach (var plan in Model.Where(p => p.Status == PartStatus.QUEUE).OrderBy(p => p.Id))
                 {
                     <tr>
                         <td>@plan.Route?.GetContent</td>
@@ -119,7 +116,7 @@
     }
 
     <!-- В ожидании на производстве -->
-    @if (Model.FirstOrDefault(p => p.Status == PlanStatus.PAUSE) != null)
+    @if (Model.FirstOrDefault(p => p.Status == PartStatus.PAUSE) != null)
     {
         <div>
             <footer class="border-top footer" />
@@ -132,7 +129,7 @@
                     <td>Количество</td>
                     <td>Требуемое сырьё</td>
                 </tr>
-                @foreach (var plan in Model.Where(p => p.Status == PlanStatus.PAUSE).OrderBy(p => p.Id))
+                @foreach (var plan in Model.Where(p => p.Status == PartStatus.PAUSE).OrderBy(p => p.Id))
                 {
                     <tr>
                         <td>@plan.Route?.GetContent</td>
@@ -147,7 +144,7 @@
     }
 
     <!-- В производстве -->
-    @if (Model.FirstOrDefault(p => p.Status == PlanStatus.PRODUCTION) != null)
+    @if (Model.FirstOrDefault(p => p.Status == PartStatus.PRODUCTION) != null)
     {
         <div>
             <footer class="border-top footer" />
@@ -159,17 +156,24 @@
                     <td>Продукция</td>
                     <td>Количество упаковок</td>
                     <td>Требуемое сырьё</td>
-                    <td>Осталось минут</td>
+                    <td>Осталось времени</td>
                 </tr>
-                @foreach (var plan in Model.Where(p => p.Status == PlanStatus.PRODUCTION).OrderBy(p => p.Id))
+                @foreach (var plan in Model.Where(p => p.Status == PartStatus.PRODUCTION).OrderBy(p => p.Id))
                 {
+                    double time = plan.Region!.GetTime(plan);
+                    int timeHours = (int)TimeSpan.FromMinutes(time).TotalHours;
+                    time = TimeSpan.FromMinutes(time).Subtract(TimeSpan.FromHours(timeHours)).TotalMinutes;
+                    int timeMinutes = (int)time;
+                    time -= timeMinutes;
+                    int timeSeconds = (int)TimeSpan.FromMinutes(time).Subtract(TimeSpan.FromMinutes(timeMinutes)).TotalSeconds;
+
                     <tr>
                         <td>@plan.Route?.GetContent</td>
                         <td>@plan.Region?.Name</td>
                         <td>@plan.Product</td>
                         <td>@(plan.Size / plan.Product.Size)</td>
                         <td>@($"{@plan.GetMaterial?.Name} - {plan.Size} гр.")</td>
-                        <td>@plan.Region?.GetTime(plan)</td>
+                        <td>@($"{timeHours}ч. {timeMinutes} м. {timeSeconds} с.")</td>
                     </tr>
                 }
             </table>

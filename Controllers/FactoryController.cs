@@ -42,7 +42,7 @@ namespace Diamond.Controllers
                 .Where(f => f.Id == factory.Id)
                 .ExecuteUpdate(f => f.SetProperty(sp => sp.Name, factory.Name));
             context.SaveChanges();
-            Server.FactorysLoad();
+            Server.Load();
             return RedirectToAction(nameof(List));
         }
         public IActionResult Delete(int Id)
@@ -68,9 +68,12 @@ namespace Diamond.Controllers
         }
         public IActionResult UpdateAllRoutes(int id)
         {
-            Server.FactorysLoad();
-            Server.Factories[id].UpdateAllRoutes();
-            Server.Save();
+            Server.Load();
+            Factory f = Server.Factories[id];
+            f.UpdateAllRoutes();
+            context.Factories.Update(f);
+            context.SaveChanges();
+            Server.Load();
             return RedirectToAction(nameof(Edit), new { Id = id });
         }
         #endregion

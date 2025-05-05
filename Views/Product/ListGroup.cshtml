@@ -29,7 +29,7 @@
             </td>
             <td>
                 <a asp-action="EditGroup" asp-route-id="@item.Id" class="btn btn-primary">Редактировать</a>
-                <a asp-action="ListSpecific" asp-route-groupId="@item.Id" class="btn btn-primary">Разновидности</a>
+                <a asp-action="ListSpecific" asp-route-groupId="@item.Id" class="btn btn-primary">Типы упаковок</a>
                 <a asp-action="DeleteGroup" asp-route-id="@item.Id" class="btn btn-danger"
                        onclick="javascript:return confirm('Вы уверены, что хотите удалить данный элемент (@item.Name)?');">Удалить</a>
             </td>

@@ -499,7 +499,7 @@ namespace Diamond.Migrations
             modelBuilder.Entity("Diamond.Models.Factory.Part", b =>
                 {
                     b.HasOne("Diamond.Models.Factory.Factory", "Factory")
-                        .WithMany("Part")
+                        .WithMany("Plan")
                         .HasForeignKey("FactoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -727,7 +727,7 @@ namespace Diamond.Migrations
                 {
                     b.Navigation("Orders");
 
-                    b.Navigation("Part");
+                    b.Navigation("Plan");
 
                     b.Navigation("Regions");
 

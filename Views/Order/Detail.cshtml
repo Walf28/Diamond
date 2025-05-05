@@ -24,7 +24,7 @@
         } else {
             <select asp-for="FactoryId" required>
                 @if ((List<Factory>)ViewBag.Factories != null)
-                    @foreach (var factory in ((List<Factory>)ViewBag.Factories).Where(f=>f.CanFullCompleteOrder(Model)))
+                    @foreach (var factory in Server.Factories.Values.Where(f=>f.CanFullCompleteOrder(Model)))
                     {
                         <option value="@factory.Id">@factory.Name</option>
                     }

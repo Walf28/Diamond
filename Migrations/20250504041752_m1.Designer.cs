@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Diamond.Migrations
 {
     [DbContext(typeof(DB))]
-    [Migration("20250422061443_m1")]
+    [Migration("20250504041752_m1")]
     partial class m1
     {
         /// <inheritdoc />
@@ -502,7 +502,7 @@ namespace Diamond.Migrations
             modelBuilder.Entity("Diamond.Models.Factory.Part", b =>
                 {
                     b.HasOne("Diamond.Models.Factory.Factory", "Factory")
-                        .WithMany("Part")
+                        .WithMany("Plan")
                         .HasForeignKey("FactoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -730,7 +730,7 @@ namespace Diamond.Migrations
                 {
                     b.Navigation("Orders");
 
-                    b.Navigation("Part");
+                    b.Navigation("Plan");
 
                     b.Navigation("Regions");
 

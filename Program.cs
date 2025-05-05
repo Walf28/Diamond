@@ -24,7 +24,7 @@ namespace Diamond
                 builder.Services.AddRazorPages();
                 builder.Services.AddDbContext<DB>(options =>
                     options.UseNpgsql(DB.ConnectionString));
-                Server.FactorysLoad();
+                Server.Load();
             }
 
             var app = builder.Build();
