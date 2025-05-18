@@ -16,9 +16,9 @@ namespace Diamond.Models.Factory
         [StringLength(50, ErrorMessage = "Название должно быть не длиннее 50 символов")]
         public string Name { get; set; } = ""; // Название объекта
 
-        // Эти два - это суммарно, сколько и чего надо произвести
+        /*// Эти два - это суммарно, сколько и чего надо произвести
         public List<int> ProductsCommonId { get; set; } = []; // Что имеется в очереди
-        public List<int> ProductsCommonSize { get; set; } = []; // Сколько этого надо произвести
+        public List<int> ProductsCommonSize { get; set; } = []; // Сколько этого надо произвести*/
         #endregion
 
         #region Ссылочные
@@ -111,6 +111,7 @@ namespace Diamond.Models.Factory
                 routes.AddRange(ThisRoutes);
             }
 
+            _ = routes.Any(r => { r.Factory = this; return true; });
             return routes;
         }
 
@@ -143,7 +144,7 @@ namespace Diamond.Models.Factory
         {
             if (part.ProductId == 0)
                 return [];
-            List<Route> routes = Routes.Where(r => r.CanProduceProduct(part.Product.ProductGroupId)).ToList();
+            List<Route> routes = Routes.Where(r => r.CanProduceProduct(part.Product.ProductId)).ToList();
             return routes;
         }
 
@@ -185,7 +186,7 @@ namespace Diamond.Models.Factory
             {
                 bool can = false;
                 foreach (var r in Routes)
-                    if (r.CanProduceProduct(op.Product.ProductGroupId))
+                    if (r.CanProduceProduct(op.Product.ProductId))
                     {
                         can = true;
                         break;
@@ -229,7 +230,7 @@ namespace Diamond.Models.Factory
                 // Добавляем в общий план
                 int productSize = orderPart.Product.Size;
                 int fullSize = orderPart.Count * productSize;
-                AddInCommonPlan(orderPart.ProductId, fullSize);
+                //AddInCommonPlan(orderPart.ProductId, fullSize);
 
                 // Пытаемся запихнуть в свободное место в плане, если такое найдётся.
                 List<Part> PlanOuttime = [];
@@ -275,7 +276,7 @@ namespace Diamond.Models.Factory
                 List<Route> PotencialRoutes = [];
                 foreach (var route in Routes)
                     if (!route.IsHaveDowntimeRegion() && 
-                        route.CanProduceProduct(orderPart.Product.ProductGroupId) && 
+                        route.CanProduceProduct(orderPart.Product.ProductId) && 
                         route.GetMaxVolumeCountProduct(orderPart.ProductId) > 0)
                         PotencialRoutes.Add(route);
                 if (PotencialRoutes.Count == 0)
@@ -410,11 +411,11 @@ namespace Diamond.Models.Factory
 
             Plan[planIndex].Status = PartStatus.DONE;
             Warehouse.AddProduct(Plan[planIndex], true);
-            RemoveInCommonPlan(Plan[planIndex].ProductId, Plan[planIndex].Size);
+            //RemoveInCommonPlan(Plan[planIndex].ProductId, Plan[planIndex].Size);
             Plan.RemoveAt(planIndex);
         }
 
-        /// <summary>
+        /*/// <summary>
         /// Добавить в общий план
         /// </summary>
         private void AddInCommonPlan(int productId, int productSize)
@@ -473,7 +474,7 @@ namespace Diamond.Models.Factory
                     }
                     return;
                 }
-        }
+        }*/
         #endregion
 
         #region Управление

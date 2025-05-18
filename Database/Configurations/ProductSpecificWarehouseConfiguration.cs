@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Diamond.Database.Configurations
 {
-    public class ProductSpecificWarehouseConfiguration : IEntityTypeConfiguration<ProductSpecificWarehouse>
+    public class ProductSpecificWarehouseConfiguration : IEntityTypeConfiguration<ProductWarehouse>
     {
-        public void Configure(EntityTypeBuilder<ProductSpecificWarehouse> builder)
+        public void Configure(EntityTypeBuilder<ProductWarehouse> builder)
         {
             builder.HasKey(p => p.Id);
 

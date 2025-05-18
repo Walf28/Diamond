@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Diamond.Models.Products
 {
-    public class ProductSpecificWarehouse
+    public class ProductWarehouse
     {
         #region Поля
         #region Обычные
@@ -15,7 +15,7 @@ namespace Diamond.Models.Products
 
         #region Ссылочные
         [ForeignKey(nameof(ProductId))]
-        public ProductSpecific Product { get; set; } = null!;
+        public Package Product { get; set; } = null!;
         [ForeignKey(nameof(WarehouseId))]
         public Warehouse Warehouse { get; set; } = null!;
         #endregion

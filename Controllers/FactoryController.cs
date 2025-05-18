@@ -68,8 +68,17 @@ namespace Diamond.Controllers
         }
         public IActionResult UpdateAllRoutes(int id)
         {
-            Server.Load();
-            Server.Factories[id].UpdateAllRoutes();
+            /*Factory f = Server.Factories[id];
+            f.UpdateAllRoutes();
+            var routes = f.Routes.Where(r => r.Id == 0).ToList();
+            for (int i = 0; i< routes.Count; ++i)
+                for (int j = 0; j < routes[i].Regions.Count; ++j)
+                    routes[i].Regions[j] = context.Regions.First(r=>r.Id == routes[i].Regions[j].Id);
+            context.Factories.Update(f);
+            context.Routes.AddRange(routes);
+            context.SaveChanges();
+            Server.Load();*/
+            Server.UpdateRoutes(id);
             return RedirectToAction(nameof(Edit), new { Id = id });
         }
         #endregion

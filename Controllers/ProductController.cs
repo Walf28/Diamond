@@ -20,7 +20,7 @@ namespace Diamond.Controllers
         {
             //List<Material> materials = [.. context.Materials.AsNoTracking()];
             ViewBag.materials = context.Materials.AsNoTracking().ToList();
-            ViewBag.technologys = context.Technologies.AsNoTracking().ToList();
+            ViewBag.technologys = context.ProductionStage.AsNoTracking().ToList();
             return View();
         }
         [HttpGet]
@@ -36,7 +36,7 @@ namespace Diamond.Controllers
             //List<Material> materials = [.. context.Materials];
             //ViewBag.materials = materials;
             ViewBag.materials = context.Materials.AsNoTracking().ToList();
-            ViewBag.technologys = context.Technologies.AsNoTracking().ToList();
+            ViewBag.technologys = context.ProductionStage.AsNoTracking().ToList();
 
             return View(product);
         }
@@ -44,7 +44,7 @@ namespace Diamond.Controllers
 
         #region Управление
         [HttpPost]
-        public IActionResult CreateGroup(ProductGroup product)
+        public IActionResult CreateGroup(Product product)
         {
             product.TechnologyProcessing.RemoveAll(tp => tp == 0);
             context.ProductsGroup.Add(product);
@@ -52,9 +52,9 @@ namespace Diamond.Controllers
             return RedirectToAction(nameof(ListGroup));
         }
         [HttpPost]
-        public IActionResult EditGroup(ProductGroup product)
+        public IActionResult EditGroup(Product product)
         {
-            ProductGroup? productGroup = context.ProductsGroup
+            Product? productGroup = context.ProductsGroup
                 .Where(pg => pg.Id == product.Id)
                 .FirstOrDefault();
             if (productGroup == null)
@@ -106,7 +106,7 @@ namespace Diamond.Controllers
                 return RedirectToAction(nameof(ListGroup));
             }
 
-            ProductSpecific ps = new() { ProductGroupId = (int)groupId };
+            Package ps = new() { ProductId = (int)groupId };
             ps.ProductGroup = ps.GetProductGroup!;
 
             return View(ps);
@@ -120,7 +120,7 @@ namespace Diamond.Controllers
                 return RedirectToAction(nameof(ListGroup));
             }
 
-            var product = context.ProductsSpecific
+            var product = context.Package
                 .AsNoTracking()
                 .Where(ps => ps.Id == productId)
                 .Include(ps => ps.ProductGroup)
@@ -132,17 +132,17 @@ namespace Diamond.Controllers
 
         #region Управление
         [HttpPost]
-        public IActionResult CreateSpecific(ProductSpecific product)
+        public IActionResult CreateSpecific(Package product)
         {
-            product.ProductGroup = context.ProductsGroup.Where(pg=>pg.Id == product.ProductGroupId).First();
-            context.ProductsSpecific.Add(product);
+            product.ProductGroup = context.ProductsGroup.Where(pg=>pg.Id == product.ProductId).First();
+            context.Package.Add(product);
             context.SaveChanges();
-            return RedirectToAction(nameof(ListSpecific), new { groupId = product.ProductGroupId });
+            return RedirectToAction(nameof(ListSpecific), new { groupId = product.ProductId });
         }
         [HttpPost]
-        public IActionResult EditSpecific(ProductSpecific product)
+        public IActionResult EditSpecific(Package product)
         {
-            var DBProduct = context.ProductsSpecific
+            var DBProduct = context.Package
                 .Where(ps => ps.Id == product.Id)
                 .FirstOrDefault();
             if (DBProduct == null)
@@ -155,13 +155,13 @@ namespace Diamond.Controllers
             DBProduct.Price = product.Price;
 
             context.SaveChanges();
-            return RedirectToAction(nameof(ListSpecific), new { groupId = product.ProductGroupId });
+            return RedirectToAction(nameof(ListSpecific), new { groupId = product.ProductId });
         }
         public IActionResult DeleteSpecific(int? productId, int? id)
         {
             if (id != null)
             {
-                context.ProductsSpecific.Where(ps => ps.Id == id).ExecuteDelete();
+                context.Package.Where(ps => ps.Id == id).ExecuteDelete();
                 context.SaveChanges();
             }
             return RedirectToAction(nameof(ListSpecific), new { groupId = productId });

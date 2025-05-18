@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Diamond.Database.Configurations
 {
-    public class TechnologyConfiguration : IEntityTypeConfiguration<Technology>
+    public class TechnologyConfiguration : IEntityTypeConfiguration<ProductionStage>
     {
-        public void Configure(EntityTypeBuilder<Technology> builder)
+        public void Configure(EntityTypeBuilder<ProductionStage> builder)
         {
             builder.HasKey(m => m.Id);
 

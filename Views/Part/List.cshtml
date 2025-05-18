@@ -18,14 +18,14 @@
     {
         <div>
             <footer class="border-top footer" />
-            <h1>Ожидают утверждения</h1>
+            <h1>Ожидают принятия</h1>
             <a class="btn btn-primary"
                 asp-action="ApproveAll"
                 asp-route-Id="@ViewBag.FactoryId">Утвердить всё</a>
             <table class="table table-bordered">
                 <tr>
-                    <td>Маршрут</td>
                     <td>Продукция</td>
+                    <td>Маршрут</td>
                     <td>Количество упаковок</td>
                     <td>Требуемое сырьё</td>
                     <td></td>
@@ -33,14 +33,17 @@
                 @foreach (var plan in Model.Where(p => p.Status == PartStatus.AWAIT_CONFIRMATION).OrderBy(p => p.Id))
                 {
                     <tr>
-                        <td>@plan.Route!.GetContent</td>
                         <td>@plan.Product</td>
+                        <td>@plan.Route!.GetContent</td>
                         <td>@(plan.Size / plan.Product.Size)</td>
                         <td>@($"{@plan.GetMaterial?.Name} - {plan.Size} гр.")</td>
                         <td>
                             <a class="btn btn-primary"
                                 asp-action="Approve"
-                                asp-route-Id="@plan.Id">Утвердить</a>
+                                asp-route-Id="@plan.Id">Принять</a>
+                            <a class="btn btn-primary"
+                               asp-action="Edit"
+                               asp-route-Id="@plan.Id">Изменить</a>
                             <a class="btn btn-danger"
                                 asp-action="Delete"
                                 asp-route-Id="@plan.Id"

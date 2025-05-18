@@ -22,7 +22,7 @@ namespace Diamond.Models.Orders
         [ForeignKey(nameof(OrderId))]
         public Order Order { get; set; } = null!;
         [ForeignKey(nameof(ProductId))]
-        public ProductSpecific Product { get; set; } = null!;
+        public Package Product { get; set; } = null!;
         #endregion
 
         #region Id ссылок

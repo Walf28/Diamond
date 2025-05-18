@@ -12,6 +12,7 @@
     </div>
     <input type="number" asp-for="@Model.RegionId" value="@Model.RegionId" readonly hidden />
     <input type="number" asp-for="@Model.Id" value="@Model.Id" readonly hidden />
+    <h1>Участок "@Model.Region.Name"</h1>
     <p>Начало простоя
         <input id="dStart"
                type="datetime-local"

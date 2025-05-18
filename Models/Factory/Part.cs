@@ -43,7 +43,7 @@ namespace Diamond.Models.Factory
         [ForeignKey(nameof(RegionId))]
         public Region? Region { get; set; } // На каком участке на данный момент находится
         [ForeignKey(nameof(ProductId))]
-        public ProductSpecific Product { get; set; } = null!; // Что необходимо произвести
+        public Package Product { get; set; } = null!; // Что необходимо произвести
         [ForeignKey(nameof(MaterialId))]
         public Material Material { get; set; } = null!; // На чём необходимо произвести
         #endregion
@@ -62,7 +62,7 @@ namespace Diamond.Models.Factory
         {
             get
             {
-                ProductSpecific? ps = context.ProductsSpecific
+                Package? ps = context.Package
                     .AsNoTracking()
                     .Where(ps => ps.Id == ProductId)
                     .Include(ps => ps.ProductGroup).ThenInclude(pg => pg.Material)
@@ -78,7 +78,7 @@ namespace Diamond.Models.Factory
             {
                 try
                 {
-                    return Size / context.ProductsSpecific.AsNoTracking().First(ps => ps.Id == ProductId).Size;
+                    return Size / context.Package.AsNoTracking().First(ps => ps.Id == ProductId).Size;
                 }
                 catch 
                 {

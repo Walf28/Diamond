@@ -22,7 +22,7 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult Create()
         {
-            ViewBag.Products = context.ProductsSpecific
+            ViewBag.Products = context.Package
                 .AsNoTracking()
                 .Include(ps => ps.ProductGroup)
                 .ToList();
@@ -62,7 +62,7 @@ namespace Diamond.Controllers
             request.DateOfReceipt = DateTime.UtcNow;
             request.OrderParts.ForEach(op =>
             {
-                op.Product = context.ProductsSpecific.Where(ps => ps.Id == op.ProductId).First();
+                op.Product = context.Package.Where(ps => ps.Id == op.ProductId).First();
             });
             request.DateOfDesiredComplete = DateTime.SpecifyKind(request.DateOfDesiredComplete, DateTimeKind.Utc);
 

@@ -13,7 +13,7 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult List()
         {
-            return View(context.Technologies.AsNoTracking().ToList());
+            return View(context.ProductionStage.AsNoTracking().ToList());
         }
         [HttpGet]
         public IActionResult Create()
@@ -25,7 +25,7 @@ namespace Diamond.Controllers
         {
             if (Id == null)
                 NotFound();
-            var t = context.Technologies
+            var t = context.ProductionStage
                 .AsNoTracking()
                 .FirstOrDefault(t => t.Id == Id);
             return View(t);
@@ -34,16 +34,16 @@ namespace Diamond.Controllers
 
         #region Управление
         [HttpPost]
-        public IActionResult Create(Technology technology)
+        public IActionResult Create(ProductionStage technology)
         {
-            context.Technologies.Add(technology);
+            context.ProductionStage.Add(technology);
             context.SaveChanges();
             return RedirectToAction(nameof(List));
         }
         [HttpPost]
-        public IActionResult Edit(Technology technology)
+        public IActionResult Edit(ProductionStage technology)
         {
-            context.Technologies
+            context.ProductionStage
                 .Where(m => m.Id == technology.Id)
                 .ExecuteUpdate(f => f.SetProperty(sp => sp.Name, technology.Name));
             context.SaveChanges();
@@ -52,7 +52,7 @@ namespace Diamond.Controllers
         [HttpPost]
         public IActionResult Delete(int Id)
         {
-            context.Technologies.Where(m => m.Id == Id).ExecuteDelete();
+            context.ProductionStage.Where(m => m.Id == Id).ExecuteDelete();
             context.SaveChanges();
             return RedirectToAction(nameof(List));
         }

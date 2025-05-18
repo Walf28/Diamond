@@ -2,7 +2,7 @@
 
 namespace Diamond.Models
 {
-    public class Technology
+    public class ProductionStage
     {
         #region Поля
         #region Обычные

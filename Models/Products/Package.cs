@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Diamond.Models.Products
 {
-    public class ProductSpecific
+    public class Package
     {
         #region Поля
         #region Обычные
@@ -23,26 +23,26 @@ namespace Diamond.Models.Products
         [NotMapped]
         private readonly DB context = new();
         public List<OrderPart> OrderParts { get; set; } = []; // Заявки
-        [ForeignKey(nameof(ProductGroupId))]
-        public ProductGroup ProductGroup { get; set; } = new();
+        [ForeignKey(nameof(ProductId))]
+        public Product ProductGroup { get; set; } = new();
         public List<Part> Plans { get; set; } = [];
-        public List<ProductSpecificWarehouse> ProductWarehouses { get; set; } = [];
+        public List<ProductWarehouse> ProductWarehouses { get; set; } = [];
         #endregion
 
         #region Id ссылок
-        public int ProductGroupId { get; set; } // На каком сырье создаётся
+        public int ProductId { get; set; } // На каком сырье создаётся
         #endregion
         #endregion
 
         #region Свойства
-        public ProductGroup? GetProductGroup => context.ProductsGroup.AsNoTracking().Where(pg => pg.Id == ProductGroupId).FirstOrDefault();
+        public Product? GetProductGroup => context.ProductsGroup.AsNoTracking().Where(pg => pg.Id == ProductId).FirstOrDefault();
         public Material? GetMaterial
         {
             get
             {
                 var pg = context.ProductsGroup
                     .AsNoTracking()
-                    .Where(pg => pg.Id == ProductGroupId)
+                    .Where(pg => pg.Id == ProductId)
                     .Include(pg => pg.Material)
                     .FirstOrDefault();
                 if (pg == null)
@@ -56,7 +56,7 @@ namespace Diamond.Models.Products
             {
                 try
                 {
-                    return context.ProductsGroup.AsNoTracking().Where(pg => pg.Id == ProductGroupId).First().Name + $" {Size} гр.";
+                    return context.ProductsGroup.AsNoTracking().Where(pg => pg.Id == ProductId).First().Name + $" {Size} гр.";
                 }
                 catch
                 {
@@ -71,7 +71,7 @@ namespace Diamond.Models.Products
         {
             try
             {
-                return context.ProductsGroup.AsNoTracking().Where(pg => pg.Id == ProductGroupId).First().Name + $" {Size} гр.";
+                return context.ProductsGroup.AsNoTracking().Where(pg => pg.Id == ProductId).First().Name + $" {Size} гр.";
             }
             catch
             {

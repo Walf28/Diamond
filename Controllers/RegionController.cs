@@ -29,7 +29,7 @@ namespace Diamond.Controllers
             };
             /*foreach (var item in context.Materials)
                 region.Materials.Add(new MaterialForRegion() { Material = item, MaterialId = item.Id, Region = region, RegionId = region.Id });*/
-            ViewBag.technologys = context.Technologies.AsNoTracking().ToList();
+            ViewBag.technologys = context.ProductionStage.AsNoTracking().ToList();
             ViewBag.materials = context.Materials.AsNoTracking().ToList();
 
             return View(region);
@@ -50,7 +50,7 @@ namespace Diamond.Controllers
                 .First(r => r.Id == id);
 
             ViewBag.materials = context.Materials.AsNoTracking().ToList();
-            ViewBag.technologys = context.Technologies.AsNoTracking().ToList();
+            ViewBag.technologys = context.ProductionStage.AsNoTracking().ToList();
 
             return View(region);
         }
@@ -81,7 +81,7 @@ namespace Diamond.Controllers
             }
 
             // Ссылка на тип технологической обработки
-            region.Type = context.Technologies.First(t => t.Id == TypeId);
+            region.Type = context.ProductionStage.First(t => t.Id == TypeId);
 
             // Добавление в БД
             context.Regions.Add(region);
@@ -130,7 +130,7 @@ namespace Diamond.Controllers
             }
 
             // Ссылка на тип технологической обработки
-            DBRegion.Type = context.Technologies.First(t => t.Id == TypeId);
+            DBRegion.Type = context.ProductionStage.First(t => t.Id == TypeId);
 
             // Сохранение всех изменений
             context.SaveChanges();

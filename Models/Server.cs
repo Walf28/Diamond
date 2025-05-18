@@ -60,14 +60,7 @@ namespace Diamond.Models
         
         private static void Save(object? o, ElapsedEventArgs eea)
         {
-            try
-            {
-                context.SaveChanges(true);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"ОШИБКА! {ex.Message}");
-            }
+            Save();
         }
         public static void Save()
         {
@@ -85,8 +78,10 @@ namespace Diamond.Models
         #region Маршруты
         public static void UpdateRoutes(int factoryId)
         {
+            Load();
             Factories[factoryId].UpdateAllRoutes();
-            Save();
+            context.Routes.AddRange(Factories[factoryId].Routes.Where(r => r.Id == 0));
+            context.SaveChanges();
         }
         #endregion
 

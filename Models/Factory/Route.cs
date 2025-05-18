@@ -15,7 +15,7 @@ namespace Diamond.Models.Factory
 
         [Required(ErrorMessage = "Название обязательно")]
         [StringLength(50, ErrorMessage = "Название должно быть не длиннее 50 символов")]
-        public string Name { get; set; } = ""; // Название объекта
+        public string? Name { get; set; } = ""; // Название объекта
         public List<int> RegionsRoute { get; set; } = []; // послежовательность id, составляющая последовательность участков
         #endregion
 
@@ -151,7 +151,7 @@ namespace Diamond.Models.Factory
         /// <summary>
         /// Список, какую продукцию на нём можно производить
         /// </summary>
-        public List<ProductGroup> GetAvailableProducts()
+        public List<Product> GetAvailableProducts()
         {
             // Сырьё, которое может использовать маршрут
             List<Material> materials = GetAcceptableMaterials();
@@ -159,7 +159,7 @@ namespace Diamond.Models.Factory
                 return [];
 
             // Продукция, которую можно производить, если не считать тех. обработку
-            List<ProductGroup> allProducts = [];
+            List<Product> allProducts = [];
             foreach (var material in materials)
             {
                 allProducts.AddRange([..context.ProductsGroup
@@ -169,7 +169,7 @@ namespace Diamond.Models.Factory
 
             // Рассмотрим каждую продукцию
             List<int> thisTechnologyProcess = Regions.Select(r=>r.TypeId).ToList();
-            List<ProductGroup> potecialProducts = allProducts.Where(p=>p.TechnologyProcessing.SequenceEqual(thisTechnologyProcess)).ToList();
+            List<Product> potecialProducts = allProducts.Where(p=>p.TechnologyProcessing.SequenceEqual(thisTechnologyProcess)).ToList();
 
             return potecialProducts;
         }
@@ -235,7 +235,7 @@ namespace Diamond.Models.Factory
         public int GetMaxVolumeCountProduct(int productId)
         {
             // Находим саму продукцию из БД
-            ProductSpecific product = context.ProductsSpecific
+            Package product = context.Package
                 .AsNoTracking()
                 .Where(ps => ps.Id == productId)
                 .Include(ps => ps.ProductGroup)
@@ -254,9 +254,10 @@ namespace Diamond.Models.Factory
         /// <summary>
         /// Можно ли произвести данную продукцию на этом маршруте
         /// </summary>
-        public bool CanProduceProduct(int productId)
+        public bool CanProduceProduct(int packageId)
         {
             var list = GetAvailableProducts();
+            int productId = context.Package.AsNoTracking().First(p => p.Id == packageId).ProductId;
             foreach (var item in list)
                 if (item.Id == productId)
                     return true;
@@ -368,18 +369,18 @@ namespace Diamond.Models.Factory
                     // и проверяем, не попадаем ли мы за это время под начало простоя текущего участка.
                     // Если не попадаем, то не учитываем время простоя этого участка.
                     DateTime dtFactFinish = DateTime.UtcNow.AddMinutes(Time);
-                    if (dtFactFinish < Regions[regionId].Downtime!.DowntimeStart)
+                    if (dtFactFinish < region.Downtime.DowntimeStart)
                         continue;
 
                     // Если этот простой неизвестно когда закончится, то возвращаем бесконечность;
                     // Если этот простой уже идёт, считаем через сколько он закончится;
                     // В остальных случаях берём продолжительность простоя.
-                    if (region.Downtime!.DowntimeFinish == null)
+                    if (region.Downtime.DowntimeFinish == null)
                         return double.PositiveInfinity;
-                    else if (region.Downtime!.IsDowntimeNow)
-                        Time += region.Downtime!.DowntimeFinish!.Value.Subtract(dtFactFinish).TotalMinutes;
+                    else if (region.Downtime.IsDowntimeNow)
+                        Time += region.Downtime.DowntimeFinish!.Value.Subtract(dtFactFinish).TotalMinutes;
                     else
-                        Time += region.Downtime!.DowntimeDuration;
+                        Time += region.Downtime.DowntimeDuration;
                 }
             }
 

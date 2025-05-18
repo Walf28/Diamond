@@ -3,6 +3,7 @@ using Diamond.Models;
 using Diamond.Models.Factory;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Route = Diamond.Models.Factory.Route;
 
 namespace Diamond.Controllers
 {
@@ -29,7 +30,7 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult Create(int factoryId)
         {
-            ViewBag.Products = context.ProductsSpecific.AsNoTracking()
+            ViewBag.Products = context.Package.AsNoTracking()
                                                        .Include(ps => ps.ProductGroup)
                                                        .ToList();
             ViewBag.Routes = context.Routes.AsNoTracking()
@@ -41,25 +42,34 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult Edit(int Id)
         {
-            Part plan = context.Plans
+            /*Part part = context.Plans
                 .AsNoTracking()
                 .Include(p => p.Factory).ThenInclude(f => f.Routes).ThenInclude(r => r.Regions).ThenInclude(r => r.Materials)
-                .Include(p => p.Route).ThenInclude(r => r.Regions).ThenInclude(r=>r.RegionsParents)
-                .Include(p => p.Route).ThenInclude(r => r.Regions).ThenInclude(r=>r.RegionsChildrens)
+                .Include(p => p.Route).ThenInclude(r => r.Regions).ThenInclude(r => r.RegionsParents)
+                .Include(p => p.Route).ThenInclude(r => r.Regions).ThenInclude(r => r.RegionsChildrens)
                 .Include(p => p.Region).ThenInclude(r => r!.RegionsParents)
                 .Include(p => p.Region).ThenInclude(r => r!.RegionsChildrens)
-                .First(p => p.Id == Id);
-            ViewBag.ProductName = context.ProductsSpecific.Include(ps => ps.ProductGroup).First(p => p.Id == plan.ProductId).ToString();
+                .Include(p => p.Region).ThenInclude(r => r!.Routes)
+                .First(p => p.Id == Id);*/
+            int factoryId = context.Plans.AsNoTracking().First(p=>p.Id == Id).FactoryId;
+            Part part = Server.Factories[factoryId].Plan.First(p=>p.Id == Id);
+            ViewBag.ProductName = context.Package.Include(ps => ps.ProductGroup).First(p => p.Id == part.ProductId).ToString();
 
             // Выискиваем маршруты, на которые можно заменить данный
-            ViewBag.Routes = context.Factories
+            /*if (part.Region != null)
+                ViewBag.Routes = part.Region.Routes.Where(r=>r.CanProduceProduct(part.ProductId) && r.Id != part.RouteId).ToList();
+            else
+                ViewBag.Routes = part.Factory.Routes.Where(r=>r.CanProduceProduct(part.ProductId) && r.Id != part.RouteId).ToList();*/
+            /*context.Factories
                 .Include(f => f.Plan)
                 .Include(f => f.Routes).ThenInclude(r => r.Regions).ThenInclude(r => r.Downtime)
                 .Include(f => f.Regions).ThenInclude(r => r.Materials)
                 .Include(f => f.Regions).ThenInclude(r=>r.Downtime)
-                .First(f => f.Id == plan.FactoryId).GetRoutesToChangePlan(plan.Id);
+                .Include(f => f.Regions).ThenInclude(r=>r.RegionsChildrens)
+                .Include(f => f.Regions).ThenInclude(r=>r.RegionsParents)
+                .First(f => f.Id == part.FactoryId).GetRoutesToChangePlan(part.Id);*/
 
-            return View(plan);
+            return View(part);
         }
         #endregion
 
@@ -114,13 +124,13 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult GetRoutesAndMaterailId(int factoryId, int productId)
         {
-            var pgId = context.ProductsSpecific.Where(ps => ps.Id == productId).Select(ps => ps.ProductGroupId).ToList()[0];
+            var pgId = context.Package.Where(ps => ps.Id == productId).Select(ps => ps.ProductId).ToList()[0];
             List<Models.Factory.Route> routes = Server.Factories[factoryId].Routes.Where(r=>r.CanProduceProduct(pgId)).ToList();
             return Json(new
             {
                 routesId = routes.Select(r => r.Id),
                 routesContent = routes.Select(r => r.GetContent),
-                materialId = context.ProductsSpecific
+                materialId = context.Package
                     .Include(ps => ps.ProductGroup)
                     .First(ps => ps.Id == productId)
                     .ProductGroup.MaterialId
@@ -129,7 +139,7 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult GetVolumeRoute(int routeId, int productId)
         {
-            int materialId = context.ProductsSpecific
+            int materialId = context.Package
                 .AsNoTracking()
                 .Include(ps => ps.ProductGroup)
                 .First(ps => ps.Id == productId)
@@ -139,6 +149,7 @@ namespace Diamond.Controllers
                 maxSize = context.Routes
                     .AsNoTracking()
                     .Include(r => r.Regions).ThenInclude(r => r.Materials)
+                    .Include(r => r.Regions).ThenInclude(r => r.RegionsChildrens)
                     .First(r => r.Id == routeId)
                     .GetMaxVolumeCountProduct(materialId)
             });
@@ -146,18 +157,13 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult GetResultTimeOnRoute(int routeId, int planId)
         {
-            Part? plan = context.Plans.FirstOrDefault(p => p.Id == planId);
-            Models.Factory.Route? route = context.Routes
-                .Where(r => r.Id == routeId)
-                .Include(r => r.Factory).ThenInclude(f => f.Plan)
-                .Include(r => r.Factory).ThenInclude(f => f.Routes).ThenInclude(r => r.Part)
-                .Include(r => r.Factory).ThenInclude(f => f.Routes).ThenInclude(r => r.Regions).ThenInclude(r => r.Materials)
-                .Include(r => r.Factory).ThenInclude(f => f.Routes).ThenInclude(r => r.Regions).ThenInclude(r => r.Downtime)
-                .FirstOrDefault();
+            Part? plan = context.Plans.AsNoTracking().FirstOrDefault(p => p.Id == planId);
+            Route? route = Server.Factories.Values.FirstOrDefault(f => f.Routes.FirstOrDefault(r => r.Id == routeId) != null)?.Routes.FirstOrDefault(r => r.Id == routeId);
             if (plan == null || route == null)
                 return Json(new { });
 
-            double totalMinutes = route.GetTimeToCompleteFullPlan() + route.GetTimeToCompletePart(plan);
+            //double totalMinutes = route.GetTimeToCompleteFullPlan() + route.GetTimeToCompletePart(plan);
+            double totalMinutes = route.GetTimeToCompleteFullPlan(plan.ComingSoon);
             if (double.IsInfinity(totalMinutes))
                 return Json(new { });
             double totalMilliseconds = TimeSpan.FromMinutes(totalMinutes).TotalMilliseconds;

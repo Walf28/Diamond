@@ -1,5 +1,5 @@
 ﻿@using Diamond.Models.Products
-@model ProductSpecific
+@model Package
 @{
     ViewData["Title"] = $"Продукция \"{Model.ProductGroup.Name}\"";
 }
@@ -7,10 +7,10 @@
 <form method="post">
     <h1>@Model.ProductGroup.Name</h1>
     <div>
-        <input type="submit" asp-controller="Product" asp-action="ListSpecific" asp-route-groupId="@Model.ProductGroupId" value="Назад" formnovalidate />
+        <input type="submit" asp-controller="Product" asp-action="ListSpecific" asp-route-groupId="@Model.ProductId" value="Назад" formnovalidate />
         <input type="submit" value="Сохранить"/>
     </div>
-    <input type="number" value="@Model.ProductGroupId" asp-for="@Model.ProductGroupId" hidden/>
+    <input type="number" value="@Model.ProductId" asp-for="@Model.ProductId" hidden/>
     <p>Номер<input asp-for="@Model.Id" type="number" value="@Model.Id" readonly/></p>
     <p>Размер (гр.)<input asp-for="@Model.Size" type="number" min="1" value="@Model.Size" required/></p>
     <p>Цена (руб.)<input asp-for="@Model.Price" type="number" min="2" value="@Model.Price" required/></p>

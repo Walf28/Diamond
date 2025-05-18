@@ -4,9 +4,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Diamond.Database.Configurations
 {
-    public class ProductSpecificConfiguration : IEntityTypeConfiguration<ProductSpecific>
+    public class ProductSpecificConfiguration : IEntityTypeConfiguration<Package>
     {
-        public void Configure(EntityTypeBuilder<ProductSpecific> builder)
+        public void Configure(EntityTypeBuilder<Package> builder)
         {
             builder.HasKey(p => p.Id);
 
@@ -14,7 +14,7 @@ namespace Diamond.Database.Configurations
             // С группой продукции
             builder.HasOne(ps => ps.ProductGroup).WithMany(pg => pg.ProductsSpecific)
                 .HasPrincipalKey(pg => pg.Id)
-                .HasForeignKey(ps => ps.ProductGroupId)
+                .HasForeignKey(ps => ps.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
             // C заявками
             builder.HasMany(p => p.OrderParts).WithOne(r => r.Product)

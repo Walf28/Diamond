@@ -28,7 +28,7 @@
                     <td><input type="checkbox" name="check" value="@k" checked /></td>
                     <td><input type="text" name="name" value="@routes[i].Name" /></td>
                     <td>@MaterialForRegion.ToString(routes[i].GetMaxPowerOnMaterial()).Replace("\n", " | ")</td>
-                    <td>@ProductGroup.ToString(routes[i].GetAvailableProducts())</td>
+                    <td>@Product.ToString(routes[i].GetAvailableProducts())</td>
                     <td>
                         @routes[i].GetContent
                         @for(int j =0; j< routes[i].Regions.Count; ++j){
@@ -44,7 +44,7 @@
                     <td><input type="checkbox" name="check" value="@k" /></td>
                     <td><input type="text" name="name" value=""/></td>
                     <td>@MaterialForRegion.ToString(routes[i].GetMaxPowerOnMaterial()).Replace("\n", " | ")</td>
-                    <td>@ProductGroup.ToString(routes[i].GetAvailableProducts())</td>
+                    <td>@Product.ToString(routes[i].GetAvailableProducts())</td>
                     <td>
                         @routes[i].GetContent
                         @for (int j = 0; j < routes[i].Regions.Count; ++j){

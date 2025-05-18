@@ -1,6 +1,10 @@
 ﻿@using Diamond.Models.Factory
 @model Part
 @{
+    if (Model.Region != null)
+        ViewBag.Routes = Model.Region.Routes.Where(r => r.CanProduceProduct(Model.ProductId)).ToList();
+    else
+        ViewBag.Routes = Model.Factory.Routes.Where(r => r.CanProduceProduct(Model.ProductId)).ToList();
     ViewData["Title"] = "Изменение плана";
 }
 
@@ -17,54 +21,58 @@
     <input id="factoryId" type="number" value="@Model.FactoryId" asp-for="@Model.FactoryId" hidden readonly/>
     <input id="planId" type="number" value="@Model.Id" asp-for="@Model.Id" hidden readonly/>
 
+    @if (Model.Status == PartStatus.QUEUE || Model.Status == PartStatus.AWAIT_CONFIRMATION)
+    {
+        <p>Статус
+            <select asp-for="@Model.Status">
+                <option value="@PartStatus.QUEUE">В очереди</option>
+                <option value="@PartStatus.AWAIT_CONFIRMATION">Ожидает подтверждения</option>
+            </select>
+        </p>
+    }
     <p>Продукция<input type="text" value="@ViewBag.ProductName" readonly/></p>
     <p>К какому сроку надо выполнить
         <input
         value="@Model.ComingSoon.ToLocalTime()"
         min="@DateTime.Now.ToLocalTime().ToString("yyyy-MM-ddTHH:mm")"
-        readonly/></p>
+        readonly/>
+    </p>
     <p>На каком участке находится<input value="@(Model.Region == null ? "-" :Model.Region.Name)" readonly/></p>
     <p>Выбранный размер<input value="@Model.Size" readonly/></p>
     <p>Маршрут
         <select id="selectedRoute" asp-for="@Model.RouteId" onchange="GetResultTime(value, planId.value)" required>
-            @if (Model.Route.GetTimeToCompleteFullPlan() == double.PositiveInfinity)
-            {
-                <option value="@Model.RouteId">
-                    @($"{Model.Route.GetContent} | ?")
-                </option>
-            }
-            else
-            {
-            <option value="@Model.RouteId">
-                @($"{Model.Route.GetContent} | {TimeSpan.FromMinutes(Model.Route.GetTimeToCompleteFullPlan()).TotalHours:f2} ч.")</option>
-            }
-            @foreach(var r in (ViewBag.Routes as List<Route>)!)
-            {
-                double time = r.GetTimeToEndDowntime();
-                if (time == 0)
+            @{
+                var rar = ViewBag.Routes as List<Route>;
+                var r1 = rar!.Where(r => r.GetTimeToEndDowntime() == 0).ToList();
+                var r3 = rar!.Where(r => r.GetTimeToEndDowntime() == double.PositiveInfinity).ToList();
+                var r2 = rar!.Where(r => !r1.Contains(r) && !r3.Contains(r)).ToList();
+                foreach (var r in r1)
                 {
                     <option value="@r.Id" style="background-color:lime">
-                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan()).TotalHours:f2} ч.")</option>
-                }
-                else if (double.IsInfinity(time))
-                {
-                    <option value="@r.Id" style="background-color:red">
-                        @($"{r.GetContent} | {r.GetTimeToCompleteFullPlan()}")
+                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan(Model.ComingSoon)).TotalHours:f2} ч.")
                     </option>
                 }
-                else
+                foreach (var r in r2)
                 {
                     <option value="@r.Id" style="background-color:orange">
-                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan()).TotalHours:f2} ч.")
+                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan(Model.ComingSoon)).TotalHours:f2} ч.")
+                    </option>
+                }
+                foreach (var r in r3)
+                {
+                    <option value="@r.Id" style="background-color:red">
+                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan(Model.ComingSoon)).TotalHours:f2} ч.")
                     </option>
                 }
             }
-        </select></p>
+        </select>
+    </p>
     <p>Необходимое время (с учётом имеющихся заказов)
         <input id="resultTime"
             type="text"
             readonly/></p>
 </form>
+
 @section Scripts {
     <script>
         function GetResultTime(routeId, planId)

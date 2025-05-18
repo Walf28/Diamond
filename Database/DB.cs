@@ -16,16 +16,16 @@ namespace Diamond.Database
         public DbSet<Region> Regions { get; set; } = null!;
         public DbSet<Part> Plans { get; set; } = null!;
         public DbSet<Downtime> Downtimes { get; set; } = null!;
-        public DbSet<ProductGroup> ProductsGroup { get; set; } = null!;
-        public DbSet<ProductSpecific> ProductsSpecific { get; set; } = null!;
-        public DbSet<ProductSpecificWarehouse> ProductsSpecificWarehouse { get; set; } = null!;
+        public DbSet<Product> ProductsGroup { get; set; } = null!;
+        public DbSet<Package> Package { get; set; } = null!;
+        public DbSet<ProductWarehouse> ProductsWarehouse { get; set; } = null!;
         public DbSet<Material> Materials { get; set; } = null!;
         public DbSet<MaterialForRegion> RegionsMaterials { get; set; } = null!;
         public DbSet<MaterialWarehouse> MaterialsWarehouse { get; set; } = null!;
         public DbSet<Order> Orders { get; set; } = null!;
         public DbSet<OrderPart> OrderParts { get; set; } = null!;
         public DbSet<Warehouse> Warehouses { get; set; } = null!;
-        public DbSet<Technology> Technologies { get; set; } = null!;
+        public DbSet<ProductionStage> ProductionStage { get; set; } = null!;
 
         /*string cmdDeleteMigrations = "Remove-Migration";
         string cmdCreateMigrations = "Add-Migration InitialCreate";

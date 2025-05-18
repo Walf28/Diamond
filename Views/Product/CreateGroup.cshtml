@@ -1,6 +1,6 @@
 ﻿@using Diamond.Models.Materials
 @using Diamond.Models.Products
-@model ProductGroup
+@model Product
 @{
     ViewData["Title"] = "Добавление группы продукции";
 }
@@ -14,7 +14,7 @@
     <p>На каком сырье производится<select asp-for="@Model.MaterialId" asp-items="@(new SelectList((List<Material>)ViewBag.materials, "Id", "Name"))" required></select></p>
 
     <div id="technologyProcess">
-        <p>Процесс обработки <button type="button" onclick="addTP()">Добавить</button></p>
+        <p>Этапы производства <button type="button" onclick="addTP()">Добавить</button></p>
     </div>
 </form>
 
@@ -29,7 +29,7 @@
             newElement.innerHTML = `
                 <select name="TechnologyProcessing" required>
                     <option value="0">Отсутствует</option>
-                    @foreach (var item in ((List<Technology>)ViewBag.technologys))
+                    @foreach (var item in ((List<ProductionStage>)ViewBag.technologys))
                         {
                             <option value="@item.Id">@item.Name</option>
                         }

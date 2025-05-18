@@ -13,7 +13,7 @@ namespace Diamond.Models.Factory
 
         [ForeignKey(nameof(FactoryId))]
         public Factory Factory { get; set; } = null!;
-        public List<ProductSpecificWarehouse> Products { get; set; } = [];
+        public List<ProductWarehouse> Products { get; set; } = [];
         public List<MaterialWarehouse> Materials { get; set; } = [];
         #endregion
 

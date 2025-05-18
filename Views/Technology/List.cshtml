@@ -1,11 +1,11 @@
 ﻿@using Diamond.Models.Materials
-@model IEnumerable<Technology>
+@model IEnumerable<ProductionStage>
 @{
-    ViewData["Title"] = "Список технологий";
+    ViewData["Title"] = "Этапы производства";
 }
 
-<h1>Список технологий</h1>
-<input type="button" onclick="location.href='@Url.Action("Create", "Technology")'" value="Добавить тип технологии" />
+<h1>Этапы производства</h1>
+<input type="button" onclick="location.href='@Url.Action("Create", "ProductionStage")'" value="Добавить этап производства" />
 <table class="table table-bordered">
     <thead>
         <tr>
