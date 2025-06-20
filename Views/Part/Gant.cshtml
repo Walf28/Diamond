@@ -1,0 +1,37 @@
+﻿@{
+    ViewData["Title"] = $"График Ганта";
+}
+
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+    <link href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css"
+          rel="stylesheet" type="text/css" />
+    <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function(event) {
+            // specifying the date format
+            gantt.config.date_format = "%Y-%m-%d %H:%i";
+            // initializing gantt
+            gantt.init("gantt_here");
+
+            // initiating data loading
+            gantt.load("/api/data");
+            // initializing dataProcessor
+            var dp = new gantt.dataProcessor("/api/");
+            // and attaching it to gantt
+            dp.init(gantt);
+            // setting the REST mode for dataProcessor
+            dp.setTransactionMode("REST");
+        });
+    </script>
+</head>
+<body>
+    <input type="submit" value="Назад"
+           asp-controller="Part"
+           asp-action="List"
+           asp-route-Id="@ViewBag.FactoryId"
+           formmethod="get"
+           formnovalidate />
+    <div id="gantt_here" style="width: 100%; height: 100vh;"></div>
+</body>

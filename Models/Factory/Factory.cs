@@ -99,7 +99,6 @@ namespace Diamond.Models.Factory
                 // Нахождение используемых маршрутов
                 for (int i = 0; i < ThisRoutes.Count; ++i)
                     foreach (var UsedRoute in Routes)
-                        //if (ThisRoutes[i].GetContent == UsedRoute.GetContent)
                         if (ThisRoutes[i].RegionsRoute.SequenceEqual(UsedRoute.RegionsRoute))
                         {
                             ThisRoutes.RemoveAt(i);
@@ -111,7 +110,6 @@ namespace Diamond.Models.Factory
                 routes.AddRange(ThisRoutes);
             }
 
-            _ = routes.Any(r => { r.Factory = this; return true; });
             return routes;
         }
 
@@ -123,12 +121,15 @@ namespace Diamond.Models.Factory
             list ??= [];
             list.Add(region);
             routes ??= [];
-            if (region.RegionsChildrens.Count == 0)
-                region = context.Regions.AsNoTracking().Where(r => r.Id == region.Id).Include(r => r.RegionsChildrens).First();
 
             // Конец
             if (region.RegionsChildrens.Count == 0)
-                routes.Add(new() { Regions = list, RegionsRoute = list.Select(r => r.Id).ToList() });
+                routes.Add(new() 
+                {
+                    Regions = list, 
+                    RegionsRoute = list.Select(r => r.Id).ToList(),
+                    Factory = this
+                });
 
             // Просмотр всех последующих участков
             foreach (var children in region.RegionsChildrens)
@@ -144,7 +145,7 @@ namespace Diamond.Models.Factory
         {
             if (part.ProductId == 0)
                 return [];
-            List<Route> routes = Routes.Where(r => r.CanProduceProduct(part.Product.ProductId)).ToList();
+            List<Route> routes = Routes.Where(r => r.CanProduceProduct(part.Product.Id)).ToList();
             return routes;
         }
 
@@ -186,7 +187,7 @@ namespace Diamond.Models.Factory
             {
                 bool can = false;
                 foreach (var r in Routes)
-                    if (r.CanProduceProduct(op.Product.ProductId))
+                    if (r.CanProduceProduct(op.Product.Id))
                     {
                         can = true;
                         break;
@@ -230,20 +231,19 @@ namespace Diamond.Models.Factory
                 // Добавляем в общий план
                 int productSize = orderPart.Product.Size;
                 int fullSize = orderPart.Count * productSize;
-                //AddInCommonPlan(orderPart.ProductId, fullSize);
 
                 // Пытаемся запихнуть в свободное место в плане, если такое найдётся.
                 List<Part> PlanOuttime = [];
                 for (int i = 0; i < Plan.Count && fullSize > 0; ++i)
                 {
                     // Первичная проверка, можно ли произвести по данному плану данную продукцию
-                    if (Plan[i].Status != PartStatus.AWAIT_CONFIRMATION || Plan[i].ProductId != orderPart.ProductId)
+                    if (Plan[i].Status != PartStatus.AWAIT_CONFIRMATION || Plan[i].ProductId != orderPart.PackageId)
                         continue;
 
                     // Проверка с подсчётами, есть ли место для дополнения плана
                     // volumeCountInRoute - количество продукции, которое может быть произведено по маршруту из этого плана
                     // volumeSizeInRoute - общий объём сколько можно отправить в маршрут по данному плану
-                    int volumeCountInRoute = Plan[i].Route.GetMaxVolumeCountProduct(orderPart.ProductId);
+                    int volumeCountInRoute = Plan[i].Route.GetMaxVolumeCountProduct(orderPart.PackageId);
                     int volumeSizeInRoute = volumeCountInRoute * productSize;
                     if (volumeSizeInRoute <= Plan[i].Size)
                         continue;
@@ -277,7 +277,7 @@ namespace Diamond.Models.Factory
                 foreach (var route in Routes)
                     if (!route.IsHaveDowntimeRegion() && 
                         route.CanProduceProduct(orderPart.Product.ProductId) && 
-                        route.GetMaxVolumeCountProduct(orderPart.ProductId) > 0)
+                        route.GetMaxVolumeCountProduct(orderPart.PackageId) > 0)
                         PotencialRoutes.Add(route);
                 if (PotencialRoutes.Count == 0)
                     throw new Exception("Нет маршрутов, способных выполнить заказ");
@@ -303,7 +303,7 @@ namespace Diamond.Models.Factory
                     {
                         int idIndex = Routes.FindIndex(r => r.Id == fastestRouteId);
                         int materialId = orderPart.Product.ProductGroup.MaterialId;
-                        int volumeProductCount = Routes[idIndex].GetMaxVolumeCountProduct(orderPart.ProductId);
+                        int volumeProductCount = Routes[idIndex].GetMaxVolumeCountProduct(orderPart.PackageId);
                         int needCount = fullSize / productSize;
                         int volumeMaterialSize = volumeProductCount * orderPart.Count;
                         Plan.Add(new()
@@ -316,9 +316,10 @@ namespace Diamond.Models.Factory
                             Product = orderPart.Product,
                             FactoryId = Id,
                             RouteId = fastestRouteId,
-                            ProductId = orderPart.ProductId,
+                            ProductId = orderPart.PackageId,
                             MaterialId = materialId,
-                            Status = PartStatus.AWAIT_CONFIRMATION
+                            Status = PartStatus.AWAIT_CONFIRMATION,
+                            Order = request
                         });
                         Routes[idIndex].Part.Add(Plan[^1]);
                         //fullSize = fullSize <= volumeMaterialSize ? 0 : fullSize - volumeMaterialSize;
@@ -411,7 +412,6 @@ namespace Diamond.Models.Factory
 
             Plan[planIndex].Status = PartStatus.DONE;
             Warehouse.AddProduct(Plan[planIndex], true);
-            //RemoveInCommonPlan(Plan[planIndex].ProductId, Plan[planIndex].Size);
             Plan.RemoveAt(planIndex);
         }
 

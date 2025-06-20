@@ -21,13 +21,13 @@ namespace Diamond.Models.Orders
         public readonly DB context = new();
         [ForeignKey(nameof(OrderId))]
         public Order Order { get; set; } = null!;
-        [ForeignKey(nameof(ProductId))]
+        [ForeignKey(nameof(PackageId))]
         public Package Product { get; set; } = null!;
         #endregion
 
         #region Id ссылок
         public int? OrderId { get; set; }
-        public int ProductId { get; set; }
+        public int PackageId { get; set; }
         #endregion
         #endregion
     }

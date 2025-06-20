@@ -18,7 +18,7 @@ namespace Diamond.Database.Configurations
             
             // С продукцией
             builder.HasOne(op => op.Product).WithMany(p => p.OrderParts)
-                .HasForeignKey(op => op.ProductId)
+                .HasForeignKey(op => op.PackageId)
                 .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }

@@ -11,6 +11,7 @@
     <div>
         <button onclick="location.href='@Url.Action("Edit", "Factory", new { Id = ViewBag.FactoryId })'">Назад</button>
         <button onclick="location.href='@Url.Action("Create", "Part", new { factoryId = ViewBag.FactoryId })'">Добавить</button>
+        <button onclick="location.href='@Url.Action("Gant", "Part", new { factoryId = ViewBag.FactoryId })'">Диаграмма Ганта</button>
     </div>
 
     <!-- Ожидают утверждения -->

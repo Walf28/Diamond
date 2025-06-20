@@ -17,14 +17,6 @@ namespace Diamond.Controllers
         {
             ViewBag.FactoryName = Server.Factories[Id].Name; // context.Factories.AsNoTracking().First(f => f.Id == Id).Name;
             ViewBag.FactoryId = Id;
-            /*return View(context.Plans
-                .AsNoTracking()
-                .Where(p => p.FactoryId == Id)
-                .Include(p => p.Factory).ThenInclude(f => f.Routes)
-                .Include(p => p.Route)
-                .Include(p => p.Region).ThenInclude(pgId=>pgId!.Materials)
-                .Include(p => p.Product)
-                .ToList());*/
             return View(Server.Factories[Id].Plan);
         }
         [HttpGet]
@@ -37,39 +29,31 @@ namespace Diamond.Controllers
                                            .Where(r => r.FactoryId == factoryId)
                                            .ToList();
             ViewBag.FactoryId = factoryId;
+            ViewBag.Orders = context.Orders.AsNoTracking()
+                .Where(o => o.FactoryId == factoryId)
+                .ToList();
             return View();
         }
         [HttpGet]
         public IActionResult Edit(int Id)
         {
-            /*Part part = context.Plans
-                .AsNoTracking()
-                .Include(p => p.Factory).ThenInclude(f => f.Routes).ThenInclude(r => r.Regions).ThenInclude(r => r.Materials)
-                .Include(p => p.Route).ThenInclude(r => r.Regions).ThenInclude(r => r.RegionsParents)
-                .Include(p => p.Route).ThenInclude(r => r.Regions).ThenInclude(r => r.RegionsChildrens)
-                .Include(p => p.Region).ThenInclude(r => r!.RegionsParents)
-                .Include(p => p.Region).ThenInclude(r => r!.RegionsChildrens)
-                .Include(p => p.Region).ThenInclude(r => r!.Routes)
-                .First(p => p.Id == Id);*/
             int factoryId = context.Plans.AsNoTracking().First(p=>p.Id == Id).FactoryId;
             Part part = Server.Factories[factoryId].Plan.First(p=>p.Id == Id);
+            ViewBag.AllRoutes = Server.Factories[factoryId].Routes.Where(r=>r.CanProduceProduct(part.ProductId)).ToList();
+            ViewBag.Routes = part.Region == null ? ViewBag.AllRoutes : part.Factory.Routes.Where(r => r.CanProduceProduct(part.ProductId)).ToList();
             ViewBag.ProductName = context.Package.Include(ps => ps.ProductGroup).First(p => p.Id == part.ProductId).ToString();
-
-            // Выискиваем маршруты, на которые можно заменить данный
-            /*if (part.Region != null)
-                ViewBag.Routes = part.Region.Routes.Where(r=>r.CanProduceProduct(part.ProductId) && r.Id != part.RouteId).ToList();
-            else
-                ViewBag.Routes = part.Factory.Routes.Where(r=>r.CanProduceProduct(part.ProductId) && r.Id != part.RouteId).ToList();*/
-            /*context.Factories
-                .Include(f => f.Plan)
-                .Include(f => f.Routes).ThenInclude(r => r.Regions).ThenInclude(r => r.Downtime)
-                .Include(f => f.Regions).ThenInclude(r => r.Materials)
-                .Include(f => f.Regions).ThenInclude(r=>r.Downtime)
-                .Include(f => f.Regions).ThenInclude(r=>r.RegionsChildrens)
-                .Include(f => f.Regions).ThenInclude(r=>r.RegionsParents)
-                .First(f => f.Id == part.FactoryId).GetRoutesToChangePlan(part.Id);*/
-
+            ViewBag.Orders = context.Orders.AsNoTracking()
+                .Where(o => o.FactoryId == factoryId)
+                .ToList();
+            
             return View(part);
+        }
+        [HttpGet]
+        public IActionResult Gant(int factoryId)
+        {
+            ViewBag.FactoryId = factoryId;
+            ViewBag.Parts = Server.Factories[factoryId].Plan.Where(p => p.Status != PartStatus.AWAIT_CONFIRMATION).ToList();
+            return View();
         }
         #endregion
 
@@ -81,15 +65,25 @@ namespace Diamond.Controllers
             {
                 plan.Status = PartStatus.QUEUE;
                 plan.ComingSoon = plan.ComingSoon.ToUniversalTime();
-                Server.PlanCreate(plan);
+                plan.Order = context.Orders.First(o => o.Id == plan.OrderId);
+                
+                context.Plans.Add(plan);
+                context.SaveChanges();
+                Server.Load();
+                //Server.PlanCreate(plan);
             }
             return RedirectToAction(nameof(List), new { Id = plan.FactoryId });
         }
         [HttpPost]
-        public IActionResult Edit(Part plan)
+        public IActionResult Edit(Part plan, int variantRoute, int selectedRoute0, int selectedRoute1)
         {
             Part p = context.Plans.First(p => p.Id == plan.Id);
-            p.Route = context.Routes.First(p => p.Id == plan.RouteId);
+            p.Order = context.Orders.First(o => o.Id == plan.OrderId);
+            if (variantRoute == 0)
+                p.Route = context.Routes.First(p => p.Id == selectedRoute0);
+            else
+                p.Route = context.Routes.First(p => p.Id == selectedRoute1);
+
             context.SaveChanges();
             Server.Load();
             return RedirectToAction(nameof(List), new { Id = plan.FactoryId });
@@ -110,7 +104,7 @@ namespace Diamond.Controllers
         public IActionResult ApproveAll(int Id)
         {
             Server.PlanApproveAll(Id);
-            return RedirectToAction(nameof(List), new { Id = Id });
+            return RedirectToAction(nameof(List), new { Id });
         }
         public IActionResult Await(int Id)
         {
@@ -124,8 +118,8 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult GetRoutesAndMaterailId(int factoryId, int productId)
         {
-            var pgId = context.Package.Where(ps => ps.Id == productId).Select(ps => ps.ProductId).ToList()[0];
-            List<Models.Factory.Route> routes = Server.Factories[factoryId].Routes.Where(r=>r.CanProduceProduct(pgId)).ToList();
+            //var pgId = context.Package.Where(ps => ps.Id == productId).Select(ps => ps.ProductId).ToList()[0];
+            List<Models.Factory.Route> routes = Server.Factories[factoryId].Routes.Where(r=>r.CanProduceProduct(productId)).ToList();
             return Json(new
             {
                 routesId = routes.Select(r => r.Id),
@@ -157,13 +151,15 @@ namespace Diamond.Controllers
         [HttpGet]
         public IActionResult GetResultTimeOnRoute(int routeId, int planId)
         {
-            Part? plan = context.Plans.AsNoTracking().FirstOrDefault(p => p.Id == planId);
+            Part? part = context.Plans.AsNoTracking().FirstOrDefault(p => p.Id == planId);
             Route? route = Server.Factories.Values.FirstOrDefault(f => f.Routes.FirstOrDefault(r => r.Id == routeId) != null)?.Routes.FirstOrDefault(r => r.Id == routeId);
-            if (plan == null || route == null)
+            if (part == null || route == null)
                 return Json(new { });
 
-            //double totalMinutes = route.GetTimeToCompleteFullPlan() + route.GetTimeToCompletePart(plan);
-            double totalMinutes = route.GetTimeToCompleteFullPlan(plan.ComingSoon);
+            //double totalMinutes = route.GetTimeToCompleteFullPlan() + route.GetTimeToCompletePart(part);
+            double totalMinutes = route.GetTimeToCompleteFullPlan(part.ComingSoon);
+            if (part.RouteId != route.Id && totalMinutes != double.PositiveInfinity)
+                totalMinutes += route.GetTimeToCompletePart(part);
             if (double.IsInfinity(totalMinutes))
                 return Json(new { });
             double totalMilliseconds = TimeSpan.FromMinutes(totalMinutes).TotalMilliseconds;

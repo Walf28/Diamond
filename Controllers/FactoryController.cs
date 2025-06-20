@@ -56,28 +56,19 @@ namespace Diamond.Controllers
         {
             context.Regions.Where(r => r.Id == RegionId).ExecuteDelete();
             context.SaveChanges();
-            return UpdateAllRoutes(ModelId);
+            return RedirectToAction(nameof(Edit), new { Id = ModelId });
+            //return UpdateAllRoutes(ModelId);
         }
         public IActionResult SetDowntime(int RegionId)
         {
             Server.DowntimeCreate(RegionId);
             return RedirectToAction(nameof(Edit), new
             {
-                Id = Server.context.Regions.First(r => r.Id == RegionId).FactoryId
+                Id = context.Regions.AsNoTracking().First(r => r.Id == RegionId).FactoryId
             });
         }
         public IActionResult UpdateAllRoutes(int id)
         {
-            /*Factory f = Server.Factories[id];
-            f.UpdateAllRoutes();
-            var routes = f.Routes.Where(r => r.Id == 0).ToList();
-            for (int i = 0; i< routes.Count; ++i)
-                for (int j = 0; j < routes[i].Regions.Count; ++j)
-                    routes[i].Regions[j] = context.Regions.First(r=>r.Id == routes[i].Regions[j].Id);
-            context.Factories.Update(f);
-            context.Routes.AddRange(routes);
-            context.SaveChanges();
-            Server.Load();*/
             Server.UpdateRoutes(id);
             return RedirectToAction(nameof(Edit), new { Id = id });
         }

@@ -9,7 +9,7 @@ namespace Diamond.Models
 {
     public static class Server
     {
-        public static readonly DB context = new();
+        private static DB context = new();
         private static readonly System.Timers.Timer timer = new(TimeSpan.FromSeconds(2));
         private static List<Factory.Factory> factories = [];
         public static readonly Dictionary<int, Factory.Factory> Factories = [];
@@ -19,6 +19,8 @@ namespace Diamond.Models
         {
             try
             {
+                context = new();
+                factories.Clear();
                 factories = [..context.Factories
                     .Include(f=>f.Warehouse).ThenInclude(w=>w.Products)
                     .Include(f=>f.Warehouse).ThenInclude(w=>w.Materials)
@@ -36,6 +38,7 @@ namespace Diamond.Models
                     .Include(f=>f.Plan).ThenInclude(p=>p.Region)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Product)
                     .Include(f=>f.Plan).ThenInclude(p=>p.Material)
+                    .Include(f=>f.Plan).ThenInclude(p=>p.Order)
                     .Include(f=>f.Orders.Where(r=>r.Status == OrderStatus.FABRICATING)).ThenInclude(o => o.OrderParts).ThenInclude(op => op.Product).ThenInclude(p => p.ProductGroup)];
             }
             catch (TimeoutException te)
@@ -44,11 +47,11 @@ namespace Diamond.Models
                 return;
             }
 
-            factories.ForEach(f =>
+            /*factories.ForEach(f =>
             {
                 f.LaunchAllRegions();
                 f.StartPlan();
-            });
+            });*/
 
             Factories.Clear();
             for (int i = 0; i < factories.Count; ++i)
@@ -79,6 +82,8 @@ namespace Diamond.Models
         public static void UpdateRoutes(int factoryId)
         {
             Load();
+            Factories[factoryId].Routes.Where(r=>!r.IsWorking).ToList().ForEach(
+                r => context.Routes.Entry(r).State = EntityState.Deleted);
             Factories[factoryId].UpdateAllRoutes();
             context.Routes.AddRange(Factories[factoryId].Routes.Where(r => r.Id == 0));
             context.SaveChanges();

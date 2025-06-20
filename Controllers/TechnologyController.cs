@@ -7,7 +7,7 @@ namespace Diamond.Controllers
 {
     public class TechnologyController : Controller
     {
-        private readonly DB context = Server.context;
+        private readonly DB context = new();
 
         #region Представление
         [HttpGet]

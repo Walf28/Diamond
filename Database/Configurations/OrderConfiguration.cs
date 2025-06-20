@@ -20,6 +20,11 @@ namespace Diamond.Database.Configurations
             builder.HasMany(o => o.OrderParts).WithOne(op => op.Order)
                 .HasForeignKey(op => op.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // С планом
+            builder.HasMany(o => o.Plan).WithOne(p => p.Order)
+                .HasForeignKey(op => op.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
             #endregion
         }
     }

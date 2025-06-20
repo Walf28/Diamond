@@ -1,5 +1,6 @@
 ﻿using Diamond.Database;
 using Diamond.Models.Materials;
+using Diamond.Models.Orders;
 using Diamond.Models.Products;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
@@ -46,6 +47,8 @@ namespace Diamond.Models.Factory
         public Package Product { get; set; } = null!; // Что необходимо произвести
         [ForeignKey(nameof(MaterialId))]
         public Material Material { get; set; } = null!; // На чём необходимо произвести
+        [ForeignKey(nameof(OrderId))]
+        public Order? Order { get; set; } = null; // На чём необходимо произвести
         #endregion
 
         #region Id ссылок
@@ -54,6 +57,7 @@ namespace Diamond.Models.Factory
         public int? RegionId { get; set; } // На каком участке на данный момент находится
         public int ProductId { get; set; } // Что производим
         public int MaterialId { get; set; } // Id сырья
+        public int? OrderId { get; set; } // Id заказа
         #endregion
         #endregion
 

@@ -168,7 +168,9 @@ namespace Diamond.Models.Factory
             }
 
             // Рассмотрим каждую продукцию
-            List<int> thisTechnologyProcess = Regions.Select(r=>r.TypeId).ToList();
+            List<int> thisTechnologyProcess = [];
+            foreach (var rr in RegionsRoute)
+                thisTechnologyProcess.Add(Regions.First(r => r.Id == rr).TypeId);
             List<Product> potecialProducts = allProducts.Where(p=>p.TechnologyProcessing.SequenceEqual(thisTechnologyProcess)).ToList();
 
             return potecialProducts;
@@ -232,12 +234,12 @@ namespace Diamond.Models.Factory
         /// <summary>
         /// Максимальный объём продукции (в пачках), которое маршрут может производить в одной партии
         /// </summary>
-        public int GetMaxVolumeCountProduct(int productId)
+        public int GetMaxVolumeCountProduct(int packageId)
         {
             // Находим саму продукцию из БД
             Package product = context.Package
                 .AsNoTracking()
-                .Where(ps => ps.Id == productId)
+                .Where(ps => ps.Id == packageId)
                 .Include(ps => ps.ProductGroup)
                 .First();
             
@@ -254,15 +256,23 @@ namespace Diamond.Models.Factory
         /// <summary>
         /// Можно ли произвести данную продукцию на этом маршруте
         /// </summary>
-        public bool CanProduceProduct(int packageId)
+        public bool CanProduceProduct(int productId)
         {
-            var list = GetAvailableProducts();
-            int productId = context.Package.AsNoTracking().First(p => p.Id == packageId).ProductId;
+            List<Product> list = GetAvailableProducts();
             foreach (var item in list)
                 if (item.Id == productId)
                     return true;
             return false;
         }
+        /*public bool CanProduceProduct(int packageId)
+        {
+            var list = GetAvailableProducts();
+            int productId = context.Package.AsNoTracking().First(p => p.Id == productId).ProductId;
+            foreach (var item in list)
+                if (item.Id == productId)
+                    return true;
+            return false;
+        }*/
 
         /// <summary>
         /// Сколько минут требуется маршруту, чтобы обработать все партии до указанного участка (включительно).
@@ -350,6 +360,10 @@ namespace Diamond.Models.Factory
         /// </summary>
         public double GetTimeToCompleteFullPlan(DateTime priority, bool ConsiderDowntime = true)
         {
+            return Regions.Select(r => r.GetTime(priority, ConsiderDowntime)).Sum();
+        }
+        /*public double GetTimeToCompleteFullPlan(DateTime priority, bool ConsiderDowntime = true)
+        {
             if (!IsWorking)
                 throw new Exception("Маршрут не нашёл все необходимые участки");
             else if (!ConsiderDowntime)
@@ -386,7 +400,8 @@ namespace Diamond.Models.Factory
 
             // Вывод результата
             return Time;
-        }
+        }*/
+
 
         /// <summary>
         /// Есть ли на маршруте простаивающий участок
@@ -705,7 +720,7 @@ namespace Diamond.Models.Factory
         #region Статические и переопределяющие
         public override string ToString()
         {
-            if (Name != "")
+            if (Name != null && Name != "")
                 return Name;
             return GetContent;
         }

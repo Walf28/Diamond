@@ -1,10 +1,6 @@
 ﻿@using Diamond.Models.Factory
 @model Part
 @{
-    if (Model.Region != null)
-        ViewBag.Routes = Model.Region.Routes.Where(r => r.CanProduceProduct(Model.ProductId)).ToList();
-    else
-        ViewBag.Routes = Model.Factory.Routes.Where(r => r.CanProduceProduct(Model.ProductId)).ToList();
     ViewData["Title"] = "Изменение плана";
 }
 
@@ -31,6 +27,13 @@
         </p>
     }
     <p>Продукция<input type="text" value="@ViewBag.ProductName" readonly/></p>
+    <p>
+        К какому заказу привязан
+        <select asp-for="@Model.OrderId"
+                asp-items="@(new SelectList(ViewBag.Orders, "Id", "Customer"))">
+            <option value="0">Без привязки</option>
+        </select>
+    </p>
     <p>К какому сроку надо выполнить
         <input
         value="@Model.ComingSoon.ToLocalTime()"
@@ -39,34 +42,76 @@
     </p>
     <p>На каком участке находится<input value="@(Model.Region == null ? "-" :Model.Region.Name)" readonly/></p>
     <p>Выбранный размер<input value="@Model.Size" readonly/></p>
-    <p>Маршрут
-        <select id="selectedRoute" asp-for="@Model.RouteId" onchange="GetResultTime(value, planId.value)" required>
-            @{
-                var rar = ViewBag.Routes as List<Route>;
-                var r1 = rar!.Where(r => r.GetTimeToEndDowntime() == 0).ToList();
-                var r3 = rar!.Where(r => r.GetTimeToEndDowntime() == double.PositiveInfinity).ToList();
-                var r2 = rar!.Where(r => !r1.Contains(r) && !r3.Contains(r)).ToList();
-                foreach (var r in r1)
-                {
-                    <option value="@r.Id" style="background-color:lime">
-                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan(Model.ComingSoon)).TotalHours:f2} ч.")
-                    </option>
+    <div>
+        @if (Model.Region != null)
+        {
+            <p>Способ транспортировки продукции
+                <select name="variantRoute" onchange="SelectTypeChangeRoute(value)">
+                    <option id="0" selected>Автоматически</option>
+                    <option id="1">Вручную</option>
+                </select>
+            </p>
+        }
+        else
+        {
+            <input name="variantRoute" type="number" value="0" hidden readonly />
+        }
+
+        <p>Маршрут
+            <select name="selectedRoute0" asp-for="@Model.RouteId" onchange="GetResultTime(value, planId.value)" required>
+                @{
+                    var rar = ViewBag.Routes as List<Route>;
+                    var r1 = rar!.Where(r => r.GetTimeToEndDowntime() == 0).ToList();
+                    var r3 = rar!.Where(r => r.GetTimeToEndDowntime() == double.PositiveInfinity).ToList();
+                    var r2 = rar!.Where(r => !r1.Contains(r) && !r3.Contains(r)).ToList();
+                    foreach (var r in r1)
+                    {
+                        <option value="@r.Id" style="background-color:lime">
+                            @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan(Model.ComingSoon) + r.GetTimeToCompletePart(Model)).TotalHours:f2} ч.")
+                        </option>
+                    }
+                    foreach (var r in r2)
+                    {
+                        <option value="@r.Id" style="background-color:orange">
+                            @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan(Model.ComingSoon) + r.GetTimeToCompletePart(Model)).TotalHours:f2} ч.")
+                        </option>
+                    }
+                    foreach (var r in r3)
+                    {
+                        <option value="@r.Id" style="background-color:red">
+                            @($"{r.GetContent} | ? ч.")
+                        </option>
+                    }
                 }
-                foreach (var r in r2)
-                {
-                    <option value="@r.Id" style="background-color:orange">
-                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan(Model.ComingSoon)).TotalHours:f2} ч.")
-                    </option>
+            </select>
+            <select name="selectedRoute1" asp-for="@Model.RouteId" onchange="GetResultTime(value, planId.value)" required hidden>
+                @{
+                    var _rar = ViewBag.AllRoutes as List<Route>;
+                    var _r1 = _rar!.Where(r => r.GetTimeToEndDowntime() == 0).ToList();
+                    var _r3 = _rar!.Where(r => r.GetTimeToEndDowntime() == double.PositiveInfinity).ToList();
+                    var _r2 = _rar!.Where(r => !_r1.Contains(r) && !_r3.Contains(r)).ToList();
+                    foreach (var r in _r1)
+                    {
+                        <option value="@r.Id" style="background-color:lime">
+                            @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan(Model.ComingSoon) + r.GetTimeToCompletePart(Model)).TotalHours:f2} ч.")
+                        </option>
+                    }
+                    foreach (var r in _r2)
+                    {
+                        <option value="@r.Id" style="background-color:orange">
+                            @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan(Model.ComingSoon) + r.GetTimeToCompletePart(Model)).TotalHours:f2} ч.")
+                        </option>
+                    }
+                    foreach (var r in _r3)
+                    {
+                        <option value="@r.Id" style="background-color:red">
+                            @($"{r.GetContent} | ? ч.")
+                        </option>
+                    }
                 }
-                foreach (var r in r3)
-                {
-                    <option value="@r.Id" style="background-color:red">
-                        @($"{r.GetContent} | {TimeSpan.FromMinutes(r.GetTimeToCompleteFullPlan(Model.ComingSoon)).TotalHours:f2} ч.")
-                    </option>
-                }
-            }
-        </select>
+            </select>
     </p>
+    </div>
     <p>Необходимое время (с учётом имеющихся заказов)
         <input id="resultTime"
             type="text"
@@ -85,6 +130,19 @@
                     document.getElementById("resultTime").setAttribute('value', `${data.hours}:${data.minutes}:${data.seconds}`);
                 }
             });
+        }
+        function SelectTypeChangeRoute(type)
+        {
+            if (type == 0)
+            {
+                document.getElementById("selectedRoute0").style.display = 'block';
+                document.getElementById("selectedRoute1").style.display = 'none';
+            }
+            else
+            {
+                document.getElementById("selectedRoute0").style.display = 'none';
+                document.getElementById("selectedRoute1").style.display = 'block';
+            }
         }
     </script>
 }

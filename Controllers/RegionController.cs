@@ -77,7 +77,11 @@ namespace Diamond.Controllers
             {
                 if (selectedMaterials[i] == 0)
                     continue;
-                region.Materials.Add(new() { Material = context.Materials.First(m=>m.Id == selectedMaterials[i]), Power = selectedMaterialsPower[i] });
+                region.Materials.Add(new() {
+                    Material = context.Materials.First(m=>m.Id == selectedMaterials[i]),
+                    Power = selectedMaterialsPower[i],
+                    Region = region
+                });
             }
 
             // Ссылка на тип технологической обработки
@@ -87,8 +91,6 @@ namespace Diamond.Controllers
             context.Regions.Add(region);
             context.SaveChanges();
             Server.Load();
-            Server.Factories[region.FactoryId].UpdateAllRoutes();
-            Server.Save();
             return RedirectToAction("Edit", "Factory", new { Id = region.FactoryId });
         }
         public IActionResult Update(Region region, List<int> parentRegions, List<int> childrenRegions, int TypeId, List<int> selectedMaterials, List<int> selectedMaterialsPower)
@@ -126,7 +128,7 @@ namespace Diamond.Controllers
                 if (DBRegion.Materials.FirstOrDefault(m => m.MaterialId == selectedMaterials[i]) == null)
                     DBRegion.Materials.Add(new() { Material = context.Materials.First(m => m.Id == selectedMaterials[i]), Power = selectedMaterialsPower[i] });
                 else
-                    DBRegion.Materials.Where(m => m.MaterialId == selectedMaterials[i]).Any(m => { m.Power = selectedMaterialsPower[i]; return true; });
+                    _ = DBRegion.Materials.Where(m => m.MaterialId == selectedMaterials[i]).Any(m => { m.Power = selectedMaterialsPower[i]; return true; });
             }
 
             // Ссылка на тип технологической обработки
@@ -135,8 +137,6 @@ namespace Diamond.Controllers
             // Сохранение всех изменений
             context.SaveChanges();
             Server.Load();
-            Server.Factories[DBRegion.FactoryId].UpdateAllRoutes();
-            Server.Save();
             return RedirectToAction("Edit", "Factory", new { Id = region.FactoryId });
         }
         public IActionResult Delete(int Id)
@@ -163,7 +163,7 @@ namespace Diamond.Controllers
         {
             return Json(new
             {
-                value = Server.context.Regions
+                value = context.Regions
                 .AsNoTracking()
                 .Include(r => r.Type)
                 .First(r => r.Id == regionId)

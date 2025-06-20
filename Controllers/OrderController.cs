@@ -62,7 +62,7 @@ namespace Diamond.Controllers
             request.DateOfReceipt = DateTime.UtcNow;
             request.OrderParts.ForEach(op =>
             {
-                op.Product = context.Package.Where(ps => ps.Id == op.ProductId).First();
+                op.Product = context.Package.Where(ps => ps.Id == op.PackageId).First();
             });
             request.DateOfDesiredComplete = DateTime.SpecifyKind(request.DateOfDesiredComplete, DateTimeKind.Utc);
 

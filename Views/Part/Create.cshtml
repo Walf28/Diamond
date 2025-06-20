@@ -22,7 +22,14 @@
             onchange="ProductIsSelected(factoryId.value, value)"
             required>
             <option value="0">Отсутствует</option>
-        </select></p>
+        </select>
+    </p>
+    <p>К какому заказу привязать
+        <select asp-for="@Model.OrderId"
+                asp-items="@(new SelectList(ViewBag.Orders, "Id", "Customer"))">
+            <option value="0" selected>Без привязки</option>
+        </select>
+    </p>
     <p>К какому сроку надо выполнить
         <input 
             type="datetime-local" 

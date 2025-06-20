@@ -14,6 +14,7 @@
     </div>
 
     <p>Номер заявки<input type="number" asp-for="@Model.Id" value="@Model.Id" readonly/></p>
+    <p>Заказчик<input type="text" asp-for="@Model.Customer" value="@Model.Customer" readonly /></p>
     <p>Дата желаемого выполнения заявки<input type="text" value="@Model.DateOfDesiredComplete.ToString("dd.MM.yyyy")" readonly/></p>
     <p>Товар<input type="text" value="@(Model.OrderParts[0].Product.GetNameAndCount)" readonly style="width: 400px"/></p>
     <p>Количество<input type="number" value="@Model.OrderParts[0].Count" readonly/></p>

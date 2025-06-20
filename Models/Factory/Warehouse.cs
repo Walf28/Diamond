@@ -121,7 +121,7 @@ namespace Diamond.Models.Factory
             {
                 foreach (var orderPart in order.OrderParts)
                     foreach (var product in Products)
-                        if (orderPart.ProductId == product.ProductId)
+                        if (orderPart.PackageId == product.ProductId)
                         {
                             int requestCountNeed = orderPart.Count - orderPart.CountComplete;
                             if (requestCountNeed >= product.Count) // Если продукции на складе меньше (или столько же), чем нужно

@@ -285,20 +285,18 @@ namespace Diamond.Models.Factory
         /// Уже выполненные и менее приоритетные партии, которые ещё не начали своё движение) не берутся в расчёт.
         /// Простаивание берётся в расчёт.
         /// </summary>
-        public double GetTime(DateTime priority, bool ConsiderDowntime = true)
+        public double GetTime(DateTime? priority = null, bool ConsiderDowntime = true)
         {
             double Time = 0;
             // Считаем суммарное время, которое понадобится для выполнения без учёта простоев
             foreach (var route in Routes)
             {
-                var lp = route.Part.Where(p => p.ComingSoon.ToUniversalTime() <= priority.ToUniversalTime());
+                var lp = priority == null ? route.Part : route.Part.Where(p => p.ComingSoon.ToUniversalTime() <= priority.Value.ToUniversalTime());
                 foreach (var part in lp)
                 {
                     int res = route.PlanWasCompletedInRegion(part.Id, Id)!.Value;
                     if (res > 0 || (res == 0 && Status == RegionStatus.AWAIT_UNLOADING))
                         continue;
-                    else if (res == 0 && Status == RegionStatus.IN_WORKING && timer != null)
-                        Time += startTimer!.Value.ToLocalTime().AddMilliseconds(timer.Interval).Subtract(DateTime.Now).TotalMinutes;
                     else
                         Time += GetTime(part);
                 }

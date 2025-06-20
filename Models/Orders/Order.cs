@@ -1,4 +1,5 @@
 ﻿using Diamond.Database;
+using Diamond.Models.Factory;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -21,6 +22,7 @@ namespace Diamond.Models.Orders
         #region Поля
         #region Обычные
         public int Id { get; set; }
+        public string Customer { get; set; } = "";
         [Range(1, int.MaxValue, ErrorMessage = "Разрешены только положительные значения")]
         public DateTime DateOfReceipt { get; set; } // Дата поступления заявки
         public DateTime DateOfDesiredComplete { get; set; } // Дата желаемого выполнения заявки
@@ -35,6 +37,7 @@ namespace Diamond.Models.Orders
         [ForeignKey(nameof(FactoryId))]
         public Factory.Factory? Factory { get; set; } // Завод
         public List<OrderPart> OrderParts { get; set; } = [];
+        public List<Part> Plan = [];
         #endregion
 
         #region Id ссылок

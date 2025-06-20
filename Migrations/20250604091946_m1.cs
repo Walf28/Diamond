@@ -58,6 +58,7 @@ namespace Diamond.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    Сustomer = table.Column<string>(type: "text", nullable: false),
                     DateOfReceipt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DateOfDesiredComplete = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     DateOfAcceptance = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -330,7 +331,7 @@ namespace Diamond.Migrations
                     Count = table.Column<int>(type: "integer", nullable: false),
                     CountComplete = table.Column<int>(type: "integer", nullable: false),
                     OrderId = table.Column<int>(type: "integer", nullable: true),
-                    ProductId = table.Column<int>(type: "integer", nullable: false)
+                    PackageId = table.Column<int>(type: "integer", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -342,8 +343,8 @@ namespace Diamond.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_OrderParts_Package_ProductId",
-                        column: x => x.ProductId,
+                        name: "FK_OrderParts_Package_PackageId",
+                        column: x => x.PackageId,
                         principalTable: "Package",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -362,7 +363,8 @@ namespace Diamond.Migrations
                     RouteId = table.Column<int>(type: "integer", nullable: false),
                     RegionId = table.Column<int>(type: "integer", nullable: true),
                     ProductId = table.Column<int>(type: "integer", nullable: false),
-                    MaterialId = table.Column<int>(type: "integer", nullable: false)
+                    MaterialId = table.Column<int>(type: "integer", nullable: false),
+                    OrderId = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -377,6 +379,12 @@ namespace Diamond.Migrations
                         name: "FK_Plans_Materials_MaterialId",
                         column: x => x.MaterialId,
                         principalTable: "Materials",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Plans_Orders_OrderId",
+                        column: x => x.OrderId,
+                        principalTable: "Orders",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -454,9 +462,9 @@ namespace Diamond.Migrations
                 column: "OrderId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OrderParts_ProductId",
+                name: "IX_OrderParts_PackageId",
                 table: "OrderParts",
-                column: "ProductId");
+                column: "PackageId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Orders_FactoryId",
@@ -477,6 +485,11 @@ namespace Diamond.Migrations
                 name: "IX_Plans_MaterialId",
                 table: "Plans",
                 column: "MaterialId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Plans_OrderId",
+                table: "Plans",
+                column: "OrderId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Plans_ProductId",

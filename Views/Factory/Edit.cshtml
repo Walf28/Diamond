@@ -39,7 +39,8 @@
                 <td>Статус</td>
                 <td></td>
             </tr>
-            @foreach(var Region in Model.Regions.OrderBy(r=>r.Id)) {
+            @foreach (var Region in Model.Regions.OrderBy(r => r.Id))
+            {
                 <tr>
                     <td>@Region.Name</td>
                     <td>@Region.Type</td>

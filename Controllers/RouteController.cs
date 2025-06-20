@@ -8,7 +8,7 @@ namespace Diamond.Controllers
 {
     public class RouteController : Controller
     {
-        private readonly DB context = Server.context;
+        private readonly DB context = new();
 
         #region Отображение
         public IActionResult List(int Id)

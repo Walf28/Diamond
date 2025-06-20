@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Diamond.Migrations
 {
     [DbContext(typeof(DB))]
-    [Migration("20250517112142_m1")]
+    [Migration("20250604091946_m1")]
     partial class m1
     {
         /// <inheritdoc />
@@ -95,6 +95,9 @@ namespace Diamond.Migrations
                     b.Property<int>("MaterialId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("OrderId")
+                        .HasColumnType("integer");
+
                     b.Property<int>("ProductId")
                         .HasColumnType("integer");
 
@@ -115,6 +118,8 @@ namespace Diamond.Migrations
                     b.HasIndex("FactoryId");
 
                     b.HasIndex("MaterialId");
+
+                    b.HasIndex("OrderId");
 
                     b.HasIndex("ProductId");
 
@@ -312,6 +317,10 @@ namespace Diamond.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
+                    b.Property<string>("Сustomer")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("Id");
 
                     b.HasIndex("FactoryId");
@@ -336,14 +345,14 @@ namespace Diamond.Migrations
                     b.Property<int?>("OrderId")
                         .HasColumnType("integer");
 
-                    b.Property<int>("ProductId")
+                    b.Property<int>("PackageId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
                     b.HasIndex("OrderId");
 
-                    b.HasIndex("ProductId");
+                    b.HasIndex("PackageId");
 
                     b.ToTable("OrderParts");
                 });
@@ -496,6 +505,11 @@ namespace Diamond.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("Diamond.Models.Orders.Order", "Order")
+                        .WithMany("Plan")
+                        .HasForeignKey("OrderId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
                     b.HasOne("Diamond.Models.Products.Package", "Product")
                         .WithMany("Plans")
                         .HasForeignKey("ProductId")
@@ -516,6 +530,8 @@ namespace Diamond.Migrations
                     b.Navigation("Factory");
 
                     b.Navigation("Material");
+
+                    b.Navigation("Order");
 
                     b.Navigation("Product");
 
@@ -629,7 +645,7 @@ namespace Diamond.Migrations
 
                     b.HasOne("Diamond.Models.Products.Package", "Product")
                         .WithMany("OrderParts")
-                        .HasForeignKey("ProductId")
+                        .HasForeignKey("PackageId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -760,6 +776,8 @@ namespace Diamond.Migrations
             modelBuilder.Entity("Diamond.Models.Orders.Order", b =>
                 {
                     b.Navigation("OrderParts");
+
+                    b.Navigation("Plan");
                 });
 
             modelBuilder.Entity("Diamond.Models.ProductionStage", b =>
